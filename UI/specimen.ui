@@ -1,0 +1,2710 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>specimen_MainWindow</class>
+ <widget class="QMainWindow" name="specimen_MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1270</width>
+    <height>890</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1270</width>
+    <height>890</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1270</width>
+    <height>890</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QFrame" name="specimen_frame">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>10</y>
+      <width>1260</width>
+      <height>870</height>
+     </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>1260</width>
+      <height>870</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>1260</width>
+      <height>870</height>
+     </size>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::StyledPanel</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Shadow::Raised</enum>
+    </property>
+    <widget class="QLabel" name="specimen_name_label">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>10</y>
+       <width>60</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>60</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>60</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>ชื่อสัตว์</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_ID_label">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>80</y>
+       <width>150</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>150</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>150</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>หมายเลข (ID/OPD)</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="specimen_name_lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>10</y>
+       <width>270</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>270</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>270</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="specimen_ID_lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>190</x>
+       <y>80</y>
+       <width>260</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>260</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>260</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_sex_label">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>10</y>
+       <width>90</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>90</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>90</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>เพศ (SEX)</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="specimen_sex_comboBox">
+     <property name="geometry">
+      <rect>
+       <x>590</x>
+       <y>10</y>
+       <width>180</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>180</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>180</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <item>
+      <property name="text">
+       <string>ผู้ (Male)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>เมีย (Female)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ไม่ทราบ (Unknow)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ม้า (Foal)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ม้า (Filly)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ม้า (Mare)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ม้า (Gelding)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ม้า (Stallion)</string>
+      </property>
+     </item>
+    </widget>
+    <widget class="QLabel" name="specimen_age_label">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>80</y>
+       <width>90</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>90</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>90</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>อายุ (Age)</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="specimen_ageYear_lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>590</x>
+       <y>80</y>
+       <width>70</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_ageYear_label">
+     <property name="geometry">
+      <rect>
+       <x>680</x>
+       <y>80</y>
+       <width>20</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>ปี</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="specimen_ageMonth_lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>710</x>
+       <y>80</y>
+       <width>70</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_ageMonth_label">
+     <property name="geometry">
+      <rect>
+       <x>790</x>
+       <y>80</y>
+       <width>50</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>50</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>50</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>เดือน</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="specimen_ageDay_lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>840</x>
+       <y>80</y>
+       <width>70</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_ageDay_label">
+     <property name="geometry">
+      <rect>
+       <x>920</x>
+       <y>80</y>
+       <width>30</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>30</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>30</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>วัน</string>
+     </property>
+    </widget>
+    <widget class="QCheckBox" name="specimen_ageUnknown_checkBox">
+     <property name="geometry">
+      <rect>
+       <x>970</x>
+       <y>80</y>
+       <width>120</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>120</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>120</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>ไม่ทราบอายุ</string>
+     </property>
+    </widget>
+    <widget class="QFrame" name="specimen_speedStatus_frame">
+     <property name="geometry">
+      <rect>
+       <x>1100</x>
+       <y>10</y>
+       <width>150</width>
+       <height>160</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>150</width>
+       <height>160</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>150</width>
+       <height>160</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Plain</enum>
+     </property>
+     <widget class="QLabel" name="specimen_status_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>120</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>สถานะตัวอย่าง</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_normal_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>50</y>
+        <width>90</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>90</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>90</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ปกติ</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_most_urgent_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>100</y>
+        <width>100</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>100</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>100</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ด่วนที่สุด</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLabel" name="specimen_death_label">
+     <property name="geometry">
+      <rect>
+       <x>780</x>
+       <y>10</y>
+       <width>150</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>150</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>150</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>สาเหตุการเสียชีวิต</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="specimen_death_comboBox">
+     <property name="geometry">
+      <rect>
+       <x>930</x>
+       <y>10</y>
+       <width>160</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>160</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>160</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <item>
+      <property name="text">
+       <string>ยังมีชีวิต (Alive)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>โรคชรา (Senile)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ติดเชื้อ (Infectious Disease)</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>ไม่ทราบสาเหตุ (Unknow)</string>
+      </property>
+     </item>
+    </widget>
+    <widget class="QFrame" name="specimen_animal_type_frame">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>130</y>
+       <width>940</width>
+       <height>120</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>940</width>
+       <height>120</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>940</width>
+       <height>120</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Plain</enum>
+     </property>
+     <widget class="QLabel" name="specimen_animal_type_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>70</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>70</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>70</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ชนิดสัตว์</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_swine_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>10</y>
+        <width>120</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>สุกร (Swine)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_elephant_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>70</y>
+        <width>140</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>140</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>140</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ช้าง (Elephant)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_felin_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>290</x>
+        <y>70</y>
+        <width>110</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>110</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>110</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>แมว (Felin)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_avian_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>290</x>
+        <y>10</y>
+        <width>140</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>140</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>140</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>สัตว์ปีก (Avian)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_bovine_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>460</x>
+        <y>10</y>
+        <width>120</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>โค (ฺBovine)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_equine_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>630</x>
+        <y>10</y>
+        <width>120</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ม้า (Equine)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_conine_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>800</x>
+        <y>10</y>
+        <width>130</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>130</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>130</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>สุนัข (Conine)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_unknown_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>800</x>
+        <y>70</y>
+        <width>120</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>120</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ไม่ทราบชนิด</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_animal_other_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>460</x>
+        <y>70</y>
+        <width>70</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>70</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>70</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>อื่นๆ</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="specimen_animal_other_lineEdit">
+      <property name="geometry">
+       <rect>
+        <x>520</x>
+        <y>70</y>
+        <width>260</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>260</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>260</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QFrame" name="specimen_sample_frame">
+     <property name="geometry">
+      <rect>
+       <x>960</x>
+       <y>180</y>
+       <width>290</width>
+       <height>200</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>290</width>
+       <height>200</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>290</width>
+       <height>200</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Plain</enum>
+     </property>
+     <widget class="QLabel" name="specimen_sample_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>270</width>
+        <height>70</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>270</width>
+        <height>70</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>270</width>
+        <height>70</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>รายละเอียดตัวอย่างสิ่งส่งตรวจ (SAMPLE)</string>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignCenter</set>
+      </property>
+      <property name="wordWrap">
+       <bool>true</bool>
+      </property>
+     </widget>
+     <widget class="QComboBox" name="specimen_sample_comboBox">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>90</y>
+        <width>270</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>270</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>270</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <item>
+       <property name="text">
+        <string>ซากสัตว์</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ชิ้นเนื้อในน้ำยา 10% ฟอร์มาลิน</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>บล็อคพาราฟิน</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำในช่องท้อง</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำในช่องอก</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>FNA slide(s)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Slide(s)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ปัสสาวะ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ของเหลวจากแผล</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำไขข้อกระดูก</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำไขสันหลัง</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ไขกระดูก</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>เลือด</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ปัสสาวะ (Cystocentesis)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ปัสสาวะ (Catheterization)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ปัสสาวะ (Voiding)</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ปลายสาย Catheter</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Ascitic fluid</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำถุงหุ้มหัวใจ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Bronchiolar lavage</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Gastric lavage</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>หนอง</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Swab ใน Stuart transport medium</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำลาย</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>อุจจาระ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ขน</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>เล็บ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>กระดูก</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ชิ้นเนื้อ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Isolate bacterial colony</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Agar plate</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>หนอนพยาธิ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ขยะติดเชื้อ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>อาหารสัตว์</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>Semen</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ซีรัม</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>น้ำยาฆ่าเชื้อ</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>สารเคมี</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>ปรสิต</string>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>อุปกรณ์</string>
+       </property>
+      </item>
+     </widget>
+     <widget class="QRadioButton" name="specimen_sample_other_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>150</y>
+        <width>70</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>70</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>70</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>อื่นๆ</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="specimen_sample_other_lineEdit">
+      <property name="geometry">
+       <rect>
+        <x>70</x>
+        <y>150</y>
+        <width>210</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>210</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>210</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignmentFlag::AlignCenter</set>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLineEdit" name="specimen_breed_lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>260</y>
+       <width>370</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>370</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>370</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_breed_label">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>260</y>
+       <width>110</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>110</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>110</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>พันธุ์ (Breed)</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="specimen_weight_lineEdit">
+     <property name="geometry">
+      <rect>
+       <x>620</x>
+       <y>260</y>
+       <width>150</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>150</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>150</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_weight_label">
+     <property name="geometry">
+      <rect>
+       <x>550</x>
+       <y>260</y>
+       <width>60</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>60</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>60</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>น้ำหนัก</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_kilogram_label">
+     <property name="geometry">
+      <rect>
+       <x>790</x>
+       <y>260</y>
+       <width>70</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>70</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>กิโลกรัม</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_day_of_death_label">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>320</y>
+       <width>110</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>110</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>110</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>วันที่เสียชีวิต</string>
+     </property>
+    </widget>
+    <widget class="QDateTimeEdit" name="specimen_day_of_death_dateTimeEdit">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>320</y>
+       <width>170</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>170</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>170</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="locale">
+      <locale language="Thai" country="Thailand"/>
+     </property>
+     <property name="buttonSymbols">
+      <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+     </property>
+     <property name="displayFormat">
+      <string>d/M/yyyy h:mm </string>
+     </property>
+     <property name="calendarPopup">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_day_keep_sample_label">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>380</y>
+       <width>130</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>130</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>วันที่เก็บตัวอย่าง</string>
+     </property>
+    </widget>
+    <widget class="QDateTimeEdit" name="specimen_day_keep_sample_dateTimeEdit">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>380</y>
+       <width>170</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>170</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>170</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="locale">
+      <locale language="Thai" country="Thailand"/>
+     </property>
+     <property name="buttonSymbols">
+      <enum>QAbstractSpinBox::ButtonSymbols::NoButtons</enum>
+     </property>
+     <property name="displayFormat">
+      <string>d/M/yyyy h:mm </string>
+     </property>
+     <property name="calendarPopup">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QFrame" name="specimen_keeping_frame">
+     <property name="geometry">
+      <rect>
+       <x>340</x>
+       <y>320</y>
+       <width>610</width>
+       <height>100</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>610</width>
+       <height>100</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>610</width>
+       <height>100</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::Box</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Plain</enum>
+     </property>
+     <widget class="QLabel" name="specimen_keeping_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>0</y>
+        <width>170</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>170</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>170</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>การเก็บรักษาตัวอย่าง</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_chill_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>45</y>
+        <width>130</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>130</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>130</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>แช่เย็น (Chill)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_freeze_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>190</x>
+        <y>45</y>
+        <width>150</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>150</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>150</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>แช่แข็ง (Freeze)</string>
+      </property>
+     </widget>
+     <widget class="QRadioButton" name="specimen_room_temperature_radioButton">
+      <property name="geometry">
+       <rect>
+        <x>370</x>
+        <y>45</y>
+        <width>230</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>230</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>230</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ไม่แช่ (Room Temperature)</string>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QLabel" name="specimen_record_heal_label">
+     <property name="geometry">
+      <rect>
+       <x>20</x>
+       <y>440</y>
+       <width>130</width>
+       <height>40</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>130</width>
+       <height>40</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>ประวัติการรักษา</string>
+     </property>
+    </widget>
+    <widget class="QTextEdit" name="specimen_record_heal_textEdit">
+     <property name="geometry">
+      <rect>
+       <x>160</x>
+       <y>440</y>
+       <width>320</width>
+       <height>90</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>320</width>
+       <height>90</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>320</width>
+       <height>90</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+    </widget>
+    <widget class="QTextEdit" name="specimen_record_antibiotics_textEdit">
+     <property name="geometry">
+      <rect>
+       <x>630</x>
+       <y>440</y>
+       <width>320</width>
+       <height>90</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>320</width>
+       <height>90</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>320</width>
+       <height>90</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+    </widget>
+    <widget class="QLabel" name="specimen_record_antibiotics_label">
+     <property name="geometry">
+      <rect>
+       <x>490</x>
+       <y>440</y>
+       <width>140</width>
+       <height>60</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>140</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>140</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>ประวัติการ ให้ยาปฏิชีวนะ</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignmentFlag::AlignCenter</set>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="specimen_save_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>970</x>
+       <y>440</y>
+       <width>130</width>
+       <height>60</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>130</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>บันทึก</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="specimen_cancel_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>1110</x>
+       <y>440</y>
+       <width>130</width>
+       <height>60</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>130</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>130</width>
+       <height>60</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>20</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>ย้อนกลับ</string>
+     </property>
+    </widget>
+    <widget class="QFrame" name="specimen_lab_frame">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>540</y>
+       <width>1260</width>
+       <height>330</height>
+      </rect>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>1260</width>
+       <height>330</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>1260</width>
+       <height>330</height>
+      </size>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::Shape::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Shadow::Raised</enum>
+     </property>
+     <widget class="QLabel" name="specimen_lab_label">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>260</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>260</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>260</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ห้องปฏิบัติการที่ต้องการส่งตรวจ</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_fungal_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>50</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ราวิทยา (Fungal)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_serology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>95</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ซีรัมวิทยา (Serology)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_water_quality_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>140</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ตรวจคุณภาพน้ำ (Water quality)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_immunohistochemistry_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>185</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>พยาธิวิทยา (Immunohistochemistry)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_necropsy_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>230</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>พยาธิวิทยา (Necropsy)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_histopathology_research_recut_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>275</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>พยาธิวิทยา (Histopathology Research Recut)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_microbiology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>50</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>จุลชีววิทยา (Microbiology)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_cytology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>230</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>พยาธิวิทยา (Cytology)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_parasitology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>95</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ปรสิตวิทยา (Parasitology)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_molecular_biology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>140</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>อณูชีววิทยา (Molecular biology)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_histopathology_research_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>275</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>พยาธิวิทยา (Histopathology Research)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_surgical_biopsy_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>430</x>
+        <y>185</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>พยาธิวิทยา (Surgical biopsy)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_food_safety_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>850</x>
+        <y>230</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>อาหารปลอดภัย (Food safty)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_service_after_death_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>850</x>
+        <y>275</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>งานบริการหลังความตาย</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_virology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>850</x>
+        <y>50</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>ไวรัสวิทยา (Virology)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_histopathology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>850</x>
+        <y>185</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>พยาธิวิทยา (Histopathology)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_feed_analysis_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>850</x>
+        <y>95</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>เคมีวิเคราะห์ (Feed analysis)</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="specimen_hematology_pushButton">
+      <property name="geometry">
+       <rect>
+        <x>850</x>
+        <y>140</y>
+        <width>390</width>
+        <height>40</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>390</width>
+        <height>40</height>
+       </size>
+      </property>
+      <property name="font">
+       <font>
+        <family>TH Niramit AS</family>
+        <pointsize>20</pointsize>
+       </font>
+      </property>
+      <property name="text">
+       <string>โลหิตวิทยา (Hematology)</string>
+      </property>
+     </widget>
+    </widget>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

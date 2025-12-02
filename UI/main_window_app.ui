@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1550</width>
+    <height>900</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1550</width>
+    <height>900</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1550</width>
+    <height>900</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Register</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QFrame" name="frame">
+    <property name="geometry">
+     <rect>
+      <x>5</x>
+      <y>5</y>
+      <width>265</width>
+      <height>890</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
+    </property>
+    <property name="frameShadow">
+     <enum>QFrame::Shadow::Plain</enum>
+    </property>
+    <property name="lineWidth">
+     <number>2</number>
+    </property>
+    <widget class="QPushButton" name="register_new_customer_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>10</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>ลงทะเบียนลูกค้าใหม่</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="new_work_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>70</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>รับงานใหม่</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="logout_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>830</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>LOGOUT</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="barcode_print_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>190</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>ปริ้น บาร์โค้ด</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="check_job_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>130</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>ตรวจงาน</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="lab_received_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>250</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>รับตัวอย่าง</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="specimen_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>530</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Specimen</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="edit_employee_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>750</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Edit employee</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="lab_report_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>310</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>Lab Report</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QStackedWidget" name="stackedWidget">
+    <property name="geometry">
+     <rect>
+      <x>275</x>
+      <y>5</y>
+      <width>1270</width>
+      <height>890</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
+    </property>
+    <property name="lineWidth">
+     <number>2</number>
+    </property>
+    <property name="currentIndex">
+     <number>0</number>
+    </property>
+    <widget class="QWidget" name="register_new_customer_page"/>
+    <widget class="QWidget" name="new_work_page"/>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

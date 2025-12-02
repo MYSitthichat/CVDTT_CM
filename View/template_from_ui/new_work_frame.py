@@ -1,0 +1,217 @@
+# -*- coding: utf-8 -*-
+
+################################################################################
+## Form generated from reading UI file 'new_work_register.ui'
+##
+## Created by: Qt User Interface Compiler version 6.9.2
+##
+## WARNING! All changes made in this file will be lost when recompiling UI file!
+################################################################################
+
+from PySide6.QtCore import (QCoreApplication, QDate, QDateTime, QLocale,
+    QMetaObject, QObject, QPoint, QRect,
+    QSize, QTime, QUrl, Qt)
+from PySide6.QtGui import (QBrush, QColor, QConicalGradient, QCursor,
+    QFont, QFontDatabase, QGradient, QIcon,
+    QImage, QKeySequence, QLinearGradient, QPainter,
+    QPalette, QPixmap, QRadialGradient, QTransform)
+from PySide6.QtWidgets import (QApplication, QCheckBox, QFrame, QHeaderView,
+    QLabel, QLineEdit, QMainWindow, QPushButton,
+    QSizePolicy, QTreeWidget, QTreeWidgetItem, QWidget)
+
+class Ui_add_new_work_MainWindow(object):
+    def setupUi(self, add_new_work_MainWindow):
+        if not add_new_work_MainWindow.objectName():
+            add_new_work_MainWindow.setObjectName(u"add_new_work_MainWindow")
+        add_new_work_MainWindow.resize(1270, 890)
+        add_new_work_MainWindow.setMinimumSize(QSize(1270, 890))
+        add_new_work_MainWindow.setMaximumSize(QSize(1270, 890))
+        self.centralwidget = QWidget(add_new_work_MainWindow)
+        self.centralwidget.setObjectName(u"centralwidget")
+        self.label = QLabel(self.centralwidget)
+        self.label.setObjectName(u"label")
+        self.label.setGeometry(QRect(1130, 0, 111, 51))
+        font = QFont()
+        font.setFamilies([u"TH Niramit AS"])
+        font.setPointSize(24)
+        font.setBold(True)
+        self.label.setFont(font)
+        self.frame = QFrame(self.centralwidget)
+        self.frame.setObjectName(u"frame")
+        self.frame.setGeometry(QRect(5, 5, 1061, 431))
+        self.frame.setFrameShape(QFrame.Shape.Box)
+        self.frame.setFrameShadow(QFrame.Shadow.Raised)
+        self.nw_id_label = QLabel(self.frame)
+        self.nw_id_label.setObjectName(u"nw_id_label")
+        self.nw_id_label.setGeometry(QRect(10, 10, 81, 41))
+        font1 = QFont()
+        font1.setFamilies([u"TH Niramit AS"])
+        font1.setPointSize(20)
+        font1.setBold(True)
+        self.nw_id_label.setFont(font1)
+        self.nw_id_lineEdit = QLineEdit(self.frame)
+        self.nw_id_lineEdit.setObjectName(u"nw_id_lineEdit")
+        self.nw_id_lineEdit.setGeometry(QRect(100, 10, 111, 41))
+        self.nw_id_lineEdit.setFont(font1)
+        self.nw_id_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_name_sender_lineEdit = QLineEdit(self.frame)
+        self.nw_name_sender_lineEdit.setObjectName(u"nw_name_sender_lineEdit")
+        self.nw_name_sender_lineEdit.setGeometry(QRect(140, 70, 401, 41))
+        self.nw_name_sender_lineEdit.setFont(font1)
+        self.nw_name_sender_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_name_sender_label = QLabel(self.frame)
+        self.nw_name_sender_label.setObjectName(u"nw_name_sender_label")
+        self.nw_name_sender_label.setGeometry(QRect(10, 70, 81, 41))
+        self.nw_name_sender_label.setFont(font1)
+        self.nw_name_owner_lineEdit = QLineEdit(self.frame)
+        self.nw_name_owner_lineEdit.setObjectName(u"nw_name_owner_lineEdit")
+        self.nw_name_owner_lineEdit.setGeometry(QRect(140, 260, 401, 41))
+        self.nw_name_owner_lineEdit.setFont(font1)
+        self.nw_name_owner_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_name_owner_label = QLabel(self.frame)
+        self.nw_name_owner_label.setObjectName(u"nw_name_owner_label")
+        self.nw_name_owner_label.setGeometry(QRect(10, 260, 91, 41))
+        self.nw_name_owner_label.setFont(font1)
+        self.nw_tex_id_owner_lineEdit = QLineEdit(self.frame)
+        self.nw_tex_id_owner_lineEdit.setObjectName(u"nw_tex_id_owner_lineEdit")
+        self.nw_tex_id_owner_lineEdit.setGeometry(QRect(140, 310, 401, 41))
+        self.nw_tex_id_owner_lineEdit.setFont(font1)
+        self.nw_tex_id_owner_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_tex_id_owner_label = QLabel(self.frame)
+        self.nw_tex_id_owner_label.setObjectName(u"nw_tex_id_owner_label")
+        self.nw_tex_id_owner_label.setGeometry(QRect(10, 310, 131, 41))
+        self.nw_tex_id_owner_label.setFont(font1)
+        self.nw_tex_id_sender_label = QLabel(self.frame)
+        self.nw_tex_id_sender_label.setObjectName(u"nw_tex_id_sender_label")
+        self.nw_tex_id_sender_label.setGeometry(QRect(10, 120, 131, 41))
+        self.nw_tex_id_sender_label.setFont(font1)
+        self.nw_tex_id_sender_lineEdit = QLineEdit(self.frame)
+        self.nw_tex_id_sender_lineEdit.setObjectName(u"nw_tex_id_sender_lineEdit")
+        self.nw_tex_id_sender_lineEdit.setGeometry(QRect(140, 120, 401, 41))
+        self.nw_tex_id_sender_lineEdit.setFont(font1)
+        self.nw_tex_id_sender_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_sure_name_sender_label = QLabel(self.frame)
+        self.nw_sure_name_sender_label.setObjectName(u"nw_sure_name_sender_label")
+        self.nw_sure_name_sender_label.setGeometry(QRect(560, 70, 81, 41))
+        self.nw_sure_name_sender_label.setFont(font1)
+        self.nw_sure_name_sender_lineEdit = QLineEdit(self.frame)
+        self.nw_sure_name_sender_lineEdit.setObjectName(u"nw_sure_name_sender_lineEdit")
+        self.nw_sure_name_sender_lineEdit.setGeometry(QRect(640, 70, 411, 41))
+        self.nw_sure_name_sender_lineEdit.setFont(font1)
+        self.nw_sure_name_sender_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_sure_name_owner_lineEdit = QLineEdit(self.frame)
+        self.nw_sure_name_owner_lineEdit.setObjectName(u"nw_sure_name_owner_lineEdit")
+        self.nw_sure_name_owner_lineEdit.setGeometry(QRect(640, 260, 411, 41))
+        self.nw_sure_name_owner_lineEdit.setFont(font1)
+        self.nw_sure_name_owner_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_sure_name_owner_label = QLabel(self.frame)
+        self.nw_sure_name_owner_label.setObjectName(u"nw_sure_name_owner_label")
+        self.nw_sure_name_owner_label.setGeometry(QRect(560, 260, 81, 41))
+        self.nw_sure_name_owner_label.setFont(font1)
+        self.nw_owner_same_sender_checkBox = QCheckBox(self.frame)
+        self.nw_owner_same_sender_checkBox.setObjectName(u"nw_owner_same_sender_checkBox")
+        self.nw_owner_same_sender_checkBox.setGeometry(QRect(10, 210, 181, 31))
+        self.nw_owner_same_sender_checkBox.setFont(font1)
+        self.line = QFrame(self.frame)
+        self.line.setObjectName(u"line")
+        self.line.setGeometry(QRect(0, 170, 1061, 20))
+        self.line.setFrameShape(QFrame.Shape.HLine)
+        self.line.setFrameShadow(QFrame.Shadow.Sunken)
+        self.line_2 = QFrame(self.frame)
+        self.line_2.setObjectName(u"line_2")
+        self.line_2.setGeometry(QRect(0, 360, 1061, 20))
+        self.line_2.setFrameShape(QFrame.Shape.HLine)
+        self.line_2.setFrameShadow(QFrame.Shadow.Sunken)
+        self.nw_project_name_lineEdit = QLineEdit(self.frame)
+        self.nw_project_name_lineEdit.setObjectName(u"nw_project_name_lineEdit")
+        self.nw_project_name_lineEdit.setGeometry(QRect(140, 380, 911, 41))
+        self.nw_project_name_lineEdit.setFont(font1)
+        self.nw_project_name_lineEdit.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.nw_project_name_label = QLabel(self.frame)
+        self.nw_project_name_label.setObjectName(u"nw_project_name_label")
+        self.nw_project_name_label.setGeometry(QRect(10, 380, 131, 41))
+        self.nw_project_name_label.setFont(font1)
+        self.line_3 = QFrame(self.frame)
+        self.line_3.setObjectName(u"line_3")
+        self.line_3.setGeometry(QRect(0, 190, 1061, 20))
+        self.line_3.setFrameShape(QFrame.Shape.HLine)
+        self.line_3.setFrameShadow(QFrame.Shadow.Sunken)
+        self.nw_work_register_treeWidget = QTreeWidget(self.centralwidget)
+        __qtreewidgetitem = QTreeWidgetItem()
+        __qtreewidgetitem.setTextAlignment(6, Qt.AlignCenter);
+        __qtreewidgetitem.setTextAlignment(5, Qt.AlignCenter);
+        __qtreewidgetitem.setTextAlignment(4, Qt.AlignCenter);
+        __qtreewidgetitem.setTextAlignment(3, Qt.AlignCenter);
+        __qtreewidgetitem.setTextAlignment(2, Qt.AlignCenter);
+        __qtreewidgetitem.setTextAlignment(1, Qt.AlignCenter);
+        __qtreewidgetitem.setTextAlignment(0, Qt.AlignCenter);
+        self.nw_work_register_treeWidget.setHeaderItem(__qtreewidgetitem)
+        self.nw_work_register_treeWidget.setObjectName(u"nw_work_register_treeWidget")
+        self.nw_work_register_treeWidget.setGeometry(QRect(5, 450, 1061, 421))
+        self.nw_work_register_treeWidget.setFont(font1)
+        self.nw_save_pushButton = QPushButton(self.centralwidget)
+        self.nw_save_pushButton.setObjectName(u"nw_save_pushButton")
+        self.nw_save_pushButton.setGeometry(QRect(1075, 50, 191, 61))
+        self.nw_save_pushButton.setFont(font1)
+        self.nw_cancel_pushButton = QPushButton(self.centralwidget)
+        self.nw_cancel_pushButton.setObjectName(u"nw_cancel_pushButton")
+        self.nw_cancel_pushButton.setGeometry(QRect(1075, 120, 191, 61))
+        self.nw_cancel_pushButton.setFont(font1)
+        self.nw_add_result_pushButton = QPushButton(self.centralwidget)
+        self.nw_add_result_pushButton.setObjectName(u"nw_add_result_pushButton")
+        self.nw_add_result_pushButton.setGeometry(QRect(1075, 450, 191, 61))
+        self.nw_add_result_pushButton.setFont(font1)
+        self.new_delete_result_pushButton = QPushButton(self.centralwidget)
+        self.new_delete_result_pushButton.setObjectName(u"new_delete_result_pushButton")
+        self.new_delete_result_pushButton.setGeometry(QRect(1075, 520, 191, 61))
+        self.new_delete_result_pushButton.setFont(font1)
+        self.nw_print_bracode_pushButton = QPushButton(self.centralwidget)
+        self.nw_print_bracode_pushButton.setObjectName(u"nw_print_bracode_pushButton")
+        self.nw_print_bracode_pushButton.setGeometry(QRect(1075, 590, 191, 61))
+        self.nw_print_bracode_pushButton.setFont(font1)
+        self.nw_print_sned_lab_pushButton = QPushButton(self.centralwidget)
+        self.nw_print_sned_lab_pushButton.setObjectName(u"nw_print_sned_lab_pushButton")
+        self.nw_print_sned_lab_pushButton.setGeometry(QRect(1075, 660, 191, 61))
+        self.nw_print_sned_lab_pushButton.setFont(font1)
+        add_new_work_MainWindow.setCentralWidget(self.centralwidget)
+
+        self.retranslateUi(add_new_work_MainWindow)
+
+        QMetaObject.connectSlotsByName(add_new_work_MainWindow)
+    # setupUi
+
+    def retranslateUi(self, add_new_work_MainWindow):
+        add_new_work_MainWindow.setWindowTitle(QCoreApplication.translate("add_new_work_MainWindow", u"MainWindow", None))
+        self.label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e23\u0e31\u0e1a\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e21\u0e48", None))
+        self.nw_id_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e07\u0e32\u0e19", None))
+        self.nw_name_sender_lineEdit.setText("")
+        self.nw_name_sender_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e0a\u0e37\u0e48\u0e2d\u0e1c\u0e39\u0e49\u0e2a\u0e48\u0e07", None))
+        self.nw_name_owner_lineEdit.setText("")
+        self.nw_name_owner_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e0a\u0e37\u0e48\u0e2d\u0e40\u0e08\u0e49\u0e32\u0e02\u0e2d\u0e07", None))
+        self.nw_tex_id_owner_lineEdit.setText("")
+        self.nw_tex_id_owner_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e1c\u0e39\u0e49\u0e40\u0e2a\u0e35\u0e22\u0e20\u0e32\u0e29\u0e35", None))
+        self.nw_tex_id_sender_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e40\u0e25\u0e02\u0e17\u0e35\u0e48\u0e1c\u0e39\u0e49\u0e40\u0e2a\u0e35\u0e22\u0e20\u0e32\u0e29\u0e35", None))
+        self.nw_tex_id_sender_lineEdit.setText("")
+        self.nw_sure_name_sender_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e19\u0e32\u0e21\u0e2a\u0e01\u0e38\u0e25", None))
+        self.nw_sure_name_sender_lineEdit.setText("")
+        self.nw_sure_name_owner_lineEdit.setText("")
+        self.nw_sure_name_owner_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e19\u0e32\u0e21\u0e2a\u0e01\u0e38\u0e25", None))
+        self.nw_owner_same_sender_checkBox.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e04\u0e19\u0e40\u0e14\u0e35\u0e22\u0e27\u0e01\u0e31\u0e19\u0e01\u0e31\u0e1a\u0e1c\u0e39\u0e49\u0e2a\u0e48\u0e07", None))
+        self.nw_project_name_lineEdit.setText("")
+        self.nw_project_name_label.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e0a\u0e37\u0e48\u0e2d\u0e42\u0e04\u0e23\u0e07\u0e01\u0e32\u0e23", None))
+        ___qtreewidgetitem = self.nw_work_register_treeWidget.headerItem()
+        ___qtreewidgetitem.setText(6, QCoreApplication.translate("add_new_work_MainWindow", u"\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e15\u0e34\u0e21", None));
+        ___qtreewidgetitem.setText(5, QCoreApplication.translate("add_new_work_MainWindow", u"\u0e23\u0e30\u0e14\u0e31\u0e1a\u0e04\u0e27\u0e32\u0e21\u0e14\u0e48\u0e27\u0e19", None));
+        ___qtreewidgetitem.setText(4, QCoreApplication.translate("add_new_work_MainWindow", u"\u0e01\u0e32\u0e23\u0e40\u0e01\u0e47\u0e1a\u0e23\u0e31\u0e01\u0e29\u0e32", None));
+        ___qtreewidgetitem.setText(3, QCoreApplication.translate("add_new_work_MainWindow", u"\u0e2b\u0e49\u0e2d\u0e07\u0e1b\u0e0f\u0e34\u0e1a\u0e31\u0e15\u0e34\u0e01\u0e32\u0e23", None));
+        ___qtreewidgetitem.setText(2, QCoreApplication.translate("add_new_work_MainWindow", u"\u0e0a\u0e19\u0e34\u0e14\u0e2a\u0e31\u0e15\u0e27\u0e4c", None));
+        ___qtreewidgetitem.setText(1, QCoreApplication.translate("add_new_work_MainWindow", u"\u0e2b\u0e21\u0e32\u0e22\u0e40\u0e25\u0e02\u0e01\u0e32\u0e23\u0e15\u0e23\u0e27\u0e08", None));
+        ___qtreewidgetitem.setText(0, QCoreApplication.translate("add_new_work_MainWindow", u"\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48\u0e23\u0e31\u0e1a\u0e40\u0e04\u0e2a", None));
+        self.nw_save_pushButton.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e1a\u0e31\u0e19\u0e17\u0e36\u0e01\u0e07\u0e32\u0e19", None))
+        self.nw_cancel_pushButton.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01", None))
+        self.nw_add_result_pushButton.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e2a\u0e34\u0e48\u0e07\u0e2a\u0e48\u0e07\u0e15\u0e23\u0e27\u0e08", None))
+        self.new_delete_result_pushButton.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e2a\u0e34\u0e48\u0e07\u0e2a\u0e48\u0e07\u0e15\u0e23\u0e27\u0e08", None))
+        self.nw_print_bracode_pushButton.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e2a\u0e15\u0e34\u0e01\u0e40\u0e01\u0e2d\u0e23\u0e4c", None))
+        self.nw_print_sned_lab_pushButton.setText(QCoreApplication.translate("add_new_work_MainWindow", u"\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e43\u0e1a\u0e2a\u0e48\u0e07\u0e41\u0e25\u0e1b", None))
+    # retranslateUi
+

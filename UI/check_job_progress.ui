@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Check_job_MainWindow</class>
+ <widget class="QMainWindow" name="Check_job_MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1270</width>
+    <height>890</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Check Job Progress</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">font-size: 16pt;</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QLabel" name="label_check_title">
+    <property name="geometry">
+     <rect>
+      <x>1040</x>
+      <y>10</y>
+      <width>211</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>12</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font-size: 12pt;</string>
+    </property>
+    <property name="text">
+     <string>Check Job progress</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="tableTop">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>60</y>
+      <width>1000</width>
+      <height>350</height>
+     </rect>
+    </property>
+    <attribute name="horizontalHeaderDefaultSectionSize">
+     <number>320</number>
+    </attribute>
+    <attribute name="horizontalHeaderStretchLastSection">
+     <bool>true</bool>
+    </attribute>
+    <column>
+     <property name="text">
+      <string>วันเวลาสถานะปัจจุบัน</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>หมายเลขบาร์โค้ด</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>สถานะปัจจุบัน</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QPushButton" name="btn_jobs_in_system">
+    <property name="geometry">
+     <rect>
+      <x>1040</x>
+      <y>60</y>
+      <width>210</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>งานที่ยังอยู่ในระบบ</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_show_details">
+    <property name="geometry">
+     <rect>
+      <x>1040</x>
+      <y>480</y>
+      <width>210</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>แสดงรายละเอียด</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_details_header">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>440</y>
+      <width>200</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <pointsize>16</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>รายละเอียด</string>
+    </property>
+   </widget>
+   <widget class="QTableWidget" name="tableBottom">
+    <property name="geometry">
+     <rect>
+      <x>20</x>
+      <y>480</y>
+      <width>1000</width>
+      <height>380</height>
+     </rect>
+    </property>
+    <attribute name="horizontalHeaderDefaultSectionSize">
+     <number>220</number>
+    </attribute>
+    <attribute name="horizontalHeaderStretchLastSection">
+     <bool>true</bool>
+    </attribute>
+    <column>
+     <property name="text">
+      <string>เวลา</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>หมายเลขบาร์โค้ด</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>รายละเอียด</string>
+     </property>
+    </column>
+    <column>
+     <property name="text">
+      <string>ผู้ดำเนินงาน</string>
+     </property>
+    </column>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
