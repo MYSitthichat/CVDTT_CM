@@ -13,8 +13,11 @@ class SpecimenController(QObject):
         self.view = view
         self.main_window = parent  # Store reference to main window
         self.case_registration_id = None  # Store the case registration ID
+        self.specimen_id = None  # Store the specimen ID after saving
         self.api = APIApp()  # Initialize API client
+        self.room_mapping = {}  # Store dynamic room mapping
         self.bind_specimen_events()
+        self.load_room_mapping()  # Load room mapping on initialization
         # print("SpecimenController initialized")
     
     def bind_specimen_events(self):
@@ -61,7 +64,8 @@ class SpecimenController(QObject):
         if result and isinstance(result, dict):
             if result.get('status') == 'success':
                 specimen_id = result.get('specimen_id')
-                print(f"บันทึกตัวอย่างเรียบร้อย - Specimen ID: {specimen_id}")
+                self.specimen_id = specimen_id  # Store specimen_id for use in other controllers
+                print(f"✅ บันทึกตัวอย่างเรียบร้อย - Specimen ID: {specimen_id}")
                 QMessageBox.information(
                     self.view,
                     "SUCCESS",
@@ -84,30 +88,82 @@ class SpecimenController(QObject):
                 "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง"
             )
 
+    def load_room_mapping(self):
+        try:
+            room_details = self.api.get_room_details()
+            
+            if room_details and 'lab_rooms' in room_details:
+                rooms = room_details['lab_rooms']
+                button_keywords = {
+                    'microbiology': [
+                        'microbiology', 'bacteria', 'bact', 'จุลชีววิทยา', 
+                        'แบคทีเรีย', 'bacterial', 'micro', 'เชื้อ','D403',
+                        'แบคทีเรีย'
+                    ],
+                    'parasitology': [
+                        'parasitology', 'parasite', 'para', 'ปรสิตวิทยา', 
+                        'ปรสิต', 'parasitic', 'พยาธิ', 'worm'
+                    ],
+                    'molecular_biology': [
+                        'molecular', 'pcr', 'อณูชีววิทยา', 'molecular biology',
+                        'gene', 'dna', 'rna', 'พันธุกรรม', 'เจเนติก'
+                    ],
+                    'after_death': [
+                        'unclassified', 'ไม่ระบุ', 'after death', 'หลังความตาย',
+                        'ชันสูตร', 'autopsy', 'necropsy', 'post-mortem', 'ไม่จำแนก'
+                    ]
+                }
+                
+                for button_key, keywords in button_keywords.items():
+                    for room in rooms:
+                        room_id = room.get('id')
+                        name = room.get('name', '').lower()
+                        thai_name = room.get('thai_name', '').lower()
+                        nickname = room.get('nickname', '').lower()
+                        code = room.get('code', '').lower()
+                        searchable_text = f"{name} {thai_name} {nickname} {code}"
+                        
+                        for keyword in keywords:
+                            if keyword.lower() in searchable_text:
+                                self.room_mapping[button_key] = room_id
+                                break 
+                        if button_key in self.room_mapping:
+                            break
+                
+                button_names = {
+                    'microbiology': 'จุลชีววิทยา (MICROBIOLOGY)',
+                    'parasitology': 'ปรสิตวิทยา (PARASITOLOGY)',
+                    'molecular_biology': 'อณูชีววิทยา (MOLECULAR BIOLOGY)',
+                    'after_death': 'งานบริการหลังความตาย (AFTER DEATH)'
+                }
+                
+                unmapped_buttons = []
+                
+                for button_key, button_name in button_names.items():
+                    if button_key in self.room_mapping:
+                        room_id = self.room_mapping[button_key]
+                        # Find room details
+                        room = next((r for r in rooms if r['id'] == room_id), None)
+                        # if room:
+                        #     print(f"✓ {button_name}")
+                        #     print(f"  → Room ID: {room_id}")
+                        #     print(f"  → Room: [{room.get('code', '')}] {room.get('thai_name', '')}")
+                    else:
+                        unmapped_buttons.append(button_name)
+            else:
+                print("⚠️ Failed to load room mapping from database")
+        except Exception as e:
+            print(f"⚠️ Error loading room mapping: {e}")
+
+
 
     def get_room_details(self):
-        """Fetch and display lab room details with button mapping"""
+        """Fetch and display lab room details with dynamic button mapping"""
         room_details = self.api.get_room_details()
         
         if room_details and 'lab_rooms' in room_details:
-            # Sort rooms by ID
             rooms = sorted(room_details['lab_rooms'], key=lambda x: x.get('id', 0))
-            
-            # Button to Room ID mapping (ตาม room.txt)
-            button_room_mapping = {
-                'จุลชีววิทยา (MICROBIOLOGY)': 2,
-                'ปรสิตวิทยา (PARASITOLOGY)': 5,
-                'อณูชีววิทยา (MOLECULAR BIOLOGY)': 8,
-                'งานบริการหลังความตาย': 20
-            }
-            
-            # Create room lookup dictionary
             room_lookup = {room['id']: room for room in rooms}
-            
-            # Print all rooms
-            print("\n" + "="*70)
-            print("ห้องปฏิบัติการทั้งหมด (All Laboratory Rooms)")
-            print("="*70)
             
             for room in rooms:
                 room_id = room.get('id')
@@ -120,35 +176,30 @@ class SpecimenController(QObject):
                     display = f"{room_id:2d}. [{code}] {thai_name}"
                 else:
                     display = f"{room_id:2d}. {thai_name}"
-                
                 if eng_name:
                     display += f" ({eng_name})"
-                
                 if nickname:
                     display += f" [{nickname}]"
+                # print(display)
+            
+            
+            button_names = {
+                'microbiology': ' จุลชีววิทยา (MICROBIOLOGY)',
+                'parasitology': ' ปรสิตวิทยา (PARASITOLOGY)',
+                'molecular_biology': 'อณูชีววิทยา (MOLECULAR BIOLOGY)',
+                'after_death': 'งานบริการหลังความตาย'
+            }
+            
+            for button_key, button_name in button_names.items():
+                room_id = self.room_mapping.get(button_key)
                 
-                print(display)
-            
-            # Print button mapping
-            print("\n" + "="*70)
-            print("การ MAP ปุ่มกับห้องปฏิบัติการ (Button to Room Mapping)")
-            print("="*70)
-            
-            for button_name, room_id in button_room_mapping.items():
-                if room_id in room_lookup:
+                if room_id and room_id in room_lookup:
                     room = room_lookup[room_id]
                     code = room.get('code', '').strip()
                     thai_name = room.get('thai_name', '').strip()
                     eng_name = room.get('name', '').strip()
-                    
-                    print(f"✓ ปุ่ม: {button_name}")
-                    print(f"  → ห้อง ID {room_id}: [{code}] {thai_name} ({eng_name})")
                 else:
-                    print(f"✗ ปุ่ม: {button_name}")
-                    print(f"  → ไม่พบห้อง ID {room_id} ในระบบ")
-                print()
-            
-            print("="*70 + "\n")
+                    pass
             
             return rooms
         else:
@@ -179,11 +230,9 @@ class SpecimenController(QObject):
         elif self.view.ui.specimen_animal_other_radioButton.isChecked():
             other_text = self.view.ui.specimen_animal_other_lineEdit.text().strip()
             animal_type = f"อื่นๆ: {other_text}" if other_text else "อื่นๆ"
-        
-        # Get speed/priority status
+
         speed = "ปกติ" if self.view.ui.specimen_normal_radioButton.isChecked() else "ปกติ"
-        
-        # Determine keeping method (optional)
+
         keeping = ""
         if self.view.ui.specimen_chill_radioButton.isChecked():
             keeping = "แช่เย็น (Chill)"
@@ -191,17 +240,14 @@ class SpecimenController(QObject):
             keeping = "แช่แข็ง (Freeze)"
         elif self.view.ui.specimen_room_temperature_radioButton.isChecked():
             keeping = "ไม่แช่ (Room Temperature)"
-        
-        # Get demise/death cause (optional)
+
         demise = self.view.ui.specimen_death_comboBox.currentText() or ""
         
-        # Get sample inspection type (optional)
         sample_inspection = self.view.ui.specimen_sample_comboBox.currentText() or ""
         if self.view.ui.specimen_sample_other_radioButton.isChecked():
             other_sample = self.view.ui.specimen_sample_other_lineEdit.text().strip()
             sample_inspection = f"อื่นๆ: {other_sample}" if other_sample else sample_inspection
-        
-        # Helper functions for safe type conversion
+            
         def safe_int(value):
             try:
                 if isinstance(value, str):
@@ -217,9 +263,7 @@ class SpecimenController(QObject):
                 return float(value) if value else None
             except (ValueError, AttributeError):
                 return None
-        
-        # Get age values (optional, check if unknown is checked)
-        # Use 0 instead of None for database compatibility
+            
         if self.view.ui.specimen_ageUnknown_checkBox.isChecked():
             age_year = 0
             age_month = 0
@@ -228,20 +272,14 @@ class SpecimenController(QObject):
             age_year = safe_int(self.view.ui.specimen_ageYear_lineEdit.text())
             age_month = safe_int(self.view.ui.specimen_ageMonth_lineEdit.text())
             age_day = safe_int(self.view.ui.specimen_ageDay_lineEdit.text())
-            # Convert None to 0 for database compatibility
             age_year = age_year if age_year is not None else 0
             age_month = age_month if age_month is not None else 0
             age_day = age_day if age_day is not None else 0
-        
-        # Get date values (use None if not properly set)
+            
         dead_date_str = self.view.ui.specimen_day_of_death_dateTimeEdit.dateTime().toString("yyyy-MM-dd HH:mm:ss")
         collect_date_str = self.view.ui.specimen_day_keep_sample_dateTimeEdit.dateTime().toString("yyyy-MM-dd HH:mm:ss")
-        
-        # Get weight with default 0
         weight_value = safe_float(self.view.ui.specimen_weight_lineEdit.text())
         weight_value = weight_value if weight_value is not None else 0.0
-        
-        # Format data to match API expectations
         data = {
             'case_id': int(case_id) if case_id else None,
             'name': self.view.ui.specimen_name_lineEdit.text().strip() or "",  # Optional
@@ -278,61 +316,43 @@ class SpecimenController(QObject):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.add_work_widget)
         else:
             print("Warning: Cannot navigate back to new work page")    
+    
     def goto_molecular_biology(self):
-        print("\n" + "="*50)
-        print("🔬 Navigate to Molecular Biology page")
-        print("="*50)
-        print("ปุ่ม: อณูชีววิทยา (MOLECULAR BIOLOGY)")
-        print("ห้อง ID: 8")
-        print("="*50 + "\n")
-        
+        room_id = self.room_mapping.get('molecular_biology')
+        print(room_id)
         if self.main_window and hasattr(self.main_window, 'molecular_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.molecular_widget)
             if hasattr(self.main_window.molecular_widget, 'clear_page'):
                 self.main_window.molecular_widget.clear_page()
         else:
-            print("Warning: Cannot navigate to molecular biology page")
+            print("⚠️ Error: Cannot navigate to molecular biology page")
 
     def goto_microbiology(self):
-        print("\n" + "="*50)
-        print("🦠 Navigate to Microbiology page")
-        print("="*50)
-        print("ปุ่ม: จุลชีววิทยา (MICROBIOLOGY)")
-        print("ห้อง ID: 2")
-        print("="*50 + "\n")
-        
-        if self.main_window and hasattr(self.main_window, 'bacteria_widget'):
-            self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.bacteria_widget)
-        else:
-            print("Warning: Cannot navigate to microbiology page")
+        # room_id = self.room_mapping.get('microbiology')
+        room_id = 2
+        print(room_id)
+        # if self.main_window and hasattr(self.main_window, 'bacteria_widget'):
+        #     self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.bacteria_widget)
+        # else:
+        #     print("⚠️ Error: Cannot navigate to microbiology page")
     
     def goto_parasitology(self):
-        print("\n" + "="*50)
-        print("🪱 Navigate to Parasitology page")
-        print("="*50)
-        print("ปุ่ม: ปรสิตวิทยา (PARASITOLOGY)")
-        print("ห้อง ID: 5")
-        print("="*50 + "\n")
-        
-        if self.main_window and hasattr(self.main_window, 'parasite_widget'):
-            self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.parasite_widget)
-        else:
-            print("Warning: Cannot navigate to parasitology page")
+        room_id = self.room_mapping.get('parasitology')
+        print(room_id)
+        # if self.main_window and hasattr(self.main_window, 'parasite_widget'):
+        #     self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.parasite_widget)
+        # else:
+        #     print("⚠️ Error: Cannot navigate to parasitology page")
     
     def goto_after_death(self):
-        print("\n" + "="*50)
-        print("⚰️  Navigate to After Death Service page")
-        print("="*50)
-        print("ปุ่ม: งานบริการหลังความตาย")
-        print("ห้อง ID: 20")
-        print("="*50 + "\n")
-        
-        if self.main_window and hasattr(self.main_window, 'after_death_widget'):
-            self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.after_death_widget)
-            if hasattr(self.main_window.after_death_widget, 'clear_page'):
-                self.main_window.after_death_widget.clear_page()
-        else:
-            print("Warning: Cannot navigate to after death page")
+        room_id = self.room_mapping.get('after_death')
+        print(room_id)
+        # if self.main_window and hasattr(self.main_window, 'after_death_widget'):
+        #     self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.after_death_widget)
+        #     if hasattr(self.main_window.after_death_widget, 'clear_page'):
+        #         self.main_window.after_death_widget.clear_page()
+        # else:
+        #     print("⚠️ Error: Cannot navigate to after death page")
 
 
 

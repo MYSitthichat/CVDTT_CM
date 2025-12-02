@@ -7,7 +7,7 @@ pyside6-uic forgot_password.ui -o ..\view\template_from_ui\forgot_password_frame
 
 
 pyside6-uic check_job_progress.ui -o ..\view\template_from_ui\check_job_progress.py
-pyside6-uic molecular_biology.ui -o ..\view\template_from_ui\molecular_biology_page.py
+pyside6-uic molecular_biology.ui -o ..\view\template_from_ui\molecular_biology.py
 pyside6-uic barcode_page.ui -o ..\view\template_from_ui\barcode_page.py
 pyside6-uic lab_report.ui -o ..\view\template_from_ui\lab_report.py
 pyside6-uic lab_received_sample.ui -o ..\view\template_from_ui\lab_received_sample.py

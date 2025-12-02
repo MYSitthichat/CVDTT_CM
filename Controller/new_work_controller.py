@@ -49,6 +49,10 @@ class NewWorkController(QObject):
         
         self.is_selecting_sender = False
         self.is_selecting_owner = False
+        
+        # --- Lock flags to prevent clearing ID right after selection ---
+        self.lock_sender_id = False
+        self.lock_owner_id = False
 
         # --- Initialize selected IDs ---
         self.selected_sender_id = None
@@ -87,34 +91,60 @@ class NewWorkController(QObject):
     def save_clicked(self):
         if self.main_nw.check_data_input() == True:
             if self.main_nw.check_project_name_input() == False:
-                reply = QMessageBox.question(self.main_nw, "CONFIRMATION", "คุณแน่ใจหรือไม่ว่าจะไม่ใส่ชื่อโครงการ?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                reply = QMessageBox.question(
+                    self.main_nw, 
+                    "CONFIRMATION", 
+                    "คุณแน่ใจหรือไม่ว่าจะไม่ใส่ชื่อโครงการ?", 
+                    QMessageBox.Yes | QMessageBox.No, 
+                    QMessageBox.No
+                )
                 if reply == QMessageBox.No:
                     return
-                
+            
+            # Lock input fields
             self.main_nw.lock_all_input()
+            
+            # Get user ID
             user_id = None
-
             if self.main_controller:
                 user_id = self.main_controller.get_user_login_id()
             elif self.main_window and hasattr(self.main_window, 'get_user_login_id'):
                 user_id = self.main_window.get_user_login_id()
+            
+            # Get project name (ensure it's not None)
             project_name = self.main_nw.ui.nw_project_name_lineEdit.text().strip()
-
+            if not project_name:
+                project_name = ""  # Convert None/empty to empty string
+            # Validate sender and owner IDs
+            if self.selected_sender_id is None:
+                QMessageBox.warning(
+                    self.main_nw,
+                    "ERROR",
+                    "กรุณาเลือกผู้ส่งตัวอย่าง"
+                )
+                self.main_nw.unlock_all_input()
+                return
+            
+            if self.selected_owner_id is None:
+                QMessageBox.warning(
+                    self.main_nw,
+                    "ERROR",
+                    "กรุณาเลือกเจ้าของสัตว์"
+                )
+                self.main_nw.unlock_all_input()
+                return
+            
+            # Call API
             save_result = self.API_new_work.add_new_work(
                 self.selected_sender_id,
                 self.selected_owner_id,
                 project_name,
-                user_id)
+                user_id
+            )
 
             if save_result and isinstance(save_result, dict):
                 if save_result.get('status') == 'success':
                     work_id = save_result.get('work_id')
-                    # print(f"  บันทึกข้อมูลเรียบร้อย - Work ID: {work_id}")
-                    # print(f"  User ID: {user_id}")
-                    # print(f"  Sender ID: {self.selected_sender_id}")
-                    # print(f"  Owner ID: {self.selected_owner_id}")
-                    # print(f"  Project: {project_name if project_name else '(ไม่มีชื่อโครงการ)'}")
-                    
                     self.update_id_sample()
                     QMessageBox.information(
                         self.main_nw, 
@@ -123,7 +153,6 @@ class NewWorkController(QObject):
                     )
                 else:
                     error_msg = save_result.get('detail', 'Unknown error')
-                    print(f" บันทึกข้อมูลไม่สำเร็จ: {error_msg}")
                     QMessageBox.warning(
                         self.main_nw, 
                         "ERROR", 
@@ -131,7 +160,6 @@ class NewWorkController(QObject):
                     )
                     self.main_nw.unlock_all_input()
             else:
-                print(f" ไม่ได้รับผลลัพธ์จาก SERVER: {save_result}")
                 QMessageBox.warning(
                     self.main_nw, 
                     "ERROR", 
@@ -161,6 +189,8 @@ class NewWorkController(QObject):
         self.main_nw.ui.nw_owner_same_sender_checkBox.setChecked(False)
         self.selected_sender_id = None
         self.selected_owner_id = None
+        self.lock_sender_id = False
+        self.lock_owner_id = False
         self.main_nw.unlock_all_input()
 
     def setup_ui(self):
@@ -190,12 +220,13 @@ class NewWorkController(QObject):
 
 # SENDER SEARCH
     def clear_selected_id(self, user_type):
-        if user_type == 'sender' and not self.is_selecting_sender:
-            if self.selected_sender_id is not None:
-                self.selected_sender_id = None
-        elif user_type == 'owner' and not self.is_selecting_owner:
-            if self.selected_owner_id is not None:
-                self.selected_owner_id = None
+        if user_type == 'sender':
+            if self.lock_sender_id or self.is_selecting_sender:
+                return
+        elif user_type == 'owner':
+            if self.lock_owner_id or self.is_selecting_owner:
+                return
+            
     def update_search_results_sender(self, text):
         if self.is_selecting_sender:
             return
@@ -227,21 +258,45 @@ class NewWorkController(QObject):
 
     def on_item_selected_sender(self, text):
         self.is_selecting_sender = True
+        self.lock_sender_id = True  # Lock to prevent clearing
+        
         records = self.sender_records_map.get(text, []) if hasattr(self, 'sender_records_map') else []
         if records:
             r = records[0]
-            self.main_nw.ui.nw_name_sender_lineEdit.setText(r.get('name',''))
-            self.main_nw.ui.nw_sure_name_sender_lineEdit.setText(r.get('surname',''))
-            self.main_nw.ui.nw_tex_id_sender_lineEdit.setText(r.get('tax_id',''))
+            
+            # Get values with default "-" for empty fields
+            name = r.get('name', '').strip() or '-'
+            surname = r.get('surname', '').strip() or '-'
+            tax_id = r.get('tax_id', '').strip() or '-'
+            
+            # Block signals temporarily to prevent clearing ID
+            self.main_nw.ui.nw_name_sender_lineEdit.blockSignals(True)
+            self.main_nw.ui.nw_sure_name_sender_lineEdit.blockSignals(True)
+            self.main_nw.ui.nw_tex_id_sender_lineEdit.blockSignals(True)
+            
+            # Set values
+            self.main_nw.ui.nw_name_sender_lineEdit.setText(name)
+            self.main_nw.ui.nw_sure_name_sender_lineEdit.setText(surname)
+            self.main_nw.ui.nw_tex_id_sender_lineEdit.setText(tax_id)
             self.selected_sender_id = r.get('id')
-            # print(self.selected_sender_id)
-            # print(f"Selected sender - Name: {r.get('name','')}, Surname: {r.get('surname','')}, ID: {self.selected_sender_id}")
+            
+            # Unblock signals
+            self.main_nw.ui.nw_name_sender_lineEdit.blockSignals(False)
+            self.main_nw.ui.nw_sure_name_sender_lineEdit.blockSignals(False)
+            self.main_nw.ui.nw_tex_id_sender_lineEdit.blockSignals(False)
+            
+            print(f"✓ Selected SENDER - ID: {self.selected_sender_id}, Name: {name} {surname}, Tax ID: {tax_id}")
+        
         try:
             self.sender_completer.popup().hide()
         except Exception:
             pass
+        
         self.main_nw.ui.nw_name_sender_lineEdit.clearFocus()
-        self.is_selecting_sender = False
+        
+        # Use QTimer to delay resetting the flags to avoid race conditions with delayed signals
+        QTimer.singleShot(100, lambda: setattr(self, 'is_selecting_sender', False))
+        QTimer.singleShot(500, lambda: setattr(self, 'lock_sender_id', False))  # Keep locked for 500ms
 
 # OWNER SEARCH
     def update_search_results_owner(self, text):
@@ -274,17 +329,43 @@ class NewWorkController(QObject):
 
     def on_item_selected_owner(self, text):
         self.is_selecting_owner = True
+        self.lock_owner_id = True  # Lock to prevent clearing
+        
         records = self.owner_records_map.get(text, []) if hasattr(self, 'owner_records_map') else []
         if records:
             r = records[0]
-            self.main_nw.ui.nw_name_owner_lineEdit.setText(r.get('name',''))
-            self.main_nw.ui.nw_sure_name_owner_lineEdit.setText(r.get('surname',''))
-            self.main_nw.ui.nw_tex_id_owner_lineEdit.setText(r.get('tax_id',''))
+            
+            # Get values with default "-" for empty fields
+            name = r.get('name', '').strip() or '-'
+            surname = r.get('surname', '').strip() or '-'
+            tax_id = r.get('tax_id', '').strip() or '-'
+            
+            # Block signals temporarily to prevent clearing ID
+            self.main_nw.ui.nw_name_owner_lineEdit.blockSignals(True)
+            self.main_nw.ui.nw_sure_name_owner_lineEdit.blockSignals(True)
+            self.main_nw.ui.nw_tex_id_owner_lineEdit.blockSignals(True)
+            
+            # Set values
+            self.main_nw.ui.nw_name_owner_lineEdit.setText(name)
+            self.main_nw.ui.nw_sure_name_owner_lineEdit.setText(surname)
+            self.main_nw.ui.nw_tex_id_owner_lineEdit.setText(tax_id)
             self.selected_owner_id = r.get('id')
-            # print(f"Selected owner - Name: {r.get('name','')}, Surname: {r.get('surname','')}, ID: {self.selected_owner_id}")
+            
+            # Unblock signals
+            self.main_nw.ui.nw_name_owner_lineEdit.blockSignals(False)
+            self.main_nw.ui.nw_sure_name_owner_lineEdit.blockSignals(False)
+            self.main_nw.ui.nw_tex_id_owner_lineEdit.blockSignals(False)
+            
+            print(f"✓ Selected OWNER - ID: {self.selected_owner_id}, Name: {name} {surname}, Tax ID: {tax_id}")
+        
         try:
             self.owner_completer.popup().hide()
         except Exception:
             pass
+        
         self.main_nw.ui.nw_name_owner_lineEdit.clearFocus()
-        self.is_selecting_owner = False
+        
+        # Use QTimer to delay resetting the flags to avoid race conditions with delayed signals
+        QTimer.singleShot(100, lambda: setattr(self, 'is_selecting_owner', False))
+        QTimer.singleShot(500, lambda: setattr(self, 'lock_owner_id', False))  # Keep locked for 500ms
+

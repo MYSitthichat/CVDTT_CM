@@ -40,6 +40,15 @@ class SearchResult(BaseModel):
     surname: Optional[str] = "" 
     tax_id: Optional[str] = "-"
     display_text: str
+
+# --- Molecular Biology Data Model ---
+class MolecularBiologyData(BaseModel):
+    sample_id: str
+    tests: List[dict]  # List of test items with name, amount, price
+    cPCR_req: Optional[int] = 0
+    qPCR_req: Optional[int] = 0
+    extraction_req: Optional[int] = 0
+    updater: str  # username of person saving the data
     
 # --- Helper Function เชื่อมต่อ DB ---
 def get_db_connection():
@@ -277,21 +286,33 @@ def get_max_sample_id():
         conn.close()
 
 @app.post("/add_new_work")
-def add_work(sender_id: int, owner_id: int, project_name: str, updater: str):
+def add_work(
+    sender_id: Optional[int] = None, 
+    owner_id: Optional[int] = None, 
+    project_name: Optional[str] = "", 
+    updater: Optional[int] = None ):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
+        if sender_id is None:
+            raise HTTPException(status_code=422, detail="sender_id is required")
+        if owner_id is None:
+            raise HTTPException(status_code=422, detail="owner_id is required")
+        project_name = project_name if project_name else ""
+        
         cursor = conn.cursor()
         sql = """INSERT INTO case_registration (sender_id, owner_id, project_name, updater) VALUES (?, ?, ?, ?)"""
-        val = (sender_id, owner_id, project_name, updater,)
+        val = (sender_id, owner_id, project_name, updater)
         cursor.execute(sql, val)
         conn.commit()
-        return {"status": "success", "work_id": cursor.lastrowid}
+        work_id = cursor.lastrowid
+        
+        return {"status": "success", "work_id": work_id}
     
     except mariadb.Error as e:
-        print(f"Insert Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to add work")
+        print(f"❌ Insert Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add work: {str(e)}")
     finally:
         conn.close()
 # --- ADD NEW WORK API ---
@@ -386,6 +407,122 @@ def get_room_id_and_details():
 
 # --- ADD NEW SPECIMEN API ---
 
+# --- ADD NEW LAB ORDER API ---
+class LabOrder(BaseModel):
+    sample_id: Optional[str] = ""
+    room_id: Optional[str] = None
+    comments: Optional[str] = ""
+    state: Optional[str] = "0"
+    status: Optional[str] = "0"
+    updater: Optional[str] = None
+
+@app.post("/add_new_lab_order")
+def add_lab_order(lab_order: LabOrder):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO lab_order (room_id) VALUES (?)", (lab_order.room_id,))
+        conn.commit()
+        return {"status": "success", "room_id": lab_order.room_id}
+    except mariadb.Error as e:
+        print(f"Insert Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add room ID: {str(e)}")
+    finally:
+        conn.close()
+
+
+# --- ADD NEW LAB ID API ---
+
+# --- MOLECULAR BIOLOGY API ---
+
+@app.post("/save_molecular_biology")
+def save_molecular_biology(data: MolecularBiologyData):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        
+        # Prepare data for 61 test slots (test1-test61)
+        test_data = []
+        for i in range(1, 62):  # 61 tests
+            if i <= len(data.tests):
+                test = data.tests[i-1]
+                test_data.extend([
+                    test.get('name', ''),
+                    test.get('quantity', 0),
+                    test.get('total_price', 0)
+                ])
+            else:
+                test_data.extend(['', 0, 0])  # Empty test slot
+                
+        # Total columns: 1 (sample_id) + 183 (61 tests * 3 fields) + 4 (metadata) = 188
+        sql = """INSERT INTO lab_molecular_biology 
+        (sample_id, test1_name, test1_amount, test1_price, test2_name, test2_amount, test2_price, 
+        test3_name, test3_amount, test3_price, test4_name, test4_amount, test4_price, 
+        test5_name, test5_amount, test5_price, test6_name, test6_amount, test6_price, 
+        test7_name, test7_amount, test7_price, test8_name, test8_amount, test8_price, 
+        test9_name, test9_amount, test9_price, test10_name, test10_amount, test10_price, 
+        test11_name, test11_amount, test11_price, test12_name, test12_amount, test12_price, 
+        test13_name, test13_amount, test13_price, test14_name, test14_amount, test14_price, 
+        test15_name, test15_amount, test15_price, test16_name, test16_amount, test16_price, 
+        test17_name, test17_amount, test17_price, test18_name, test18_amount, test18_price, 
+        test19_name, test19_amount, test19_price, test20_name, test20_amount, test20_price, 
+        test21_name, test21_amount, test21_price, test22_name, test22_amount, test22_price, 
+        test23_name, test23_amount, test23_price, test24_name, test24_amount, test24_price, 
+        test25_name, test25_amount, test25_price, test26_name, test26_amount, test26_price, 
+        test27_name, test27_amount, test27_price, test28_name, test28_amount, test28_price, 
+        test29_name, test29_amount, test29_price, test30_name, test30_amount, test30_price, 
+        test31_name, test31_amount, test31_price, test32_name, test32_amount, test32_price, 
+        test33_name, test33_amount, test33_price, test34_name, test34_amount, test34_price, 
+        test35_name, test35_amount, test35_price, test36_name, test36_amount, test36_price, 
+        test37_name, test37_amount, test37_price, test38_name, test38_amount, test38_price, 
+        test39_name, test39_amount, test39_price, test40_name, test40_amount, test40_price, 
+        test41_name, test41_amount, test41_price, test42_name, test42_amount, test42_price, 
+        test43_name, test43_amount, test43_price, test44_name, test44_amount, test44_price, 
+        test45_name, test45_amount, test45_price, test46_name, test46_amount, test46_price, 
+        test47_name, test47_amount, test47_price, test48_name, test48_amount, test48_price, 
+        test49_name, test49_amount, test49_price, test50_name, test50_amount, test50_price, 
+        test51_name, test51_amount, test51_price, test52_name, test52_amount, test52_price, 
+        test53_name, test53_amount, test53_price, test54_name, test54_amount, test54_price, 
+        test55_name, test55_amount, test55_price, test56_name, test56_amount, test56_price, 
+        test57_name, test57_amount, test57_price, test58_name, test58_amount, test58_price, 
+        test59_name, test59_amount, test59_price, test60_name, test60_amount, test60_price, 
+        test61_name, test61_amount, test61_price, cPCR_req, qPCR_req, extraction_req, updater) 
+        VALUES (""" + ",".join(["?"] * 188) + ")"
+        
+        # Prepare parameters: sample_id + test_data + metadata
+        params = [data.sample_id] + test_data + [
+            data.cPCR_req, 
+            data.qPCR_req, 
+            data.extraction_req, 
+            data.updater
+        ]
+        
+        if len(params) != 188:
+            raise ValueError(f"Parameter mismatch: Expected 188, got {len(params)}")
+        
+        # Execute query
+        cursor.execute(sql, params)
+        conn.commit()
+        
+        return {
+            "status": "success",
+            "message": "Molecular biology data saved successfully",
+            "sample_id": data.sample_id,
+            "tests_count": len(data.tests)
+        }
+        
+    except mariadb.Error as e:
+        print(f"Database Error: {e}")
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save molecular biology data: {str(e)}")
+    finally:
+        conn.close()
+        
+# --- MOLECULAR BIOLOGY API ---
 
 
 
@@ -712,7 +849,8 @@ def delete_signature_files(username: str):
 
 # --- EMPLOYEE MANAGEMENT API ---
 
-# --- ADD NEW WORK API ---
+
+
 
 # print("Server Running ...")
 

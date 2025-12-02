@@ -6,7 +6,7 @@ import sys
 from API.client_app import APIApp
 from PySide6.QtWidgets import QMessageBox
 
-DEBUG = True
+DEBUG = False
 
 class Login_Controller(QObject):
     
@@ -30,8 +30,8 @@ class Login_Controller(QObject):
         username = self.login_window.user_lineEdit.text()
         password = self.login_window.password_lineEdit.text()
         if DEBUG == True:
-            # self.logged_in_user_id = 999
-            self.logged_in_user_id = 1
+            self.logged_in_user_id = 222
+            # self.logged_in_user_id = 1
             self.main_window.set_logged_in_user(self.logged_in_user_id)
             self.switch_to_main()
         else:

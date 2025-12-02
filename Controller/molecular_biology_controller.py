@@ -1,5 +1,6 @@
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMessageBox
+from API.client_app import APIApp
 
 class MolecularBiologyController(QObject):
     """ Controller for the Molecular Biology Page """
@@ -9,6 +10,7 @@ class MolecularBiologyController(QObject):
         self.model = model
         self.view = view # MolecularBiologyPageWidget
         self.main_window = main_window_view
+        self.api_client = APIApp()
         
         self.event_bindings()
 
@@ -20,43 +22,100 @@ class MolecularBiologyController(QObject):
         self.view.ui.back_pushButton.clicked.connect(self.go_back)
 
     def compute_summary(self):
-        print("--- ACTION: Calculate Button Pressed ---")
-        
-        # Get data from view
-        selected_items = self.view.get_data()
-        
-        count = len(selected_items)
-        total_cost = sum(item['price'] for item in selected_items)
-        
-        print(f"Calculated: {count} items, Total Cost: {total_cost}")
-        
-        # Update View
-        self.view.set_summary(count, total_cost)
+        # Let the view calculate and display the summary
+        summary = self.view.calculate_summary()
+        if summary is None:
+            return
 
     def save_data(self):
-        print("--- ACTION: Save Button Pressed ---")
         
-        selected_items = self.view.get_data()
+        # First validate and calculate to ensure data is correct
+        summary = self.view.calculate_summary()
+        
+        # Check if validation failed
+        if summary is None:
+            return
+        
+        selected_items = summary['items']
         
         if not selected_items:
             print("Validation: No items selected")
             QMessageBox.warning(self.view, "Warning", "กรุณาเลือกรายการที่ต้องการส่งตรวจ (Please select items)")
             return
-
-        print(f"Saving {len(selected_items)} items...")
-        for item in selected_items:
-            print(f" - Item: {item['name']}, Sample: {item['sample_id']}, Price: {item['price']}")
-
-        # Simulate Saving to Model
-        # success = self.model.save_molecular_data(selected_items)
-        success = True 
         
-        if success:
-            print("Status: Save Successful")
-            QMessageBox.information(self.view, "Success", "บันทึกข้อมูลเรียบร้อย (Saved Successfully)")
+        # Get sample_id from specimen_controller
+        sample_id = None
+        
+        # Try to get specimen_id from specimen_controller
+        if hasattr(self.main_window, 'specimen_controller'):
+            specimen_ctrl = self.main_window.specimen_controller
+            if hasattr(specimen_ctrl, 'specimen_id') and specimen_ctrl.specimen_id:
+                sample_id = str(specimen_ctrl.specimen_id)  # ✅ Convert to string
+        
+        # Fallback: Try to get from specimen widget UI
+        if not sample_id:
+            if hasattr(self.main_window, 'specimen_widget') and hasattr(self.main_window.specimen_widget, 'ui'):
+                if hasattr(self.main_window.specimen_widget.ui, 'specimen_ID_lineEdit'):
+                    sample_id_text = self.main_window.specimen_widget.ui.specimen_ID_lineEdit.text().strip()
+                    if sample_id_text:
+                        sample_id = str(sample_id_text)
+        
+        if not sample_id:
+            QMessageBox.warning(
+                self.view, 
+                "ไม่พบหมายเลข Sample ID", 
+                "กรุณาบันทึกข้อมูล Specimen ในหน้าก่อนหน้านี้ก่อน\n"
+                "แล้วจึงกลับมาเลือกรายการตรวจ Molecular Biology"
+            )
+            return
+        # Get username from main controller
+        username = "unknown"
+        if hasattr(self.main_window, 'main_controller'):
+            main_ctrl = self.main_window.main_controller
+            if hasattr(main_ctrl, 'logged_in_username') and main_ctrl.logged_in_username:
+                username = main_ctrl.logged_in_username
+        total_cost = 0
+        total_samples = 0
+        
+        for idx, item in enumerate(selected_items, 1):
+            unit_price = item.get('unit_price', 0)
+            quantity = item.get('quantity', 0)
+            total_price = item.get('total_price', 0)
+            
+            total_cost += total_price
+            total_samples += quantity
+        
+        # Prepare data for API
+        molecular_data = {
+            "sample_id": sample_id,
+            "tests": selected_items,
+            "cPCR_req": 0,  # TODO: Add UI fields for these if needed
+            "qPCR_req": 0,
+            "extraction_req": 0,
+            "updater": username
+        }
+        # Call API to save data
+        result = self.api_client.save_molecular_biology(molecular_data)
+        
+        if result and result.get("status") == "success":
+            QMessageBox.information(
+                self.view, 
+                "Success", 
+                f"บันทึกข้อมูลเรียบร้อย (Saved Successfully)\n\n"
+                f"Sample ID: {sample_id}\n"
+                f"จำนวนรายการ: {result.get('tests_count')} รายการ"
+            )
+            # Clear the page after successful save
+            self.view.clear_page()
+            # Go back to specimen page
             self.go_back()
         else:
-            print("Status: Save Failed")
+            error_msg = result.get('detail', 'Unknown error') if result else "Cannot connect to server"
+            QMessageBox.critical(
+                self.view,
+                "Error",
+                f"บันทึกข้อมูลไม่สำเร็จ (Save Failed)\n\n{error_msg}"
+            )
 
     def go_back(self):
         if hasattr(self.main_window, 'specimen_widget'):

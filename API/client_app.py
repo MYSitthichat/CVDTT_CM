@@ -142,27 +142,41 @@ class APIApp(QWidget):
             return None
 
     def add_new_work(self, sender_id, owner_id, project_name, updater):
+        """Add new work/case registration"""
         try:
+            # Ensure project_name is not None
+            if project_name is None:
+                project_name = ""
+            
             params = {
                 "sender_id": sender_id,
                 "owner_id": owner_id,
                 "project_name": project_name,
                 "updater": updater
             }
+            
+            print(f"📤 Sending to API: {params}")
+            
             response = requests.post(
                 f"{API_URL}/add_new_work",
                 params=params,
                 timeout=10
             )
+            
+            print(f"📥 Response status: {response.status_code}")
+            
             if response.status_code == 200:
                 result = response.json()
+                print(f"✓ API Response: {result}")
                 return result
             else:
-                return False
+                error_text = response.text
+                print(f"❌ API Error {response.status_code}: {error_text}")
+                return {"status": "error", "detail": f"HTTP {response.status_code}: {error_text}"}
                 
         except requests.RequestException as e:
-            print(f"Network error: {e}")
-            return False
+            print(f"❌ Network error: {e}")
+            return {"status": "error", "detail": f"Network error: {str(e)}"}
 
     def add_sample_registration(self, sample_data):
         try:
@@ -324,6 +338,44 @@ class APIApp(QWidget):
                 data = response.json()
                 return data.get("signature_base64")
             else:
+                return None
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return None
+
+# --- MOLECULAR BIOLOGY API ---
+
+    def save_molecular_biology(self, molecular_data):
+        """
+        Save molecular biology test data
+        
+        Args:
+            molecular_data: dict with keys:
+                - sample_id: str
+                - tests: list of dicts with 'name', 'quantity', 'total_price'
+                - cPCR_req: int (optional)
+                - qPCR_req: int (optional)
+                - extraction_req: int (optional)
+                - updater: str (username)
+        
+        Returns:
+            dict with status and message, or None on error
+        """
+        try:
+            response = requests.post(
+                f"{API_URL}/save_molecular_biology",
+                json=molecular_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"Error detail: {error_detail}")
+                except:
+                    pass
                 return None
         except requests.RequestException as e:
             print(f"Network error: {e}")
