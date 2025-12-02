@@ -28,7 +28,7 @@ class MainController(QObject):
         # Create ALL controllers here to prevent duplicate creation
         self.new_register_controller = NewRegisterController(self.main_window.register_widget)
         self.new_work_controller = NewWorkController(self.add_work_widget, self.main_window)
-        self.barcode_controller = BarcodePageController(None, self.main_window.barcode_widget)
+        self.barcode_controller = BarcodePageController(self.main_window.barcode_widget)
         self.check_job_controller = CheckJobProgressController(None, self.main_window.check_job_widget)
         self.lab_received_controller = LabReceivedSampleController(None, self.main_window.lab_received_widget)
         

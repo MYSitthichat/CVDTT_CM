@@ -138,3 +138,31 @@ class APIApp(QWidget):
         except requests.RequestException as e:
             print(f"API Connect Error on get_max_sample_id: {e}")
             return None
+
+
+# ADD BARCODE  API
+
+    def get_today_cases(self):
+        try:
+            response = requests.get(f"{API_URL}/barcode/today", timeout=5)
+            if response.status_code == 200:
+                return response.json() # Important: Return the JSON object
+            else:
+                print(f"Server Error: {response.status_code}")
+                return []
+        except Exception as e:
+            print(f"API Error: {e}")
+            return []
+
+    def search_barcode_cases(self, name, surname):
+        try:
+            params = {"name": name, "surname": surname}
+            response = requests.get(f"{API_URL}/barcode/search", params=params, timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error: {response.status_code}")
+                return []
+        except Exception as e:
+            print(f"API Error: {e}")
+            return []

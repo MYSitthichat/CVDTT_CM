@@ -285,11 +285,191 @@ def add_work():
     finally:
         conn.close()
 
-# --- ADD NEW WORK API ---
 
 
+# --- BARCODE / STICKER API ---
 
-# print("Server Running ...")
+@app.get("/barcode/today")
+def get_today_cases():
+    """ Get all cases registered today """
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: 
+            return []
+        
+        cursor = conn.cursor()
+        
+        # Query based on sample_registration.dtime (today's samples)
+        sql = """
+            SELECT 
+                s.dtime, 
+                s.case_id, 
+                s.species, 
+                CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
+                s.keep_method, 
+                s.speed,
+                s.room AS room_debug
+            FROM sample_registration s
+            LEFT JOIN room_information r ON s.room = r.code
+            WHERE DATE(s.dtime) = CURDATE()
+            ORDER BY s.dtime DESC
+        """
+        cursor.execute(sql)
+        results = []
+        for row in cursor:
+            print(f"[DEBUG] room value: {row[6]}, lab_name: {row[3]}")
+            results.append({
+                "date": str(row[0]) if row[0] else None,
+                "barcode": row[1],
+                "species": row[2],
+                "lab_name": row[3],
+                "storage": row[4],
+                "urgency": row[5]
+            })
+        
+        # If no data today, get all recent data (last 100 records)
+        if len(results) == 0:
+            print("No data for today, fetching all recent records...")
+            sql_all = """
+                SELECT 
+                    s.dtime, 
+                    s.case_id, 
+                    s.species, 
+                    CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
+                    s.keep_method, 
+                    s.speed,
+                    s.room AS room_debug
+                FROM sample_registration s
+                LEFT JOIN room_information r ON s.room = r.code
+                ORDER BY s.dtime DESC
+                LIMIT 100
+            """
+            cursor.execute(sql_all)
+            for row in cursor:
+                print(f"[DEBUG] room value: {row[6]}, lab_name: {row[3]}")
+                results.append({
+                    "date": str(row[0]) if row[0] else None,
+                    "barcode": row[1],
+                    "species": row[2],
+                    "lab_name": row[3],
+                    "storage": row[4],
+                    "urgency": row[5]
+                })
+        
+        print(f"Returning {len(results)} records")
+        return results
+    except mariadb.Error as e:
+        print(f"Query Error (Today): {e}")
+        return []
+    finally:
+        if conn: 
+            conn.close()
+
+@app.get("/barcode/search")
+def search_barcode_cases(name: str = "", surname: str = ""):
+    """ Search cases by Customer Name/Surname """
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: 
+            return []
+        
+        cursor = conn.cursor()
+        
+        # Build dynamic WHERE clause based on provided parameters
+        conditions = []
+        params = []
+        
+        # Clean up the name - if it contains surname, extract just the first name
+        search_name = name.strip() if name else ""
+        search_surname = surname.strip() if surname else ""
+        
+        # If name contains the surname (e.g., "พนม แซ่ลี"), extract just the first part
+        if search_name and search_surname and search_surname in search_name:
+            search_name = search_name.replace(search_surname, "").strip()
+        
+        print(f"[DEBUG] Cleaned search: name='{search_name}', surname='{search_surname}'")
+        
+        if search_name:
+            conditions.append("cust.name LIKE ?")
+            params.append(f"%{search_name}%")
+        
+        if search_surname:
+            conditions.append("cust.surname LIKE ?")
+            params.append(f"%{search_surname}%")
+
+        # If no search criteria provided, return empty
+        if not conditions:
+            return []
+        
+        # Use AND to match both name AND surname if both provided
+        where_clause = " AND ".join(conditions)
+        
+        # Debug: Print customer IDs that match the search criteria
+        print("=" * 50)
+        print(f"[SEARCH] Name: '{name}', Surname: '{surname}'")
+        debug_sql = f"""
+            SELECT DISTINCT cust.id, cust.name, cust.surname
+            FROM customer cust
+            WHERE {where_clause}
+        """
+        cursor.execute(debug_sql, tuple(params))
+        debug_rows = cursor.fetchall()
+        print(f"[DEBUG] Found {len(debug_rows)} matching customers:")
+        for row in debug_rows:
+            print(f"  - ID: {row[0]}, Name: {row[1]} {row[2]}")
+        print("=" * 50)
+        
+        # Search by both owner_id and sender_id
+        # Use DISTINCT to avoid duplicates from owner_id/sender_id OR condition
+        sql = f"""
+            SELECT DISTINCT
+                s.id AS sample_id,
+                s.dtime, 
+                s.case_id, 
+                s.name AS sample_name,
+                s.species, 
+                CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
+                s.keep_method, 
+                s.speed 
+            FROM sample_registration s
+            LEFT JOIN case_registration c ON s.case_id = c.id
+            LEFT JOIN customer cust ON (c.owner_id = cust.id OR c.sender_id = cust.id)
+            LEFT JOIN room_information r ON s.room = r.code
+            WHERE {where_clause}
+            ORDER BY s.dtime DESC, s.id
+        """
+        print(f"[DEBUG] Search SQL params: {params}")
+        cursor.execute(sql, tuple(params))
+        results = []
+        seen_sample_ids = set()
+        for row in cursor:
+            sample_id = row[0]
+            # Skip if we've already seen this sample
+            if sample_id in seen_sample_ids:
+                continue
+            seen_sample_ids.add(sample_id)
+            
+            results.append({
+                "date": str(row[1]) if row[1] else None,
+                "barcode": row[2],
+                "sample_name": row[3],
+                "species": row[4],
+                "lab_name": row[5],
+                "storage": row[6],
+                "urgency": row[7]
+            })
+        print(f"[DEBUG] Search returned {len(results)} results")
+        return results
+    except mariadb.Error as e:
+        print(f"Query Error (Search): {e}")
+        return []
+    finally:
+        if conn: 
+            conn.close()
+
+print("Server Running ...")
 
 # สั่ง ในขั้นตอน Production : python -m uvicorn server_api:app --host 0.0.0.0 --port 8000 --reload --log-level warning
 

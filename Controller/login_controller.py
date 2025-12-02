@@ -6,7 +6,7 @@ import sys
 from API.client_app import APIApp
 from PySide6.QtWidgets import QMessageBox
 
-DEBUG = False
+DEBUG = True
 
 class Login_Controller(QObject):
     
