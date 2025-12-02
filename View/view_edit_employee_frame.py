@@ -53,11 +53,18 @@ class EditEmployeeWindow(QMainWindow, Ui_edit_employee_MainWindow):
         # Add signature canvas over the signature frame
         self.signature_canvas = EditEmployeeWindow.SignatureCanvas(self.employee_signature_frame)
         self.signature_canvas.setGeometry(0, 0, 470, 410)
+        self.signature_canvas.setEnabled(False)  # Disable drawing by default
 
         # Connect clear/edit button
-        self.employee_edit_signature_pushButton.clicked.connect(self.clear_signature)
+        self.employee_edit_signature_pushButton.clicked.connect(self.enable_signature_drawing)
+
+    def enable_signature_drawing(self):
+        """Clear old signature and enable drawing new one"""
+        self.signature_canvas.clear()
+        self.signature_canvas.setEnabled(True)
 
     def clear_signature(self):
+        """Clear signature canvas"""
         self.signature_canvas.clear()
 
     def get_signature_image(self):

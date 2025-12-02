@@ -5,6 +5,7 @@ from Controller.new_work_controller import NewWorkController
 from Controller.barcode_page_controller import BarcodePageController
 from Controller.check_job_progress_controller import CheckJobProgressController
 from Controller.lab_received_sample_controller import LabReceivedSampleController
+from Controller.edit_employee_controller import EditEmployeeController
 from View.view_new_work_frame import AddNewWorkWidget
 
 class MainController(QObject):
@@ -31,6 +32,7 @@ class MainController(QObject):
         self.barcode_controller = BarcodePageController(None, self.main_window.barcode_widget)
         self.check_job_controller = CheckJobProgressController(None, self.main_window.check_job_widget)
         self.lab_received_controller = LabReceivedSampleController(None, self.main_window.lab_received_widget)
+        self.edit_employee_controller = EditEmployeeController(self.main_window.edit_employee_widget, self)
         
         # Connect Signal to NewWorkController
         self.show_add_work_page_signal.connect(self.new_work_controller.setup_ui)
@@ -73,6 +75,11 @@ class MainController(QObject):
     def set_logged_in_user(self, user_id):
         self.logged_in_user_id = user_id
         print(f"User logged in: ID={user_id}")
+        
+        # Set user ID in edit employee controller for permission checking
+        # Only set if user_id is valid (not None)
+        if hasattr(self, 'edit_employee_controller') and self.edit_employee_controller and user_id is not None:
+            self.edit_employee_controller.set_current_user(user_id)
     
     def get_user_login_id(self):
         """Get the logged-in user ID"""

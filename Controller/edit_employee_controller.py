@@ -1,85 +1,195 @@
 from View.view_edit_employee_frame import EditEmployeeWindow
-from PySide6.QtCore import QObject, Qt
+from PySide6.QtCore import QObject, Qt, QBuffer, QIODevice, QTimer, QEvent, QPoint
 from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem, QFileDialog
-from PySide6.QtGui import QPixmap
-import pyodbc
-import hashlib
+from PySide6.QtGui import QPixmap, QMouseEvent
+from API.client_app import APIApp
 from datetime import datetime
+import os
+import base64
 
 
 class EditEmployeeController(QObject):
-    """Controller for Edit Employee Page - mimicking lab_manager structure"""
+    """Controller for Edit Employee Page - using API"""
     
     def __init__(self, view: EditEmployeeWindow, parent=None):
         super().__init__(parent)
         self.view = view
+        self.api_app = APIApp()
         self.current_signature_path = None
         self.current_employee_id = None
+        self.current_user_permission = None  # Store current user's permission level
+        self.current_user_id = None  # Store current user's ID
+        self.setup_ui()
         self.bind_employee_events()
-        self.hide_employee_edit_frame()  # Hide edit frame initially
+        self.hide_employee_edit_frame()
+    
+    def setup_ui(self):
+        """Setup UI elements"""
+        # Load employee groups/positions into ComboBox
+        self.load_employee_groups()
+    
+    def set_current_user(self, user_id):
+        """Set current logged-in user and get their permission level"""
+        self.current_user_id = user_id
+        try:
+            user_data = self.api_app.get_employee_by_id(user_id)
+            if user_data:
+                self.current_user_permission = user_data.get('group_id')
+                # print(f"Current user permission level: {self.current_user_permission}")
+        except Exception as e:
+            print(f"Error getting current user permission: {e}")
+            self.current_user_permission = 999  # Default to lowest permission
+    
+    def load_employee_groups(self):
+        """Load employee groups from database into position ComboBox"""
+        try:
+            groups = self.api_app.get_employee_groups()
+            self.view.employee_position_comboBox.clear()
+            self.view.employee_position_comboBox.addItem("เลือกตำแหน่ง", None)  # Default option
+            
+            for group in groups:
+                self.view.employee_position_comboBox.addItem(group['name'], group['id'])
+                
+        except Exception as e:
+            print(f"Error loading employee groups: {e}")
     
     def bind_employee_events(self):
         """Bind all employee page button events"""
-        # Search and navigation - CORRECTED NAMES
-        self.view.ui.employee_search_pushButton.clicked.connect(self.search_employee)
-        self.view.ui.employee_new_pushButton.clicked.connect(self.create_new_employee)
-        self.view.ui.employee_edit_pushButton.clicked.connect(self.edit_employee_data)
-        self.view.ui.employee_delete_pushButton.clicked.connect(self.delete_employee_data)
-        self.view.ui.employee_back_pushButton.clicked.connect(self.back_to_home_from_employee)
+        # Search and navigation - NO .ui prefix!
+        self.view.employee_search_pushButton.clicked.connect(self.search_employee)
+        self.view.employee_new_pushButton.clicked.connect(self.create_new_employee)
+        self.view.employee_edit_pushButton.clicked.connect(self.edit_employee_data)
+        self.view.employee_delete_pushButton.clicked.connect(self.delete_employee_data)
+        self.view.employee_back_pushButton.clicked.connect(self.back_to_home_from_employee)
         
-        # Save and signature - CORRECTED NAMES
-        self.view.ui.employee_save_pushButton.clicked.connect(self.save_employee_data)
-        self.view.ui.employee_edit_signature_pushButton.clicked.connect(self.edit_employee_signature)
+        # Save button
+        self.view.employee_save_pushButton.clicked.connect(self.save_employee_data)
         
-        # TreeView selection - CORRECTED NAME
-        self.view.ui.employee_treeWidget.itemClicked.connect(self.on_employee_selected)
+        # TreeView selection
+        self.view.employee_treeWidget.itemClicked.connect(self.on_employee_selected)
+        
+        # Real-time search as user types
+        self.view.employee_search_lineEdit.textChanged.connect(self.on_search_text_changed)
     
     # ========== SEARCH FUNCTIONS ==========
     
+    def on_search_text_changed(self, text):
+        """Real-time search as user types"""
+        search_text = text.strip()
+        
+        # Clear results if less than 2 characters
+        if len(search_text) < 2:
+            self.view.employee_treeWidget.clear()
+            return
+        
+        # Perform search
+        self.perform_employee_search(search_text)
+    
     def search_employee(self):
-        """Search employee by name or surname"""
-        search_text = self.view.ui.employee_search_lineEdit.text().strip()  # CORRECTED
+        """Search employee by name or surname (when button is clicked)"""
+        search_text = self.view.employee_search_lineEdit.text().strip()
         
         if not search_text:
             QMessageBox.warning(self.view, "คำเตือน", "กรุณากรอกชื่อหรือนามสกุลที่ต้องการค้นหา!")
             return
         
+        if len(search_text) < 2:
+            QMessageBox.warning(self.view, "คำเตือน", "กรุณากรอกอย่างน้อย 2 ตัวอักษร!")
+            return
+        
+        self.perform_employee_search(search_text)
+    
+    def perform_employee_search(self, search_text):
+        """Perform employee search and display in treeview"""
         try:
-            # Search in database
+            # Search in database via API
             employees = self.search_employee_in_database(search_text)
+            
+            # Check if API returned valid data
+            if employees is None:
+                self.view.employee_treeWidget.clear()
+                return
             
             # Display results
             self.load_employee_search_results(employees)
-            
-            if not employees:
-                QMessageBox.information(self.view, "ผลการค้นหา", "ไม่พบข้อมูลพนักงาน!")
                 
         except Exception as e:
-            QMessageBox.critical(self.view, "ข้อผิดพลาด", f"เกิดข้อผิดพลาดในการค้นหา: {str(e)}")
+            print(f"Employee Search Error: {e}")
+            self.view.employee_treeWidget.clear()
     
     def load_employee_search_results(self, employees):
-        """Load search results into treeview"""
-        self.view.ui.employee_treeWidget.clear()  # CORRECTED
+        """Load search results into treeview - filter by permission
+        Higher permission (lower group_id) can view lower permission (higher group_id)
+        """
+        self.view.employee_treeWidget.clear()
         
+        if not employees:
+            return
+        
+        # print(f"Search returned {len(employees)} employees")
+        # print(f"Current user ID: {self.current_user_id}, Permission: {self.current_user_permission}")
+        
+        # Filter employees based on permission
+        # Higher permission users (lower group_id) can see ALL employees including same level
+        filtered_employees = []
         for emp in employees:
+            emp_id = emp.get('id')
+            emp_group_id = emp.get('group_id')
+            emp_name = f"{emp.get('name', '')} {emp.get('surname', '')}"
+            
+            # print(f"Employee: {emp_name} (ID={emp_id}, group_id={emp_group_id})")
+            
+            # Skip if can't get permission
+            if emp_group_id is None:
+                # print(f"  -> Skipped: No group_id")
+                continue
+            
+            # Skip current user (cannot edit yourself)
+            if emp_id == self.current_user_id:
+                # print(f"  -> Skipped: Current user (yourself)")
+                continue
+            
+            # Show employees with HIGHER OR EQUAL group_id (same or lower permission) than current user
+            # Example: Admin (group_id=1) can see ALL users including other admins (group_id=1,2,3,4...)
+            if self.current_user_permission is not None and emp_group_id >= self.current_user_permission:
+                # print(f"  -> ACCEPTED: {emp_group_id} >= {self.current_user_permission}")
+                filtered_employees.append(emp)
+            else:
+                print(f"  -> REJECTED: {emp_group_id} < {self.current_user_permission}")
+        
+        # print(f"Filtered results: {len(filtered_employees)} employees")
+        
+        # Display filtered results
+        for emp in filtered_employees:
             item = QTreeWidgetItem([
-                emp.get('title', ''),
-                emp.get('name', ''),
-                emp.get('surname', '')
+                str(emp.get('title', '')),
+                str(emp.get('name', '')),
+                str(emp.get('surname', ''))
             ])
-            item.setData(0, Qt.UserRole, emp['id'])  # Store employee ID
-            self.view.ui.employee_treeWidget.addTopLevelItem(item)  # CORRECTED
+            item.setData(0, Qt.UserRole, emp.get('id'))  # Store employee ID
+            self.view.employee_treeWidget.addTopLevelItem(item)
+        
+        # Don't show any message when no results - for security
+        # Lower permission users should not know that higher permission employees exist
+        
+        # Don't auto-select first item to prevent unwanted API calls
+        # User must click to view employee details
     
     def on_employee_selected(self, item):
-        """When employee is selected from search results"""
+        """When employee is selected from search results - only store ID, don't show edit frame"""
+        if not item:
+            print("No item selected")
+            return
+            
         employee_id = item.data(0, Qt.UserRole)
+        # print(f"Selected employee ID: {employee_id}")
+        
+        if not employee_id:
+            print("No employee ID found in item data")
+            return
+            
+        # Store selected employee ID but don't show edit frame yet
         self.current_employee_id = employee_id
-        
-        employee_data = self.get_employee_by_id(employee_id)
-        
-        if employee_data:
-            self.populate_employee_fields(employee_data)
-            self.show_employee_edit_frame()
     
     # ========== CRUD FUNCTIONS ==========
     
@@ -88,38 +198,79 @@ class EditEmployeeController(QObject):
         self.current_employee_id = None
         self.clear_employee_fields()
         self.show_employee_edit_frame()
-        self.view.ui.employee_password_lineEdit.setEnabled(True)  # CORRECTED
-        self.view.ui.employee_password_lineEdit.setPlaceholderText("กรุณากรอกรหัสผ่าน")  # CORRECTED
+        # Enable password field for new employee
+        self.view.employee_password_lineEdit.setEnabled(True)
+        self.view.employee_password_lineEdit.setPlaceholderText("กรุณากรอกรหัสผ่าน")
+        self.view.employee_password_lineEdit.clear()
+        # Disable signature drawing until edit button is clicked
+        self.view.signature_canvas.setEnabled(False)
     
     def edit_employee_data(self):
         """Edit selected employee"""
-        selected_item = self.view.ui.employee_treeWidget.currentItem()  # CORRECTED
+        selected_item = self.view.employee_treeWidget.currentItem()
         
         if not selected_item:
             QMessageBox.warning(self.view, "คำเตือน", "กรุณาเลือกพนักงานที่ต้องการแก้ไข!")
             return
         
-        self.on_employee_selected(selected_item)
-        self.view.ui.employee_password_lineEdit.setEnabled(False)  # CORRECTED
-        self.view.ui.employee_password_lineEdit.setPlaceholderText("(ไม่แสดงรหัสผ่าน)")  # CORRECTED
+        employee_id = selected_item.data(0, Qt.UserRole)
+        if not employee_id:
+            return
+        
+        # Check permission before allowing edit
+        if not self.check_permission_to_edit(employee_id):
+            QMessageBox.warning(
+                self.view, 
+                "ไม่มีสิทธิ์", 
+                "คุณไม่มีสิทธิ์แก้ไขข้อมูลพนักงานคนนี้!\n\nเฉพาะผู้ที่มีตำแหน่งสูงกว่าเท่านั้นที่สามารถแก้ไขได้"
+            )
+            return
+        
+        # Load employee data and show edit frame
+        self.current_employee_id = employee_id
+        employee_data = self.get_employee_by_id(employee_id)
+        
+        if employee_data:
+            self.populate_employee_fields(employee_data)
+            self.show_employee_edit_frame()
+            # Disable password field when viewing existing employee
+            self.view.employee_password_lineEdit.setEnabled(False)
+            self.view.employee_password_lineEdit.setPlaceholderText("(ไม่แสดงรหัสผ่าน)")
+            # Disable signature drawing until edit button is clicked
+            self.view.signature_canvas.setEnabled(False)
+        else:
+            QMessageBox.warning(self.view, "คำเตือน", "ไม่สามารถโหลดข้อมูลพนักงานได้!")
     
     def delete_employee_data(self):
         """Delete selected employee"""
-        selected_item = self.view.ui.employee_treeWidget.currentItem()  # CORRECTED
+        selected_item = self.view.employee_treeWidget.currentItem()
         
         if not selected_item:
             QMessageBox.warning(self.view, "คำเตือน", "กรุณาเลือกพนักงานที่ต้องการลบ!")
             return
         
         employee_id = selected_item.data(0, Qt.UserRole)
+        if not employee_id:
+            return
+        
+        # Check permission before allowing delete
+        if not self.check_permission_to_edit(employee_id):
+            QMessageBox.warning(
+                self.view, 
+                "ไม่มีสิทธิ์", 
+                "คุณไม่มีสิทธิ์ลบข้อมูลพนักงานคนนี้!\n\nเฉพาะผู้ที่มีตำแหน่งสูงกว่าเท่านั้นที่สามารถลบได้"
+            )
+            return
+            
         employee_name = f"{selected_item.text(1)} {selected_item.text(2)}"
         
         # Confirm deletion
         reply = QMessageBox.question(
             self.view, 
             "ยืนยันการลบ",
-            f"คุณแน่ใจหรือไม่ว่าต้องการลบพนักงาน '{employee_name}'?",
-            QMessageBox.Yes | QMessageBox.No
+            f"คุณแน่ใจหรือไม่ว่าต้องการลบพนักงาน '{employee_name}'?\n\nการกระทำนี้ไม่สามารถย้อนกลับได้!",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
         )
         
         if reply == QMessageBox.Yes:
@@ -152,15 +303,47 @@ class EditEmployeeController(QObject):
                 QMessageBox.warning(self.view, "คำเตือน", "กรุณากรอก Username!")
                 return
             
+            if not data['email']:
+                QMessageBox.warning(self.view, "คำเตือน", "กรุณากรอกอีเมล!")
+                return
+            
+            # Validate email format (basic)
+            if '@' not in data['email']:
+                QMessageBox.warning(self.view, "คำเตือน", "รูปแบบอีเมลไม่ถูกต้อง!")
+                return
+            
+            # Save signature image if drawn
+            if data.get('signature_image'):
+                signature_base64 = self.pixmap_to_base64(data['signature_image'])
+                if signature_base64:
+                    data['signature_base64'] = signature_base64
+                else:
+                    data['signature_base64'] = None
+            else:
+                data['signature_base64'] = None
+            
             # Check if new employee or editing
             if self.current_employee_id:
-                # Update existing employee
+                # Check permission for editing existing employee
+                if not self.check_permission_to_edit(self.current_employee_id):
+                    QMessageBox.warning(
+                        self.view, 
+                        "ไม่มีสิทธิ์", 
+                        "คุณไม่มีสิทธิ์แก้ไขข้อมูลพนักงานคนนี้!"
+                    )
+                    return
+                
+                # Update existing employee (no password field)
                 result = self.update_employee_in_database(self.current_employee_id, data)
                 message = "แก้ไขข้อมูลพนักงานสำเร็จ!"
             else:
                 # Create new employee
                 if not data['password']:
                     QMessageBox.warning(self.view, "คำเตือน", "กรุณากรอกรหัสผ่าน!")
+                    return
+                
+                if len(data['password']) < 6:
+                    QMessageBox.warning(self.view, "คำเตือน", "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร!")
                     return
                 
                 result = self.create_employee_in_database(data)
@@ -173,7 +356,7 @@ class EditEmployeeController(QObject):
                 self.current_employee_id = None
                 self.search_employee()  # Refresh search
             else:
-                QMessageBox.critical(self.view, "ข้อผิดพลาด", "ไม่สามารถบันทึกข้อมูลได้!")
+                QMessageBox.critical(self.view, "ข้อผิดพลาด", "ไม่สามารถบันทึกข้อมูลได้!\n\nUsername อาจซ้ำหรือเซิร์ฟเวอร์ไม่พร้อมใช้งาน")
                 
         except Exception as e:
             QMessageBox.critical(self.view, "ข้อผิดพลาด", f"เกิดข้อผิดพลาด: {str(e)}")
@@ -182,263 +365,250 @@ class EditEmployeeController(QObject):
     
     def get_employee_data(self):
         """Get employee form data"""
-        return {
-            'title': self.view.ui.employee_title_lineEdit.text(),  # CORRECTED
-            'name': self.view.ui.employee_name_lineEdit.text(),  # CORRECTED
-            'surname': self.view.ui.employee_surname_lineEdit.text(),  # CORRECTED
-            'email': self.view.ui.employee_email_lineEdit.text(),  # CORRECTED
-            'username': self.view.ui.employee_username_lineEdit.text(),  # CORRECTED
-            'password': self.view.ui.employee_password_lineEdit.text(),  # CORRECTED
-            'position': self.view.ui.employee_position_comboBox.currentText(),  # CORRECTED
-            'signature': self.current_signature_path
+        group_id = self.view.employee_position_comboBox.currentData()
+        
+        data = {
+            'title': self.view.employee_title_lineEdit.text().strip(),
+            'name': self.view.employee_name_lineEdit.text().strip(),
+            'surname': self.view.employee_surname_lineEdit.text().strip(),
+            'email': self.view.employee_email_lineEdit.text().strip(),
+            'username': self.view.employee_username_lineEdit.text().strip(),
+            'group_id': group_id if group_id else None,
         }
+        
+        # Get signature image from canvas (not file path)
+        signature_image = self.view.get_signature_image()
+        if signature_image and not signature_image.isNull():
+            data['signature_image'] = signature_image
+        else:
+            data['signature_image'] = None
+        
+        # Only include password for new employees
+        if self.view.employee_password_lineEdit.isEnabled():
+            data['password'] = self.view.employee_password_lineEdit.text()
+        
+        return data
     
     def populate_employee_fields(self, employee_data):
         """Populate form fields with employee data"""
-        self.view.ui.employee_title_lineEdit.setText(employee_data.get('title', ''))  # CORRECTED
-        self.view.ui.employee_name_lineEdit.setText(employee_data.get('name', ''))  # CORRECTED
-        self.view.ui.employee_surname_lineEdit.setText(employee_data.get('surname', ''))  # CORRECTED
-        self.view.ui.employee_email_lineEdit.setText(employee_data.get('email', ''))  # CORRECTED
-        self.view.ui.employee_username_lineEdit.setText(employee_data.get('username', ''))  # CORRECTED
-        self.view.ui.employee_position_comboBox.setCurrentText(employee_data.get('position', ''))  # CORRECTED
+        if not employee_data:
+            return
+            
+        self.view.employee_title_lineEdit.setText(str(employee_data.get('title', '')))
+        self.view.employee_name_lineEdit.setText(str(employee_data.get('name', '')))
+        self.view.employee_surname_lineEdit.setText(str(employee_data.get('surname', '')))
+        self.view.employee_email_lineEdit.setText(str(employee_data.get('email', '')))
+        self.view.employee_username_lineEdit.setText(str(employee_data.get('username', '')))
         
-        # Load signature if exists
-        signature_path = employee_data.get('signature')
-        if signature_path:
-            self.current_signature_path = signature_path
-            self.load_employee_signature(signature_path)
+        # Set position in ComboBox by group_id
+        group_id = employee_data.get('group_id')
+        if group_id:
+            index = self.view.employee_position_comboBox.findData(group_id)
+            if index >= 0:
+                self.view.employee_position_comboBox.setCurrentIndex(index)
+        
+        # Load signature from API
+        username = employee_data.get('username')
+        if username:
+            try:
+                signature_base64 = self.api_app.get_signature(username)
+                if signature_base64:
+                    # Decode base64 to QPixmap
+                    image_data = base64.b64decode(signature_base64)
+                    pixmap = QPixmap()
+                    pixmap.loadFromData(image_data)
+                    if not pixmap.isNull():
+                        self.view.set_signature_image(pixmap)
+                        # print(f"Signature loaded from API for user: {username}")
+                    else:
+                        self.view.clear_signature()
+                else:
+                    self.view.clear_signature()
+            except Exception as e:
+                print(f"Error loading signature from API: {e}")
+                self.view.clear_signature()
+        else:
+            self.view.clear_signature()
     
     def clear_employee_fields(self):
         """Clear all employee form fields"""
-        self.view.ui.employee_title_lineEdit.clear()  # CORRECTED
-        self.view.ui.employee_name_lineEdit.clear()  # CORRECTED
-        self.view.ui.employee_surname_lineEdit.clear()  # CORRECTED
-        self.view.ui.employee_email_lineEdit.clear()  # CORRECTED
-        self.view.ui.employee_username_lineEdit.clear()  # CORRECTED
-        self.view.ui.employee_password_lineEdit.clear()  # CORRECTED
-        self.view.ui.employee_position_comboBox.setCurrentIndex(0)  # CORRECTED
-        self.current_signature_path = None
+        self.view.employee_title_lineEdit.clear()
+        self.view.employee_name_lineEdit.clear()
+        self.view.employee_surname_lineEdit.clear()
+        self.view.employee_email_lineEdit.clear()
+        self.view.employee_username_lineEdit.clear()
+        self.view.employee_password_lineEdit.clear()
+        self.view.employee_position_comboBox.setCurrentIndex(0)  # Reset to first item
+        self.view.clear_signature()
+        # Disable signature drawing
+        self.view.signature_canvas.setEnabled(False)
     
     # ========== UI VISIBILITY FUNCTIONS ==========
     
     def show_employee_edit_frame(self):
         """Show employee edit frame"""
-        self.view.ui.frame_2.setVisible(True)  # CORRECTED - frame_2 is the edit frame
+        self.view.frame_2.setVisible(True)
     
     def hide_employee_edit_frame(self):
         """Hide employee edit frame"""
-        self.view.ui.frame_2.setVisible(False)  # CORRECTED - frame_2 is the edit frame
+        self.view.frame_2.setVisible(False)
     
     def back_to_home_from_employee(self):
-        """Go back to home page"""
-        # Emit signal or call parent navigation
-        print("Navigate back to home")
-        # If you have a parent window with stackedWidget:
-        # self.parent().stackedWidget.setCurrentIndex(0)
+        """Go back to new work page (รับงานใหม่)"""
+        self.clear_employee_fields()
+        self.hide_employee_edit_frame()
+        
+        # Clear search
+        self.view.employee_treeWidget.clear()
+        self.view.employee_search_lineEdit.clear()
+        
+        # Navigate back to new work page and trigger button click BEFORE closing window
+        if self.parent():
+            main_controller = self.parent()
+            if hasattr(main_controller, 'main_window'):
+                # Trigger the button click to properly update button highlight
+                if hasattr(main_controller.main_window.ui, 'new_work_pushButton'):
+                    main_controller.main_window.ui.new_work_pushButton.click()
+                else:
+                    # Fallback to direct method call
+                    main_controller.main_window.show_add_work_page()
+        
+        # Close edit employee window AFTER button click (this will return to main window)
+        self.view.close()
+    
+    # ========== PERMISSION FUNCTIONS ==========
+    
+    def check_permission_to_edit(self, target_employee_id):
+        """Check if current user has permission to edit/delete target employee
+        Lower group_id = higher permission (1 = highest, can edit anyone)
+        Returns True if allowed, False if not
+        """
+        # If no permission level set, deny access
+        if self.current_user_permission is None:
+            # print("No permission level set for current user")
+            return False
+        
+        # Can't edit yourself
+        if target_employee_id == self.current_user_id:
+            # print("Cannot edit your own account")
+            QMessageBox.warning(
+                self.view,
+                "ไม่สามารถดำเนินการได้",
+                "คุณไม่สามารถแก้ไขข้อมูลของตัวเองได้"
+            )
+            return False
+        
+        try:
+            # Get target employee's permission level
+            target_employee = self.api_app.get_employee_by_id(target_employee_id)
+            if not target_employee:
+                return False
+            
+            target_permission = target_employee.get('group_id')
+            if target_permission is None:
+                return False
+            
+            # Lower number = higher permission
+            # Current user can edit if their group_id is LOWER OR EQUAL (same or higher permission) than target
+            can_edit = self.current_user_permission <= target_permission
+            
+            if not can_edit:
+                # print(f"Permission denied: Current user group_id={self.current_user_permission}, Target group_id={target_permission}")
+                pass
+
+            return can_edit
+            
+        except Exception as e:
+            print(f"Error checking permission: {e}")
+            return False
     
     # ========== SIGNATURE FUNCTIONS ==========
     
-    def edit_employee_signature(self):
-        """Edit employee signature - open file dialog"""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self.view,
-            "เลือกไฟล์ลายเซ็น",
-            "",
-            "Image Files (*.png *.jpg *.jpeg *.bmp)"
-        )
-        
-        if file_path:
-            self.current_signature_path = file_path
-            self.load_employee_signature(file_path)
-    
-    def load_employee_signature(self, signature_path):
-        """Load and display employee signature"""
+    def pixmap_to_base64(self, pixmap):
+        """Convert QPixmap to base64 string"""
         try:
-            pixmap = QPixmap(signature_path)
-            if not pixmap.isNull():
-                # Scale to fit signature frame
-                scaled_pixmap = pixmap.scaled(
-                    self.view.ui.employee_signature_frame.size(),  # CORRECTED
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation
-                )
-                
-                # Note: You need to add a QLabel inside employee_signature_frame in Qt Designer
-                # to display the image. For now, just storing the path.
-                
-                print(f"Signature loaded: {signature_path}")
+            byte_array = QBuffer()
+            byte_array.open(QIODevice.WriteOnly)
+            pixmap.save(byte_array, "PNG")
+            image_data = byte_array.data()
+            base64_data = base64.b64encode(image_data).decode('utf-8')
+            return base64_data
         except Exception as e:
-            print(f"Error loading signature: {e}")
+            print(f"Error converting pixmap to base64: {e}")
+            return None
     
-    # ========== DATABASE FUNCTIONS ==========
+    # ========== DATABASE FUNCTIONS - USING API ==========
     
     def search_employee_in_database(self, search_text):
-        """Search employee by name or surname in database"""
+        """Search employee by name or surname using API"""
         try:
-            connection = self.connect_database()
-            cursor = connection.cursor()
-            
-            sql = """
-            SELECT id, title, name, surname, email, username, position, signature
-            FROM employees
-            WHERE name LIKE ? OR surname LIKE ?
-            ORDER BY name
-            """
-            
-            cursor.execute(sql, (f'%{search_text}%', f'%{search_text}%'))
-            rows = cursor.fetchall()
-            
-            employees = []
-            for row in rows:
-                employees.append({
-                    'id': row[0],
-                    'title': row[1],
-                    'name': row[2],
-                    'surname': row[3],
-                    'email': row[4],
-                    'username': row[5],
-                    'position': row[6],
-                    'signature': row[7]
-                })
-            
-            cursor.close()
-            connection.close()
-            
-            return employees
-            
+            employees = self.api_app.search_employee(search_text)
+            if employees is None:
+                return None
+            return employees if isinstance(employees, list) else []
         except Exception as e:
             print(f"Error searching employee: {e}")
-            return []
+            return None
     
     def get_employee_by_id(self, employee_id):
-        """Get employee by ID from database"""
+        """Get employee by ID using API"""
         try:
-            connection = self.connect_database()
-            cursor = connection.cursor()
-            
-            sql = "SELECT * FROM employees WHERE id = ?"
-            cursor.execute(sql, (employee_id,))
-            row = cursor.fetchone()
-            
-            cursor.close()
-            connection.close()
-            
-            if row:
-                return {
-                    'id': row[0],
-                    'title': row[1],
-                    'name': row[2],
-                    'surname': row[3],
-                    'email': row[4],
-                    'username': row[5],
-                    'password': row[6],
-                    'position': row[7],
-                    'signature': row[8]
-                }
-            return None
-            
+            employee_data = self.api_app.get_employee_by_id(employee_id)
+            return employee_data
         except Exception as e:
             print(f"Error getting employee: {e}")
             return None
     
     def create_employee_in_database(self, data):
-        """Create new employee in database"""
+        """Create new employee using API"""
         try:
-            connection = self.connect_database()
-            cursor = connection.cursor()
+            employee_data = {
+                "title": data.get('title', ''),
+                "name": data.get('name', ''),
+                "surname": data.get('surname', ''),
+                "email": data.get('email', ''),
+                "username": data.get('username', ''),
+                "password": data.get('password', ''),
+                "group_id": data.get('group_id'),
+                "signature_base64": data.get('signature_base64')  # Send base64 signature to API
+            }
             
-            # Hash password
-            hashed_password = hashlib.sha256(data['password'].encode()).hexdigest()
-            
-            sql = """
-            INSERT INTO employees 
-            (title, name, surname, email, username, password, position, signature, created_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
-            
-            cursor.execute(sql, (
-                data['title'],
-                data['name'],
-                data['surname'],
-                data['email'],
-                data['username'],
-                hashed_password,
-                data['position'],
-                data.get('signature'),
-                datetime.now()
-            ))
-            
-            connection.commit()
-            cursor.close()
-            connection.close()
-            
-            return True
+            result = self.api_app.create_employee(employee_data)
+            return result is not None and result.get('status') == 'success'
             
         except Exception as e:
             print(f"Error creating employee: {e}")
             return False
     
     def update_employee_in_database(self, employee_id, data):
-        """Update employee data in database"""
+        """Update employee data using API"""
         try:
-            connection = self.connect_database()
-            cursor = connection.cursor()
+            employee_data = {
+                "title": data.get('title', ''),
+                "name": data.get('name', ''),
+                "surname": data.get('surname', ''),
+                "email": data.get('email', ''),
+                "username": data.get('username', ''),
+                "group_id": data.get('group_id'),
+                "signature_base64": data.get('signature_base64')  # Send base64 signature to API
+            }
             
-            sql = """
-            UPDATE employees 
-            SET title=?, name=?, surname=?, email=?, username=?, position=?, signature=?, updated_date=?
-            WHERE id=?
-            """
-            
-            cursor.execute(sql, (
-                data['title'],
-                data['name'],
-                data['surname'],
-                data['email'],
-                data['username'],
-                data['position'],
-                data.get('signature'),
-                datetime.now(),
-                employee_id
-            ))
-            
-            connection.commit()
-            cursor.close()
-            connection.close()
-            
-            return True
+            # print(f"Updating employee {employee_id} with data: {employee_data}")
+            result = self.api_app.update_employee(employee_id, employee_data)
+            # print(f"Update result: {result}")
+            return result is not None and result.get('status') == 'success'
             
         except Exception as e:
             print(f"Error updating employee: {e}")
+            import traceback
+            traceback.print_exc()
             return False
     
     def delete_employee_from_database(self, employee_id):
-        """Delete employee from database"""
+        """Delete employee using API"""
         try:
-            connection = self.connect_database()
-            cursor = connection.cursor()
-            
-            sql = "DELETE FROM employees WHERE id = ?"
-            cursor.execute(sql, (employee_id,))
-            
-            connection.commit()
-            cursor.close()
-            connection.close()
-            
-            return True
-            
+            result = self.api_app.delete_employee(employee_id)
+            return result is not None and result.get('status') == 'success'
         except Exception as e:
             print(f"Error deleting employee: {e}")
             return False
-    
-    def connect_database(self):
-        """Connect to SQL Server database"""
-        # Replace with your actual database credentials
-        connection_string = (
-            "DRIVER={SQL Server};"
-            "SERVER=your_server_name;"
-            "DATABASE=your_database_name;"
-            "UID=your_username;"
-            "PWD=your_password;"
-        )
-        return pyodbc.connect(connection_string)
