@@ -6,7 +6,7 @@ import sys
 from API.client_app import APIApp
 from PySide6.QtWidgets import QMessageBox
 
-DEBUG = False
+DEBUG = True
 
 class Login_Controller(QObject):
     
@@ -60,7 +60,7 @@ class Login_Controller(QObject):
 
     def show_main_after_login_page(self):
         self.main_window.Show_main_page()
-        self.main_window.show_register_page()
+        self.main_window.show_add_work_page()
 
     def show_forgot_password(self):
         self.login_window.hide()

@@ -25,9 +25,12 @@ class MainController(QObject):
         # db_model = login_controller.model if login_controller else None
         self.main_window = MainWindow(add_work_widget=self.add_work_widget)
         
+        # Set reference to this controller in main_window
+        self.main_window.main_controller = self
+        
         # Create ALL controllers here to prevent duplicate creation
         self.new_register_controller = NewRegisterController(self.main_window.register_widget)
-        self.new_work_controller = NewWorkController(self.add_work_widget, self.main_window)
+        self.new_work_controller = NewWorkController(self.add_work_widget, self.main_window, self)
         self.barcode_controller = BarcodePageController(None, self.main_window.barcode_widget)
         self.check_job_controller = CheckJobProgressController(None, self.main_window.check_job_widget)
         self.lab_received_controller = LabReceivedSampleController(None, self.main_window.lab_received_widget)
@@ -72,7 +75,7 @@ class MainController(QObject):
     
     def set_logged_in_user(self, user_id):
         self.logged_in_user_id = user_id
-        print(f"User logged in: ID={user_id}")
+        # print(f"User logged in: ID={user_id}")
     
     def get_user_login_id(self):
         """Get the logged-in user ID"""

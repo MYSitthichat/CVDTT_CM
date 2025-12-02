@@ -266,26 +266,114 @@ def get_max_sample_id():
         conn.close()
 
 @app.post("/add_new_work")
-def add_work():
+def add_work(sender_id: int, owner_id: int, project_name: str, updater: str):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
-        pass
-        # cursor = conn.cursor()
-        # sql = """INSERT INTO work (title, description, owner_id, created_at)
-        #          VALUES (?, ?, ?, ?)"""
-        # val = (work.title, work.description, work.owner_id, datetime.now())
-        # cursor.execute(sql, val)
-        # conn.commit()
-        # return {"status": "success", "work_id": cursor.lastrowid}
+        cursor = conn.cursor()
+        sql = """INSERT INTO case_registration (sender_id, owner_id, project_name, updater) VALUES (?, ?, ?, ?)"""
+        val = (sender_id, owner_id, project_name, updater,)
+        cursor.execute(sql, val)
+        conn.commit()
+        return {"status": "success", "work_id": cursor.lastrowid}
+    
     except mariadb.Error as e:
         print(f"Insert Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to add work")
     finally:
         conn.close()
-
 # --- ADD NEW WORK API ---
+
+
+# --- ADD NEW SPECIMEN API ---
+class NewSpecimen(BaseModel):
+    case_id: Optional[int] = None  # Optional
+    name: Optional[str] = ""  # Optional
+    opd_number: Optional[str] = ""
+    sex: Optional[str] = ""
+    age_year: Optional[int] = 0  # Default: 0
+    age_month: Optional[int] = 0  # Default: 0
+    age_day: Optional[int] = 0  # Default: 0
+    demise: Optional[str] = ""
+    species: str  # REQUIRED - ชนิดสัตว์
+    breed: Optional[str] = ""
+    sample_type: Optional[str] = ""
+    weight: Optional[float] = 0.0  # Default: 0.0
+    dead_date: Optional[str] = None
+    collect_date: Optional[str] = None
+    keep_method: Optional[str] = ""
+    speed: Optional[str] = ""
+    medical_record: Optional[str] = ""
+    dosage_record: Optional[str] = ""
+    sample_inspection: Optional[str] = ""
+    updater: Optional[int] = None
+    other_details: Optional[str] = ""
+
+@app.post("/add_new_specimen")
+def add_specimen(specimen: NewSpecimen):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        val = (
+            specimen.case_id if specimen.case_id is not None else 0,
+            specimen.name or "",
+            specimen.opd_number or "",
+            specimen.sex or "",
+            specimen.age_year if specimen.age_year is not None else 0,
+            specimen.age_month if specimen.age_month is not None else 0,
+            specimen.age_day if specimen.age_day is not None else 0,
+            specimen.demise or "",
+            specimen.species,  # REQUIRED
+            specimen.breed or "",
+            specimen.sample_type or "",
+            specimen.weight if specimen.weight is not None else 0.0,
+            specimen.dead_date,  # Can be NULL
+            specimen.collect_date,  # Can be NULL
+            specimen.keep_method or "",
+            specimen.speed or "",
+            specimen.medical_record or "",
+            specimen.dosage_record or "",
+            specimen.sample_inspection or "",
+            specimen.updater  # Can be NULL
+        )
+        sql = """INSERT INTO sample_registration (
+                    case_id, name, opd_number, sex, age_year, age_month, age_day,
+                    demise, species, breed, sample_type, weight, dead_date, collect_date,
+                    keep_method, speed, medical_record, dosage_record, sample_inspection,
+                    updater
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        
+        cursor.execute(sql, val)
+        conn.commit()
+        return {"status": "success", "specimen_id": cursor.lastrowid}
+    except mariadb.Error as e:
+        print(f"Insert Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add specimen: {str(e)}")
+    finally:
+        conn.close()
+        
+
+@app.get("/get_room_details")
+def get_room_id_and_details():
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, code, name, thai_name, nickname FROM room_information WHERE status = 1")
+        rooms = [{"id": row[0], "code": row[1], "name": row[2], "thai_name": row[3], "nickname": row[4]} for row in cursor]
+        return {"lab_rooms": rooms}
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve lab rooms")
+    finally:
+        conn.close()
+
+
+# --- ADD NEW SPECIMEN API ---
 
 
 

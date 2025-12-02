@@ -29,6 +29,9 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        # Store reference to main controller (will be set by MainController)
+        self.main_controller = None
+
         # --- Setup Pages (Widgets Only) ---
         # Controllers will be created by MainController
         self.register_widget = RegisterNewCustomerWidget()
@@ -143,3 +146,13 @@ class MainWindow(QMainWindow):
 
     def hide(self):
         super().hide()
+    
+    def get_logged_in_user_id(self):
+        """Get the logged-in user ID from main controller"""
+        if self.main_controller:
+            return self.main_controller.get_logged_in_user_id()
+        return None
+    
+    def get_user_login_id(self):
+        """Alias for get_logged_in_user_id for backward compatibility"""
+        return self.get_logged_in_user_id()

@@ -1,0 +1,6 @@
+        ชื่อปุ่ม                      ID ห้อง
+
+จุลชีววิทยา (Microbiology)             2
+ปรสิตวิทยา (Parasitology)             5
+อณูชีววิทยา (Molecular Biopsy)         8
+งานบริการหลังความตาย                  20

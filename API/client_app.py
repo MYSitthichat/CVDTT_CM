@@ -125,6 +125,8 @@ class APIApp(QWidget):
         
 # ADD NEW CUSTOMER API
 
+# ADD NEW WORK API
+
     def get_max_sample_id(self):
         try:
             response = requests.get(f"{API_URL}/get_max_sample_id", timeout=5)
@@ -138,3 +140,58 @@ class APIApp(QWidget):
         except requests.RequestException as e:
             print(f"API Connect Error on get_max_sample_id: {e}")
             return None
+
+    def add_new_work(self, sender_id, owner_id, project_name, updater):
+        try:
+            params = {
+                "sender_id": sender_id,
+                "owner_id": owner_id,
+                "project_name": project_name,
+                "updater": updater
+            }
+            response = requests.post(
+                f"{API_URL}/add_new_work",
+                params=params,
+                timeout=10
+            )
+            if response.status_code == 200:
+                result = response.json()
+                return result
+            else:
+                return False
+                
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return False
+
+    def add_sample_registration(self, sample_data):
+        try:
+            response = requests.post(
+                f"{API_URL}/add_new_specimen",
+                json=sample_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                result = response.json()
+                return result
+            else:
+                return {"status": "error", "detail": response.text}
+                
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return {"status": "error", "detail": str(e)}
+
+    def get_room_details(self):
+        try:
+            response = requests.get(f"{API_URL}/get_room_details", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                return data
+            else:
+                print(f"Server Error on get_room_details: {response.status_code}")
+                return None
+        except requests.RequestException as e:
+            print(f"API Connect Error on get_room_details: {e}")
+            return None
+
+# ADD NEW WORK API

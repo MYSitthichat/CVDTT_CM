@@ -6,14 +6,15 @@ from View.view_new_work_frame import AddNewWorkWidget
 
 
 class NewWorkController(QObject):
-    def __init__(self, new_work_widget = None, main_window = None):
+    def __init__(self, new_work_widget = None, main_window = None, main_controller = None):
         super().__init__()
         if new_work_widget is None:
             self.main_nw = AddNewWorkWidget()
         else:
             self.main_nw = new_work_widget
         self.main_window = main_window
-        self.api_search_app = APIApp()
+        self.main_controller = main_controller
+        self.API_new_work = APIApp()
 
         self.last_sender_search_text = ""
         self.sender_search_timer = QTimer(self)
@@ -55,7 +56,7 @@ class NewWorkController(QObject):
         
         
         self.main_nw.ui.nw_save_pushButton.clicked.connect(self.save_clicked)
-        self.main_nw.ui.nw_cancel_pushButton.clicked.connect(self.cancel_clicked)
+        self.main_nw.ui.nw_cancel_pushButton.clicked.connect(self.cancel_clicked_button)
         self.main_nw.ui.nw_add_result_pushButton.clicked.connect(self.add_result_clicked)
         self.main_nw.ui.new_delete_result_pushButton.clicked.connect(self.delete_result_clicked)
         self.main_nw.ui.nw_print_bracode_pushButton.clicked.connect(self.print_sticker_clicked)
@@ -71,9 +72,9 @@ class NewWorkController(QObject):
         
     def update_id_sample(self):
         try:
-            max_id = self.api_search_app.get_max_sample_id()
+            max_id = self.API_new_work.get_max_sample_id()
             if max_id is not None:
-                new_id = max_id + 1
+                new_id = max_id
                 self.main_nw.ui.nw_id_lineEdit.setText(str(new_id))
             else:
                 QMessageBox.warning(self.main_nw, "API Error", "ไม่สามารถดึงเลขที่งานล่าสุดได้")
@@ -89,21 +90,63 @@ class NewWorkController(QObject):
                 reply = QMessageBox.question(self.main_nw, "CONFIRMATION", "คุณแน่ใจหรือไม่ว่าจะไม่ใส่ชื่อโครงการ?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
                 if reply == QMessageBox.No:
                     return
-            self.update_id_sample()
+                
             self.main_nw.lock_all_input()
-            
-            # --- ที่นี่ คุณสามารถเข้าถึง ID ของผู้ส่งและเจ้าของได้ ---
-            print(f"กำลังบันทึกข้อมูล...")
-            print(f"Sender ID: {self.selected_sender_id}")
-            print(f"Owner ID: {self.selected_owner_id}")
-            # คุณสามารถนำ self.selected_sender_id และ self.selected_owner_id
-            # ไปใช้ในการสร้าง API request เพื่อบันทึกข้อมูลลง database ต่อไป
+            user_id = None
 
-            QMessageBox.information(self.main_nw, "SUCCESS", "บันทึกข้อมูลเรียบร้อย")
-            
+            if self.main_controller:
+                user_id = self.main_controller.get_user_login_id()
+            elif self.main_window and hasattr(self.main_window, 'get_user_login_id'):
+                user_id = self.main_window.get_user_login_id()
+            project_name = self.main_nw.ui.nw_project_name_lineEdit.text().strip()
+
+            save_result = self.API_new_work.add_new_work(
+                self.selected_sender_id,
+                self.selected_owner_id,
+                project_name,
+                user_id)
+
+            if save_result and isinstance(save_result, dict):
+                if save_result.get('status') == 'success':
+                    work_id = save_result.get('work_id')
+                    # print(f"  บันทึกข้อมูลเรียบร้อย - Work ID: {work_id}")
+                    # print(f"  User ID: {user_id}")
+                    # print(f"  Sender ID: {self.selected_sender_id}")
+                    # print(f"  Owner ID: {self.selected_owner_id}")
+                    # print(f"  Project: {project_name if project_name else '(ไม่มีชื่อโครงการ)'}")
+                    
+                    self.update_id_sample()
+                    QMessageBox.information(
+                        self.main_nw, 
+                        "SUCCESS", 
+                        f"บันทึกข้อมูลเรียบร้อย\nเลขที่งาน: {work_id}"
+                    )
+                else:
+                    error_msg = save_result.get('detail', 'Unknown error')
+                    print(f" บันทึกข้อมูลไม่สำเร็จ: {error_msg}")
+                    QMessageBox.warning(
+                        self.main_nw, 
+                        "ERROR", 
+                        f"บันทึกข้อมูลไม่สำเร็จ\n{error_msg}"
+                    )
+                    self.main_nw.unlock_all_input()
+            else:
+                print(f" ไม่ได้รับผลลัพธ์จาก SERVER: {save_result}")
+                QMessageBox.warning(
+                    self.main_nw, 
+                    "ERROR", 
+                    "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง"
+                )
+                self.main_nw.unlock_all_input()
         else:
             QMessageBox.warning(self.main_nw, "DATA ERROR", "กรุณากรอกข้อมูลให้ครบถ้วน")
-            print("Data is invalid, cannot save.")
+
+    def cancel_clicked_button(self):
+        reply = QMessageBox.question(self.main_nw, "CONFIRMATION", "คุณแน่ใจหรือไม่ว่ายกเลิกการบันทึกข้อมูล?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if reply == QMessageBox.No:
+            return
+        self.cancel_clicked()
+
 
     def cancel_clicked(self):
         self.main_nw.ui.nw_name_sender_lineEdit.clear()
@@ -124,18 +167,10 @@ class NewWorkController(QObject):
         self.cancel_clicked()
 
     def add_result_clicked(self):
-        # print("Add result button clicked")
-        
-        # Get the case registration ID
         case_id = self.main_nw.ui.nw_id_lineEdit.text()
-        
-        # Navigate to Specimen Page and pass case_registration_id
         if self.main_window and hasattr(self.main_window, 'specimen_widget'):
-            # Pass the case_registration_id to specimen controller
             if hasattr(self.main_window, 'specimen_controller'):
                 self.main_window.specimen_controller.set_case_registration_id(case_id)
-            
-            # Switch to specimen page
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.specimen_widget)
         else:
             print("Warning: main_window or specimen_widget not available")
@@ -154,7 +189,6 @@ class NewWorkController(QObject):
         pass
 
 # SENDER SEARCH
-
     def clear_selected_id(self, user_type):
         if user_type == 'sender' and not self.is_selecting_sender:
             if self.selected_sender_id is not None:
@@ -174,7 +208,7 @@ class NewWorkController(QObject):
             self.sender_model.setStringList([])
             return
         try:
-            sender_results = self.api_search_app.fetch_search_results(text)
+            sender_results = self.API_new_work.fetch_search_results(text)
             if not sender_results:
                 self.sender_model.setStringList([])
                 return
@@ -200,8 +234,8 @@ class NewWorkController(QObject):
             self.main_nw.ui.nw_sure_name_sender_lineEdit.setText(r.get('surname',''))
             self.main_nw.ui.nw_tex_id_sender_lineEdit.setText(r.get('tax_id',''))
             self.selected_sender_id = r.get('id')
+            # print(self.selected_sender_id)
             # print(f"Selected sender - Name: {r.get('name','')}, Surname: {r.get('surname','')}, ID: {self.selected_sender_id}")
-        
         try:
             self.sender_completer.popup().hide()
         except Exception:
@@ -222,7 +256,7 @@ class NewWorkController(QObject):
             self.owner_model.setStringList([])
             return
         try:
-            owner_results = self.api_search_app.fetch_search_results(text)
+            owner_results = self.API_new_work.fetch_search_results(text)
             if not owner_results:
                 self.owner_model.setStringList([])
                 return
