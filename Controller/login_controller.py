@@ -31,7 +31,6 @@ class Login_Controller(QObject):
         password = self.login_window.password_lineEdit.text()
         if DEBUG == True:
             self.logged_in_user_id = 222
-            # self.logged_in_user_id = 1
             self.main_window.set_logged_in_user(self.logged_in_user_id)
             self.switch_to_main()
         else:

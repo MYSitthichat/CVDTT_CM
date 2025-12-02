@@ -65,7 +65,6 @@ class SpecimenController(QObject):
             if result.get('status') == 'success':
                 specimen_id = result.get('specimen_id')
                 self.specimen_id = specimen_id  # Store specimen_id for use in other controllers
-                print(f"✅ บันทึกตัวอย่างเรียบร้อย - Specimen ID: {specimen_id}")
                 QMessageBox.information(
                     self.view,
                     "SUCCESS",
@@ -74,14 +73,12 @@ class SpecimenController(QObject):
                 self.get_room_details()
             else:
                 error_detail = result.get('detail', 'Unknown error')
-                print(f"บันทึกตัวอย่างไม่สำเร็จ: {error_detail}")
                 QMessageBox.warning(
                     self.view,
                     "ERROR",
                     f"บันทึกข้อมูลไม่สำเร็จ\n{error_detail}"
                 )
         else:
-            print(f"ไม่ได้รับผลลัพธ์จาก API: {result}")
             QMessageBox.warning(
                 self.view,
                 "ERROR",
@@ -314,12 +311,16 @@ class SpecimenController(QObject):
         self.view.cancel_button_clicked()
         if self.main_window and hasattr(self.main_window, 'add_work_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.add_work_widget)
+            
+            # ✅ Refresh/update treewidget data when returning to New Work page
+            if hasattr(self.main_window, 'new_work_controller') and self.main_window.new_work_controller:
+                self.main_window.new_work_controller.update_treewidget_data()
         else:
             print("Warning: Cannot navigate back to new work page")    
     
     def goto_molecular_biology(self):
         room_id = self.room_mapping.get('molecular_biology')
-        print(room_id)
+        # print(room_id)
         if self.main_window and hasattr(self.main_window, 'molecular_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.molecular_widget)
             if hasattr(self.main_window.molecular_widget, 'clear_page'):
@@ -355,11 +356,10 @@ class SpecimenController(QObject):
         #     print("⚠️ Error: Cannot navigate to after death page")
 
 
-
     def set_case_registration_id(self, case_id):
         """Set the case registration ID from new work page"""
         self.case_registration_id = case_id
-        print(f"case_registration_id: {case_id}")
+        # print(f"case_registration_id: {case_id}")
     
     def get_case_registration_id(self):
         """Get the current case registration ID"""

@@ -155,19 +155,14 @@ class APIApp(QWidget):
                 "updater": updater
             }
             
-            print(f"📤 Sending to API: {params}")
-            
             response = requests.post(
                 f"{API_URL}/add_new_work",
                 params=params,
                 timeout=10
             )
             
-            print(f"📥 Response status: {response.status_code}")
-            
             if response.status_code == 200:
                 result = response.json()
-                print(f"✓ API Response: {result}")
                 return result
             else:
                 error_text = response.text
@@ -209,6 +204,98 @@ class APIApp(QWidget):
             return None
 
 # ADD NEW WORK API
+
+# --- ADD NEW LAB ORDER API ---
+
+    def add_new_lab_order(self, order_data):
+        try:
+            response = requests.post(f"{API_URL}/add_new_lab_order",json=order_data,timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                return result
+            else:
+                return {"status": "error", "detail": response.text}
+                
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return {"status": "error", "detail": str(e)}
+
+# --- ADD NEW LAB ORDER API ---
+
+# --- UPDATE TRACKING LAB ORDER API ---
+
+    def update_tracking_lab_order(self, order_data):
+        try:
+            response = requests.post(f"{API_URL}/update_tracking_lab_order",json=order_data,timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                return result
+            else:
+                return {"status": "error", "detail": response.text}
+                
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return {"status": "error", "detail": str(e)}
+
+# --- UPDATE TRACKING LAB ORDER API ---
+
+# --- UPDATE CASE DETAILS API ---
+
+    def get_case_details(self, case_id):
+        """Get case details by case ID"""
+        try:
+            response = requests.get(f"{API_URL}/get_case_details/{case_id}", timeout=10)
+            if response.status_code == 200:
+                result = response.json()
+                return result
+            else:
+                return {"status": "error", "detail": response.text}
+
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return {"status": "error", "detail": str(e)}
+
+# --- UPDATE CASE DETAILS API ---
+
+# --- MOLECULAR BIOLOGY API ---
+
+    def save_molecular_biology(self, molecular_data):
+        """
+        Save molecular biology test data
+        
+        Args:
+            molecular_data: dict with keys:
+                - sample_id: str
+                - tests: list of dicts with 'name', 'quantity', 'total_price'
+                - cPCR_req: int (optional)
+                - qPCR_req: int (optional)
+                - extraction_req: int (optional)
+                - updater: str (username)
+        
+        Returns:
+            dict with status and message, or None on error
+        """
+        try:
+            response = requests.post(
+                f"{API_URL}/save_molecular_biology",
+                json=molecular_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error: {response.status_code}")
+                try:
+                    error_detail = response.json()
+                    print(f"Error detail: {error_detail}")
+                except:
+                    pass
+                return None
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return None
+
+# --- MOLECULAR BIOLOGY API ---
 
 # EMPLOYEE MANAGEMENT API
 
@@ -343,40 +430,4 @@ class APIApp(QWidget):
             print(f"Network error: {e}")
             return None
 
-# --- MOLECULAR BIOLOGY API ---
 
-    def save_molecular_biology(self, molecular_data):
-        """
-        Save molecular biology test data
-        
-        Args:
-            molecular_data: dict with keys:
-                - sample_id: str
-                - tests: list of dicts with 'name', 'quantity', 'total_price'
-                - cPCR_req: int (optional)
-                - qPCR_req: int (optional)
-                - extraction_req: int (optional)
-                - updater: str (username)
-        
-        Returns:
-            dict with status and message, or None on error
-        """
-        try:
-            response = requests.post(
-                f"{API_URL}/save_molecular_biology",
-                json=molecular_data,
-                timeout=10
-            )
-            if response.status_code == 200:
-                return response.json()
-            else:
-                print(f"Server Error: {response.status_code}")
-                try:
-                    error_detail = response.json()
-                    print(f"Error detail: {error_detail}")
-                except:
-                    pass
-                return None
-        except requests.RequestException as e:
-            print(f"Network error: {e}")
-            return None

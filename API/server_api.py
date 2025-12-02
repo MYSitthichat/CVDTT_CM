@@ -48,7 +48,7 @@ class MolecularBiologyData(BaseModel):
     cPCR_req: Optional[int] = 0
     qPCR_req: Optional[int] = 0
     extraction_req: Optional[int] = 0
-    updater: str  # username of person saving the data
+    updater: Optional[int] = None  # user_id of person saving the data
     
 # --- Helper Function เชื่อมต่อ DB ---
 def get_db_connection():
@@ -413,8 +413,8 @@ class LabOrder(BaseModel):
     room_id: Optional[str] = None
     comments: Optional[str] = ""
     state: Optional[str] = "0"
-    status: Optional[str] = "0"
-    updater: Optional[str] = None
+    status: Optional[str] = "1"
+    updater: Optional[int] = None  # user_id of person saving the data
 
 @app.post("/add_new_lab_order")
 def add_lab_order(lab_order: LabOrder):
@@ -423,17 +423,64 @@ def add_lab_order(lab_order: LabOrder):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO lab_order (room_id) VALUES (?)", (lab_order.room_id,))
+        cursor.execute("INSERT INTO lab_order (sample_id, room_id, comments, state, status, updater) VALUES (?, ?, ?, ?, ?, ?)", (lab_order.sample_id, lab_order.room_id, lab_order.comments, lab_order.state, lab_order.status, lab_order.updater))
         conn.commit()
-        return {"status": "success", "room_id": lab_order.room_id}
+        return {"status": "success", "sample_id": lab_order.sample_id}
+    
     except mariadb.Error as e:
         print(f"Insert Error: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to add room ID: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to add sample ID: {str(e)}")
     finally:
         conn.close()
 
-
 # --- ADD NEW LAB ID API ---
+
+# --- UPDATE TRACKING LAB ORDER API ---
+
+class update_tracking_LabOrder(BaseModel):
+    lab_order_id: Optional[str] = ""
+    tracking_info: Optional[str] = "รับงานเข้าระบบ"
+    receiver: Optional[str] = None
+    updater: Optional[str] = None
+    
+@app.post("/update_tracking_lab_order")
+def update_tracking_lab_order(lab_order: update_tracking_LabOrder):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO tracking_lab_order (lab_order_id, tracking_info, receiver, updater) VALUES (?, ?, ?, ?)", (lab_order.lab_order_id, lab_order.tracking_info, lab_order.receiver, lab_order.updater))
+        conn.commit()
+        return {"status": "success", "lab_order_id": lab_order.lab_order_id}
+    
+    except mariadb.Error as e:
+        print(f"Insert Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add lab order ID: {str(e)}")
+    finally:
+        conn.close()
+
+# --- UPDATE TRACKING LAB ORDER API ---
+
+# --- UPDATE CASE DETAILS API ---
+
+@app.get("/get_case_details/{case_id}")
+def get_case_details(case_id: str):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT lab_order.dtime, lab_order.id, sample_registration.species, room_information.code, room_information.nickname, sample_registration.keep_method, sample_registration.speed FROM case_registration LEFT JOIN sample_registration ON case_registration.id = sample_registration.case_id RIGHT JOIN lab_order ON sample_registration.id = lab_order.sample_id LEFT JOIN room_information ON lab_order.room_id = room_information.id WHERE case_registration.id = %s AND lab_order.status = 1", (case_id,))
+        result = cursor.fetchall()
+        return {"status": "success", "case_id": case_id, "data": result}
+    except mariadb.Error as e:
+        print(f"Update Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update case details: {str(e)}")
+    finally:
+        conn.close()
+
+# --- UPDATE CASE DETAILS API ---
 
 # --- MOLECULAR BIOLOGY API ---
 

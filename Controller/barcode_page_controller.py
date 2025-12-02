@@ -68,8 +68,8 @@ class BarcodePageController(QObject):
                 date_val = date_val.strftime("%d-%m-%Y %H:%M:%S")
             table.setItem(row_idx, 0, QTableWidgetItem(str(date_val)))
             
-            # Col 1: Barcode ID
-            table.setItem(row_idx, 1, QTableWidgetItem(str(item[1]).zfill(10)))
+            # Col 1: Barcode ID (12 digits with leading zeros for barcode)
+            table.setItem(row_idx, 1, QTableWidgetItem(str(item[1]).zfill(12)))
             
             # Col 2: Species
             table.setItem(row_idx, 2, QTableWidgetItem(str(item[2])))

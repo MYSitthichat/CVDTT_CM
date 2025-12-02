@@ -36,10 +36,13 @@ class MolecularBiologyController(QObject):
         if summary is None:
             return
         
+        # Get ALL test items (selected and unselected) for database saving
+        all_test_items = self.view.get_data()
+        
+        # Get only selected items for validation and display
         selected_items = summary['items']
         
         if not selected_items:
-            print("Validation: No items selected")
             QMessageBox.warning(self.view, "Warning", "กรุณาเลือกรายการที่ต้องการส่งตรวจ (Please select items)")
             return
         
@@ -68,12 +71,26 @@ class MolecularBiologyController(QObject):
                 "แล้วจึงกลับมาเลือกรายการตรวจ Molecular Biology"
             )
             return
-        # Get username from main controller
-        username = "unknown"
+
+        # Get user_id from main controller
+        user_id = None 
         if hasattr(self.main_window, 'main_controller'):
             main_ctrl = self.main_window.main_controller
-            if hasattr(main_ctrl, 'logged_in_username') and main_ctrl.logged_in_username:
-                username = main_ctrl.logged_in_username
+            if hasattr(main_ctrl, 'logged_in_user_id') and main_ctrl.logged_in_user_id:
+                user_id = main_ctrl.logged_in_user_id
+            else:
+                pass
+        else:
+            pass
+        
+        if not user_id:
+            QMessageBox.warning(
+                self.view,
+                "ไม่พบข้อมูลผู้ใช้",
+                "กรุณา Login ใหม่อีกครั้ง"
+            )
+            return
+        
         total_cost = 0
         total_samples = 0
         
@@ -85,32 +102,62 @@ class MolecularBiologyController(QObject):
             total_cost += total_price
             total_samples += quantity
         
+        # Get room_id from specimen_controller's room mapping
+        room_id = None
+        if hasattr(self.main_window, 'specimen_controller'):
+            specimen_ctrl = self.main_window.specimen_controller
+            if hasattr(specimen_ctrl, 'room_mapping') and 'molecular_biology' in specimen_ctrl.room_mapping:
+                room_id = specimen_ctrl.room_mapping['molecular_biology']
+        
         # Prepare data for API
         molecular_data = {
             "sample_id": sample_id,
-            "tests": selected_items,
-            "cPCR_req": 0,  # TODO: Add UI fields for these if needed
+            "tests": all_test_items,
+            "cPCR_req": 0,
             "qPCR_req": 0,
             "extraction_req": 0,
-            "updater": username
+            "updater": user_id
         }
-        # Call API to save data
-        result = self.api_client.save_molecular_biology(molecular_data)
         
-        if result and result.get("status") == "success":
+        lab_order_data = {
+            "sample_id": sample_id,
+            "room_id": str(room_id) if room_id else None,
+            "comments": "",
+            "state": "0",
+            "status": "1",
+            "updater": user_id
+        }
+        
+        first_update_tracking_lab_order_data = {
+            "lab_order_id": sample_id,
+            "tracking_info": "รับงานเข้าระบบ",
+            "receiver": str(user_id),
+            "updater": str(user_id)
+        }
+        
+        # Call API to save data
+        save_molecular_result = self.api_client.save_molecular_biology(molecular_data)
+        insert_lab_order = self.api_client.add_new_lab_order(lab_order_data)
+        first_update_tracking_lab_order = self.api_client.update_tracking_lab_order(first_update_tracking_lab_order_data)
+
+        if save_molecular_result and insert_lab_order and first_update_tracking_lab_order.get("status") == "success":
+            selected_count = len(selected_items)
+            total_count = len(all_test_items)
+            
             QMessageBox.information(
                 self.view, 
                 "Success", 
                 f"บันทึกข้อมูลเรียบร้อย (Saved Successfully)\n\n"
                 f"Sample ID: {sample_id}\n"
-                f"จำนวนรายการ: {result.get('tests_count')} รายการ"
+                f"รายการที่เลือก: {selected_count} รายการ\n"
             )
             # Clear the page after successful save
             self.view.clear_page()
             # Go back to specimen page
+            
             self.go_back()
         else:
-            error_msg = result.get('detail', 'Unknown error') if result else "Cannot connect to server"
+            error_msg = save_molecular_result.get('detail', 'Unknown error') if save_molecular_result else "Cannot connect to server"
             QMessageBox.critical(
                 self.view,
                 "Error",
@@ -118,7 +165,11 @@ class MolecularBiologyController(QObject):
             )
 
     def go_back(self):
-        if hasattr(self.main_window, 'specimen_widget'):
-            self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.specimen_widget)
+        if hasattr(self.main_window, 'add_work_widget'):
+            self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.add_work_widget)
+            
+            # ✅ Refresh/update treewidget data when returning to New Work page
+            if hasattr(self.main_window, 'new_work_controller') and self.main_window.new_work_controller:
+                self.main_window.new_work_controller.update_treewidget_data()
         else:
-            print("Error: Specimen Widget not found in Main Window")
+            print("Error: Add Work Widget not found in Main Window")

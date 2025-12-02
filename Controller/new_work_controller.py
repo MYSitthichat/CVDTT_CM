@@ -1,5 +1,5 @@
 from PySide6.QtCore import QObject,QStringListModel, Qt, QTimer, Slot
-from PySide6.QtWidgets import (QCompleter, QMessageBox)
+from PySide6.QtWidgets import (QCompleter, QMessageBox, QTreeWidgetItem)
 import mariadb
 from API.client_app import APIApp
 from View.view_new_work_frame import AddNewWorkWidget
@@ -284,8 +284,6 @@ class NewWorkController(QObject):
             self.main_nw.ui.nw_name_sender_lineEdit.blockSignals(False)
             self.main_nw.ui.nw_sure_name_sender_lineEdit.blockSignals(False)
             self.main_nw.ui.nw_tex_id_sender_lineEdit.blockSignals(False)
-            
-            print(f"✓ Selected SENDER - ID: {self.selected_sender_id}, Name: {name} {surname}, Tax ID: {tax_id}")
         
         try:
             self.sender_completer.popup().hide()
@@ -356,7 +354,6 @@ class NewWorkController(QObject):
             self.main_nw.ui.nw_sure_name_owner_lineEdit.blockSignals(False)
             self.main_nw.ui.nw_tex_id_owner_lineEdit.blockSignals(False)
             
-            print(f"✓ Selected OWNER - ID: {self.selected_owner_id}, Name: {name} {surname}, Tax ID: {tax_id}")
         
         try:
             self.owner_completer.popup().hide()
@@ -369,3 +366,71 @@ class NewWorkController(QObject):
         QTimer.singleShot(100, lambda: setattr(self, 'is_selecting_owner', False))
         QTimer.singleShot(500, lambda: setattr(self, 'lock_owner_id', False))  # Keep locked for 500ms
 
+# UPDATE DATA TO TREEWIDGET
+    def update_treewidget_data(self):
+        case_id = self.main_nw.ui.nw_id_lineEdit.text().strip()
+        if not case_id:
+            return
+        result = self.API_new_work.get_case_details(case_id)
+        
+        if result and result.get('status') == 'success':
+            data = result.get('data', [])
+            self.populate_treewidget(data)
+        else:
+            print(f"Failed to get case details: {result}")
+    
+    def populate_treewidget(self, data):
+        # Clear existing items
+        self.main_nw.ui.nw_work_register_treeWidget.clear()
+        
+        if not data:
+            return
+        # Populate with new data
+        for row in data:
+            try:
+                # Extract data from row
+                dtime = str(row[0]) if row[0] else ""
+                order_id_raw = str(row[1]) if row[1] else ""
+                species = str(row[2]) if row[2] else ""
+                room_code = str(row[3]) if row[3] else ""
+                room_nickname = str(row[4]) if row[4] else ""
+                keep_method = str(row[5]) if row[5] else ""
+                speed = str(row[6]) if row[6] else ""
+                
+                # Format order ID with leading zeros (12 digits for barcode)
+                if order_id_raw:
+                    order_id = order_id_raw.zfill(12)
+                else:
+                    order_id = ""
+                
+                # Combine room code and nickname for display
+                if room_code and room_nickname:
+                    lab_room = f"{room_code} ({room_nickname})"
+                elif room_code:
+                    lab_room = room_code
+                elif room_nickname:
+                    lab_room = room_nickname
+                else:
+                    lab_room = ""
+                
+                # Create tree widget item
+                item = QTreeWidgetItem([
+                    dtime,           # วันที่รับเคส
+                    order_id,        # หมายเลขการตรวจ (12 digits with leading zeros)
+                    species,         # ชนิดสัตว์
+                    lab_room,        # ห้องปฏิบัติการ
+                    keep_method,     # การเก็บรักษา
+                    speed,           # ระดับความด่วน
+                    ""               # ข้อมูลเพิ่มเติม (empty for now)
+                ])
+                
+                # Center-align all columns
+                for col in range(7):
+                    item.setTextAlignment(col, Qt.AlignmentFlag.AlignCenter)
+                
+                # Add item to treewidget
+                self.main_nw.ui.nw_work_register_treeWidget.addTopLevelItem(item)
+                
+            except Exception as e:
+                print(f"⚠️ Error adding row to treewidget: {e}")
+                print(f"   Row data: {row}")

@@ -556,6 +556,7 @@ class BacteriaController(QObject):
             
             QMessageBox.information(self.view, "สำเร็จ", "บันทึกข้อมูลทั้งหมดสำเร็จ!")
             self.clear_all_bacteria_information()
+            self.go_back_to_new_work()  # ✅ Go back to New Work page instead of staying
             
         except Exception as e:
             QMessageBox.critical(self.view, "ข้อผิดพลาด", f"เกิดข้อผิดพลาด: {str(e)}")
@@ -590,6 +591,17 @@ class BacteriaController(QObject):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.specimen_widget)
         else:
             print("Warning: Cannot navigate back to specimen page")
+    
+    def go_back_to_new_work(self):
+        """Navigate back to New Work page and refresh data"""
+        if self.main_window and hasattr(self.main_window, 'add_work_widget'):
+            self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.add_work_widget)
+            
+            # ✅ Refresh/update treewidget data when returning to New Work page
+            if hasattr(self.main_window, 'new_work_controller') and self.main_window.new_work_controller:
+                self.main_window.new_work_controller.update_treewidget_data()
+        else:
+            print("Warning: Cannot navigate back to new work page")
     
     # ========== ENABLE/DISABLE FUNCTIONS ==========
     
