@@ -195,3 +195,136 @@ class APIApp(QWidget):
             return None
 
 # ADD NEW WORK API
+
+# EMPLOYEE MANAGEMENT API
+
+    def get_max_sample_id(self):
+        try:
+            response = requests.get(f"{API_URL}/get_max_sample_id", timeout=5)
+            if response.status_code == 200:
+                data = response.json()
+                # print(data)
+                return data.get("max_id") # คืนค่า max_id ที่ได้จาก JSON
+            else:
+                print(f"Server Error on get_max_sample_id: {response.status_code}")
+                return None
+        except requests.RequestException as e:
+            print(f"API Connect Error on get_max_sample_id: {e}")
+            return None
+
+# EMPLOYEE MANAGEMENT API
+
+    def search_employee(self, search_text):
+        """Search employee by name or surname"""
+        try:
+            response = requests.get(
+                f"{API_URL}/search_employee",
+                params={"q": search_text},
+                timeout=10
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("employees", [])
+            else:
+                print(f"Server Error: {response.status_code}")
+                return []
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return []
+
+    def get_employee_by_id(self, employee_id):
+        """Get employee details by ID"""
+        try:
+            response = requests.get(
+                f"{API_URL}/get_employee/{employee_id}",
+                timeout=10
+            )
+            if response.status_code == 200:
+                # print(response.json())
+                return response.json()
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return None
+
+    def create_employee(self, employee_data):
+        """Create new employee"""
+        try:
+            response = requests.post(
+                f"{API_URL}/create_employee",
+                json=employee_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return None
+
+    def update_employee(self, employee_id, employee_data):
+        """Update employee data"""
+        try:
+            response = requests.put(
+                f"{API_URL}/update_employee/{employee_id}",
+                json=employee_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return None
+
+    def delete_employee(self, employee_id):
+        """Delete employee"""
+        try:
+            response = requests.delete(
+                f"{API_URL}/delete_employee/{employee_id}",
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return None
+
+    def get_employee_groups(self):
+        """Get all employee groups/positions"""
+        try:
+            response = requests.get(
+                f"{API_URL}/get_employee_groups",
+                timeout=10
+            )
+            if response.status_code == 200:
+                data = response.json()
+                # print(data)
+                return data.get("employee_groups", [])
+            else:
+                print(f"Server Error: {response.status_code}")
+                return []
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return []
+
+    def get_signature(self, username):
+        """Get signature image for username as base64"""
+        try:
+            response = requests.get(
+                f"{API_URL}/get_signature/{username}",
+                timeout=10
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data.get("signature_base64")
+            else:
+                return None
+        except requests.RequestException as e:
+            print(f"Network error: {e}")
+            return None

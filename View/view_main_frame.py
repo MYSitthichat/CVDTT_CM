@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
         
         # --- Link Buttons ---
         self.ui.register_new_customer_pushButton.clicked.connect(self.show_register_page)
-        # self.ui.new_work_pushButton.clicked.connect(self.show_add_work_page)
+        self.ui.new_work_pushButton.clicked.connect(self.show_add_work_page)
         
         if hasattr(self.ui, 'barcode_print_pushButton'):
             self.ui.barcode_print_pushButton.clicked.connect(self.show_barcode_page)
