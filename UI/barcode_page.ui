@@ -57,7 +57,7 @@
      <rect>
       <x>20</x>
       <y>80</y>
-      <width>1231</width>
+      <width>941</width>
       <height>41</height>
      </rect>
     </property>
@@ -222,6 +222,19 @@
     </property>
     <property name="text">
      <string>พิมพ์บาร์โค้ด</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_search_employee">
+    <property name="geometry">
+     <rect>
+      <x>1000</x>
+      <y>80</y>
+      <width>251</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ค้นหาด้วยชื่อพนักงาน</string>
     </property>
    </widget>
   </widget>

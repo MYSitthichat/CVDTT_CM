@@ -6,9 +6,9 @@ from View.view_barcode_page import BarcodePageWidget
 from View.view_check_jop_progress import CheckJobProgressWidget
 from View.view_lab_received_sample import LabReceivedSampleWidget
 from Controller.new_work_controller import NewWorkController
-from Controller.barcode_page_controller import BarcodePageController
-from Controller.check_job_progress_controller import CheckJobProgressController
-from Controller.lab_received_sample_controller import LabReceivedSampleController
+# BarcodePageController is now created in MainController
+# CheckJobProgressController is now created in MainController
+# LabReceivedSampleController is now created in MainController
 from View.view_bacteria_frame import bacterieFrameView
 from Controller.bacteria_controller import BacteriaController
 from View.view_parasite_frame import parasiteFrameView
@@ -51,10 +51,10 @@ class MainWindow(QMainWindow):
         # --- Setup Controllers ---
         # NewWorkController is now created in MainController
         # Controllers that don't need main_controller are created here
-        # Others (molecular, after_death, lab_report) are created in MainController
-        self.barcode_controller = BarcodePageController(self.barcode_widget)
-        self.check_job_controller = CheckJobProgressController(model, self.check_job_widget)
-        self.lab_received_controller = LabReceivedSampleController(model, self.lab_received_widget)
+        # Others (molecular, after_death, lab_report, barcode) are created in MainController
+        self.barcode_controller = None  # Created in MainController
+        self.check_job_controller = None  # Created in MainController
+        self.lab_received_controller = None  # Created in MainController
         self.bacteria_controller = BacteriaController(self.bacteria_widget, self)
         self.parasite_controller = ParasiteController(self.parasite_widget, self)
         self.specimen_controller = SpecimenController(self.specimen_widget, self)

@@ -315,16 +315,19 @@ class APIApp(QWidget):
 
 # EMPLOYEE MANAGEMENT API
 
-    def search_employee(self, search_text):
+    def search_employee_barcode(self, search_text):
         """Search employee by name or surname"""
         try:
             response = requests.get(
-                f"{API_URL}/search_employee",
+                f"{API_URL}/search_employee_barcode",
                 params={"q": search_text},
                 timeout=10
             )
             if response.status_code == 200:
                 data = response.json()
+                # Return the list directly (API returns list, not dict with "employees")
+                if isinstance(data, list):
+                    return data
                 return data.get("employees", [])
             else:
                 print(f"Server Error: {response.status_code}")
@@ -393,6 +396,20 @@ class APIApp(QWidget):
         try:
             params = {"name": name, "surname": surname}
             response = requests.get(f"{API_URL}/barcode/search", params=params, timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error: {response.status_code}")
+                return []
+        except Exception as e:
+            print(f"API Error: {e}")
+            return []
+
+    def search_barcode_by_employee(self, employee_id):
+        """Search barcode cases by employee ID (updater)"""
+        try:
+            params = {"employee_id": employee_id}
+            response = requests.get(f"{API_URL}/barcode/search_by_employee", params=params, timeout=5)
             if response.status_code == 200:
                 return response.json()
             else:
