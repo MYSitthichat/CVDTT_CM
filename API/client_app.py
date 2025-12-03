@@ -43,7 +43,11 @@ class APIApp(QWidget):
             if response.status_code == 200:
                 if isinstance(data, dict):
                     if data.get("success"):
-                        return {"id": data.get("user_id"), "user_id": data.get("user_id")}
+                        return {
+                            "id": data.get("user_id"), 
+                            "user_id": data.get("user_id"),
+                            "group_id": data.get("group_id")
+                        }
                     else:
                         return None
                 elif isinstance(data, bool):
@@ -315,12 +319,21 @@ class APIApp(QWidget):
 
 # EMPLOYEE MANAGEMENT API
 
-    def search_employee(self, search_text):
-        """Search employee by name or surname"""
+    def search_employee(self, search_text, current_username=None):
+        """Search employee by name or surname
+        
+        Args:
+            search_text: Search query
+            current_username: If provided, includes this user's latest record even if archived
+        """
         try:
+            params = {"q": search_text}
+            if current_username is not None:
+                params["current_username"] = current_username
+                
             response = requests.get(
                 f"{API_URL}/search_employee",
-                params={"q": search_text},
+                params=params,
                 timeout=10
             )
             if response.status_code == 200:
@@ -354,7 +367,8 @@ class APIApp(QWidget):
         try:
             response = requests.get(f"{API_URL}/get_employee_groups", timeout=10)
             if response.status_code == 200:
-                return response.json()
+                data = response.json()
+                return data.get("employee_groups", [])
             else:
                 print(f"Server Error on get_employee_groups: {response.status_code}")
                 return []
@@ -362,10 +376,20 @@ class APIApp(QWidget):
             print(f"API Connect Error on get_employee_groups: {e}")
             return []
     
-    def get_employee_by_id(self, employee_id):
-        """Get employee data by ID"""
+    def get_employee_by_id(self, employee_id, include_archived=False):
+        """Get employee data by ID
+        
+        Args:
+            employee_id: The employee ID
+            include_archived: If True, includes archived employees (status=0)
+        """
         try:
-            response = requests.get(f"{API_URL}/get_employee/{employee_id}", timeout=10)
+            params = {"include_archived": include_archived} if include_archived else {}
+            response = requests.get(
+                f"{API_URL}/get_employee/{employee_id}",
+                params=params,
+                timeout=10
+            )
             if response.status_code == 200:
                 return response.json()
             else:
@@ -374,6 +398,74 @@ class APIApp(QWidget):
         except Exception as e:
             print(f"API Connect Error on get_employee_by_id: {e}")
             return None
+    
+    def get_employee_permission_by_id(self, employee_id):
+        """Get employee permission (group_id) by ID - no status filter"""
+        try:
+            response = requests.get(f"{API_URL}/get_employee_permission/{employee_id}", timeout=10)
+            if response.status_code == 200:
+                data = response.json()
+                return data.get('group_id')
+            else:
+                return None
+        except Exception as e:
+            print(f"API Connect Error on get_employee_permission_by_id: {e}")
+            return None
+    
+    def create_employee(self, employee_data):
+        """Create new employee"""
+        try:
+            response = requests.post(
+                f"{API_URL}/create_employee",
+                json=employee_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error on create_employee: {response.status_code}")
+                return {"status": "error", "detail": response.text}
+        except requests.RequestException as e:
+            print(f"Network error on create_employee: {e}")
+            return {"status": "error", "detail": str(e)}
+    
+    def update_employee(self, employee_id, employee_data):
+        """Update employee data"""
+        try:
+            response = requests.put(
+                f"{API_URL}/update_employee/{employee_id}",
+                json=employee_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error on update_employee: {response.status_code}")
+                return {"status": "error", "detail": response.text}
+        except requests.RequestException as e:
+            print(f"Network error on update_employee: {e}")
+            return {"status": "error", "detail": str(e)}
+    
+    def delete_employee(self, employee_id, delete_data=None):
+        """Delete employee (soft delete with updater tracking)"""
+        try:
+            params = {}
+            if delete_data and 'updater' in delete_data:
+                params['updater'] = delete_data['updater']
+            
+            response = requests.delete(
+                f"{API_URL}/delete_employee/{employee_id}",
+                params=params,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error on delete_employee: {response.status_code}")
+                return {"status": "error", "detail": response.text}
+        except requests.RequestException as e:
+            print(f"Network error on delete_employee: {e}")
+            return {"status": "error", "detail": str(e)}
 
 # ADD BARCODE  API
 
