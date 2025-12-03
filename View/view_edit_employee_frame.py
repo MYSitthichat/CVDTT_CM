@@ -78,3 +78,17 @@ class EditEmployeeWindow(QMainWindow, Ui_edit_employee_MainWindow):
 
     def hide(self):
         return super().hide()
+    
+    def closeEvent(self, event):
+        """Called when window is closed - cleanup state"""
+        # Call controller's cleanup if it exists
+        if hasattr(self, 'controller') and hasattr(self.controller, 'cleanup_on_close'):
+            self.controller.cleanup_on_close()
+        super().closeEvent(event)
+    
+    def hideEvent(self, event):
+        """Called when window is hidden - cleanup state"""
+        # Call controller's cleanup if it exists
+        if hasattr(self, 'controller') and hasattr(self.controller, 'cleanup_on_close'):
+            self.controller.cleanup_on_close()
+        super().hideEvent(event)

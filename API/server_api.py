@@ -30,7 +30,7 @@ DB_CONFIG = {
     "host": "127.0.0.1",
     "user": "root",
     "password": "",
-    "database": "cvdtt_lab",
+    "database": "testdb",
     "port": 3306
 }
 
