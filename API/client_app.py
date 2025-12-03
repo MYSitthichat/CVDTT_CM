@@ -125,6 +125,8 @@ class APIApp(QWidget):
         
 # ADD NEW CUSTOMER API
 
+# ADD NEW WORK API
+
     def get_max_sample_id(self):
         try:
             response = requests.get(f"{API_URL}/get_max_sample_id", timeout=5)

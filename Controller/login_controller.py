@@ -30,7 +30,8 @@ class Login_Controller(QObject):
         username = self.login_window.user_lineEdit.text()
         password = self.login_window.password_lineEdit.text()
         if DEBUG == True:
-            self.logged_in_user_id = 999
+            # self.logged_in_user_id = 999
+            self.logged_in_user_id = 1
             self.main_window.set_logged_in_user(self.logged_in_user_id)
             self.switch_to_main()
         else:
@@ -60,7 +61,7 @@ class Login_Controller(QObject):
 
     def show_main_after_login_page(self):
         self.main_window.Show_main_page()
-        self.main_window.show_register_page()
+        self.main_window.show_add_work_page()
 
     def show_forgot_password(self):
         self.login_window.hide()
