@@ -689,6 +689,130 @@ def search_employee(q: str):
         if conn: 
             conn.close()
 
+# Helper functions for signature management
+def save_signature_to_file(username: str, base64_data: str):
+    """Save base64 encoded signature to file"""
+    try:
+        signatures_dir = "signatures"
+        if not os.path.exists(signatures_dir):
+            os.makedirs(signatures_dir)
+        
+        # Decode base64 to bytes
+        image_data = base64.b64decode(base64_data)
+        
+        # Generate filename with timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"signature_{username}_{timestamp}.png"
+        filepath = os.path.join(signatures_dir, filename)
+        
+        # Save to file
+        with open(filepath, 'wb') as f:
+            f.write(image_data)
+        
+        print(f"Signature saved: {filepath}")
+        return filepath
+    except Exception as e:
+        print(f"Error saving signature: {e}")
+        return None
+
+def delete_signature_files(username: str):
+    """Delete all signature files for a username"""
+    try:
+        signatures_dir = "signatures"
+        if not os.path.exists(signatures_dir):
+            return
+        
+        for filename in os.listdir(signatures_dir):
+            if f"signature_{username}_" in filename and filename.endswith('.png'):
+                filepath = os.path.join(signatures_dir, filename)
+                os.remove(filepath)
+                print(f"Deleted signature: {filepath}")
+    except Exception as e:
+        print(f"Error deleting signatures: {e}")
+
+# --- EMPLOYEE MANAGEMENT API ---
+
+
+# --- BARCODE / STICKER API ---
+
+@app.get("/barcode/today")
+def get_today_cases():
+    """ Get all cases registered today """
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: 
+            return []
+        
+        cursor = conn.cursor()
+        
+        # Query based on sample_registration.dtime (today's samples)
+        sql = """
+            SELECT 
+                s.dtime, 
+                s.case_id, 
+                s.species, 
+                CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
+                s.keep_method, 
+                s.speed,
+                s.room AS room_debug
+            FROM sample_registration s
+            LEFT JOIN room_information r ON s.room = r.code
+            WHERE DATE(s.dtime) = CURDATE()
+            ORDER BY s.dtime DESC
+        """
+        cursor.execute(sql)
+        results = []
+        for row in cursor:
+            print(f"[DEBUG] room value: {row[6]}, lab_name: {row[3]}")
+            results.append({
+                "date": str(row[0]) if row[0] else None,
+                "barcode": row[1],
+                "species": row[2],
+                "lab_name": row[3],
+                "storage": row[4],
+                "urgency": row[5]
+            })
+        
+        # If no data today, get all recent data (last 100 records)
+        if len(results) == 0:
+            print("No data for today, fetching all recent records...")
+            sql_all = """
+                SELECT 
+                    s.dtime, 
+                    s.case_id, 
+                    s.species, 
+                    CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
+                    s.keep_method, 
+                    s.speed,
+                    s.room AS room_debug
+                FROM sample_registration s
+                LEFT JOIN room_information r ON s.room = r.code
+                ORDER BY s.dtime DESC
+                LIMIT 100
+            """
+            cursor.execute(sql_all)
+            for row in cursor:
+                print(f"[DEBUG] room value: {row[6]}, lab_name: {row[3]}")
+                results.append({
+                    "date": str(row[0]) if row[0] else None,
+                    "barcode": row[1],
+                    "species": row[2],
+                    "lab_name": row[3],
+                    "storage": row[4],
+                    "urgency": row[5]
+                })
+        
+        print(f"Returning {len(results)} records")
+        return results
+    except mariadb.Error as e:
+        print(f"Query Error (Today): {e}")
+        return []
+    finally:
+        if conn: 
+            conn.close()
+
 @app.get("/barcode/search")
 def search_barcode_cases(name: str = "", surname: str = ""):
     """ Search cases by Customer Name/Surname """
@@ -791,53 +915,6 @@ def search_barcode_cases(name: str = "", surname: str = ""):
     finally:
         if conn: 
             conn.close()
-
-print("Server Running ...")
-# Helper functions for signature management
-def save_signature_to_file(username: str, base64_data: str):
-    """Save base64 encoded signature to file"""
-    try:
-        signatures_dir = "signatures"
-        if not os.path.exists(signatures_dir):
-            os.makedirs(signatures_dir)
-        
-        # Decode base64 to bytes
-        image_data = base64.b64decode(base64_data)
-        
-        # Generate filename with timestamp
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"signature_{username}_{timestamp}.png"
-        filepath = os.path.join(signatures_dir, filename)
-        
-        # Save to file
-        with open(filepath, 'wb') as f:
-            f.write(image_data)
-        
-        print(f"Signature saved: {filepath}")
-        return filepath
-    except Exception as e:
-        print(f"Error saving signature: {e}")
-        return None
-
-def delete_signature_files(username: str):
-    """Delete all signature files for a username"""
-    try:
-        signatures_dir = "signatures"
-        if not os.path.exists(signatures_dir):
-            return
-        
-        for filename in os.listdir(signatures_dir):
-            if f"signature_{username}_" in filename and filename.endswith('.png'):
-                filepath = os.path.join(signatures_dir, filename)
-                os.remove(filepath)
-                print(f"Deleted signature: {filepath}")
-    except Exception as e:
-        print(f"Error deleting signatures: {e}")
-
-# --- EMPLOYEE MANAGEMENT API ---
-
-
 
 
 # print("Server Running ...")
