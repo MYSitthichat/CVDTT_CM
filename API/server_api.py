@@ -623,71 +623,261 @@ def search_employee(q: str):
         search_pattern = f"%{q}%"
         cursor.execute(sql, (search_pattern, search_pattern))
         
-        # Query based on sample_registration.dtime (today's samples)
-        sql = """
-            SELECT 
-                s.dtime, 
-                s.case_id, 
-                s.species, 
-                CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
-                s.keep_method, 
-                s.speed,
-                s.room AS room_debug
-            FROM sample_registration s
-            LEFT JOIN room_information r ON s.room = r.code
-            WHERE DATE(s.dtime) = CURDATE()
-            ORDER BY s.dtime DESC
-        """
-        cursor.execute(sql)
-        results = []
+        employees = []
         for row in cursor:
-            print(f"[DEBUG] room value: {row[6]}, lab_name: {row[3]}")
-            results.append({
-                "date": str(row[0]) if row[0] else None,
-                "barcode": row[1],
-                "species": row[2],
-                "lab_name": row[3],
-                "storage": row[4],
-                "urgency": row[5]
+            employees.append({
+                "id": row[0],
+                "title": row[1] if row[1] else "",
+                "name": row[2] if row[2] else "",
+                "surname": row[3] if row[3] else "",
+                "email": row[4] if row[4] else "",
+                "username": row[5] if row[5] else "",
+                "group_id": row[6] if row[6] is not None else None,
+                "position": row[7] if row[7] else ""
             })
         
-        # If no data today, get all recent data (last 100 records)
-        if len(results) == 0:
-            print("No data for today, fetching all recent records...")
-            sql_all = """
-                SELECT 
-                    s.dtime, 
-                    s.case_id, 
-                    s.species, 
-                    CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
-                    s.keep_method, 
-                    s.speed,
-                    s.room AS room_debug
-                FROM sample_registration s
-                LEFT JOIN room_information r ON s.room = r.code
-                ORDER BY s.dtime DESC
-                LIMIT 100
-            """
-            cursor.execute(sql_all)
-            for row in cursor:
-                print(f"[DEBUG] room value: {row[6]}, lab_name: {row[3]}")
-                results.append({
-                    "date": str(row[0]) if row[0] else None,
-                    "barcode": row[1],
-                    "species": row[2],
-                    "lab_name": row[3],
-                    "storage": row[4],
-                    "urgency": row[5]
-                })
-        
-        print(f"Returning {len(results)} records")
-        return results
+        return {"employees": employees}
     except mariadb.Error as e:
-        print(f"Query Error (Today): {e}")
-        return []
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to search employee")
     finally:
-        if conn: 
-            conn.close()
+        conn.close()
+
+@app.get("/get_employee/{employee_id}")
+def get_employee(employee_id: int):
+    """Get employee details by ID"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        sql = """SELECT e.id, e.title, e.name, e.surname, e.email, e.username, e.group_id, eg.name as position
+                 FROM employee e
+                 LEFT JOIN employee_group eg ON e.group_id = eg.id
+                 WHERE e.id = ?"""
+        cursor.execute(sql, (employee_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        return {
+            "id": row[0],
+            "title": row[1] if row[1] else "",
+            "name": row[2] if row[2] else "",
+            "surname": row[3] if row[3] else "",
+            "email": row[4] if row[4] else "",
+            "username": row[5] if row[5] else "",
+            "group_id": row[6] if row[6] else None,
+            "position": row[7] if row[7] else ""
+        }
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get employee")
+    finally:
+        conn.close()
+
+class EmployeeData(BaseModel):
+    title: Optional[str] = ""
+    name: Optional[str] = ""
+    surname: Optional[str] = ""
+    email: Optional[str] = ""
+    username: Optional[str] = ""
+    password: Optional[str] = None
+    group_id: Optional[int] = None
+    signature_base64: Optional[str] = None  # Base64 encoded signature image
+
+@app.post("/create_employee")
+def create_employee(employee: EmployeeData):
+    """Create new employee"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if username already exists
+        cursor.execute("SELECT id FROM employee WHERE username = ?", (employee.username,))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Username already exists")
+        
+        # Hash password
+        password_to_hash = employee.password[:72] if employee.password else ""
+        hashed_password = pwd_context.hash(password_to_hash)
+        
+        sql = """INSERT INTO employee 
+                 (title, name, surname, email, username, password, group_id)
+                 VALUES (?, ?, ?, ?, ?, ?, ?)"""
+        
+        cursor.execute(sql, (
+            employee.title,
+            employee.name,
+            employee.surname,
+            employee.email,
+            employee.username,
+            hashed_password,
+            employee.group_id
+        ))
+        
+        employee_id = cursor.lastrowid
+        
+        # Save signature image if provided
+        if employee.signature_base64:
+            save_signature_to_file(employee.username, employee.signature_base64)
+        
+        conn.commit()
+        return {"status": "success", "employee_id": employee_id}
+        
+    except mariadb.Error as e:
+        print(f"Insert Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create employee")
+    finally:
+        conn.close()
+
+@app.put("/update_employee/{employee_id}")
+def update_employee(employee_id: int, employee: EmployeeData):
+    """Update employee data"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        # First check if employee exists
+        print(f"Checking if employee {employee_id} exists...")
+        cursor.execute("SELECT username FROM employee WHERE id = ?", (employee_id,))
+        result = cursor.fetchone()
+        if not result:
+            print(f"Employee {employee_id} not found in database")
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        old_username = result[0]
+        
+        # Check if username exists for other employees
+        cursor.execute("SELECT id FROM employee WHERE username = ? AND id != ?", 
+                      (employee.username, employee_id))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Username already exists")
+        
+        print(f"Updating employee {employee_id}: {employee.dict()}")
+        sql = """UPDATE employee 
+                 SET title=?, name=?, surname=?, email=?, username=?, group_id=?
+                 WHERE id=?"""
+        
+        cursor.execute(sql, (
+            employee.title,
+            employee.name,
+            employee.surname,
+            employee.email,
+            employee.username,
+            employee.group_id,
+            employee_id
+        ))
+        
+        # Save signature image if provided
+        if employee.signature_base64:
+            save_signature_to_file(employee.username, employee.signature_base64)
+        
+        conn.commit()
+        print(f"Employee {employee_id} updated successfully. Rows affected: {cursor.rowcount}")
+        
+        return {"status": "success", "employee_id": employee_id}
+        
+    except HTTPException:
+        raise
+    except mariadb.Error as e:
+        print(f"Update Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    finally:
+        conn.close()
+
+@app.get("/get_employee_groups")
+def get_employee_groups():
+    """Get all employee groups/positions"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name FROM employee_group ORDER BY name")
+        groups = [{"id": row[0], "name": row[1]} for row in cursor]
+        return {"employee_groups": groups}
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get employee groups")
+    finally:
+        conn.close()
+
+@app.delete("/delete_employee/{employee_id}")
+def delete_employee(employee_id: int):
+    """Delete employee"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get username before deleting
+        cursor.execute("SELECT username FROM employee WHERE id = ?", (employee_id,))
+        result = cursor.fetchone()
+        if result:
+            username = result[0]
+            # Delete signature files for this user
+            delete_signature_files(username)
+        
+        cursor.execute("DELETE FROM employee WHERE id = ?", (employee_id,))
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        return {"status": "success", "message": "Employee deleted"}
+        
+    except mariadb.Error as e:
+        print(f"Delete Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete employee")
+    finally:
+        conn.close()
+
+@app.get("/get_signature/{username}")
+def get_signature(username: str):
+    """Get the latest signature image for a username as base64"""
+    try:
+        signatures_dir = "signatures"
+        if not os.path.exists(signatures_dir):
+            return {"signature_base64": None}
+        
+        # Find all signature files for this username
+        matching_files = []
+        for filename in os.listdir(signatures_dir):
+            if f"signature_{username}_" in filename and filename.endswith('.png'):
+                filepath = os.path.join(signatures_dir, filename)
+                matching_files.append((filepath, os.path.getmtime(filepath)))
+        
+        if not matching_files:
+            return {"signature_base64": None}
+        
+        # Get the newest file
+        matching_files.sort(key=lambda x: x[1], reverse=True)
+        newest_file = matching_files[0][0]
+        
+        # Read and encode to base64
+        with open(newest_file, 'rb') as f:
+            image_data = f.read()
+            base64_data = base64.b64encode(image_data).decode('utf-8')
+            return {"signature_base64": base64_data}
+            
+    except Exception as e:
+        print(f"Error getting signature: {e}")
+        return {"signature_base64": None}
 
 # Helper functions for signature management
 def save_signature_to_file(username: str, base64_data: str):

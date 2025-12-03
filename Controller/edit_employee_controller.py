@@ -140,19 +140,16 @@ class EditEmployeeController(QObject):
                 # print(f"  -> Skipped: No group_id")
                 continue
             
-            # Skip current user (cannot edit yourself)
-            if emp_id == self.current_user_id:
-                # print(f"  -> Skipped: Current user (yourself)")
-                continue
+            # Show current user (can edit yourself)
+            # Show employees with HIGHER group_id (lower permission)
+            # Hide employees with SAME group_id who are not you (peers - cannot edit)
+            # Hide employees with LOWER group_id (higher permission - cannot edit)
             
-            # Show employees with HIGHER group_id (lower permission) than current user
-            # Example: Admin (group_id=1) can see users with group_id=2,3,4... but not other admins
-            if self.current_user_permission is not None and emp_group_id > self.current_user_permission:
-                # print(f"  -> ACCEPTED: {emp_group_id} > {self.current_user_permission}")
+            is_self = (emp_id == self.current_user_id)
+            has_lower_permission = (self.current_user_permission is not None and emp_group_id > self.current_user_permission)
+            
+            if is_self or has_lower_permission:
                 filtered_employees.append(emp)
-            else:
-                # print(f"  -> REJECTED: {emp_group_id} <= {self.current_user_permission}")
-                pass
         
         # print(f"Filtered results: {len(filtered_employees)} employees")
         
@@ -514,23 +511,19 @@ class EditEmployeeController(QObject):
     
     def check_permission_to_edit(self, target_employee_id):
         """Check if current user has permission to edit/delete target employee
-        Lower group_id = higher permission (1 = highest, can edit anyone)
-        Returns True if allowed, False if not
+        Rules:
+        - CAN edit yourself
+        - CAN edit lower permission (higher group_id)
+        - CANNOT edit same permission peers (same group_id, different user)
+        - CANNOT edit higher permission (lower group_id)
         """
         # If no permission level set, deny access
         if self.current_user_permission is None:
-            # print("No permission level set for current user")
             return False
         
-        # Can't edit yourself
+        # Allow editing yourself
         if target_employee_id == self.current_user_id:
-            # print("Cannot edit your own account")
-            QMessageBox.warning(
-                self.view,
-                "ไม่สามารถดำเนินการได้",
-                "คุณไม่สามารถแก้ไขข้อมูลของตัวเองได้"
-            )
-            return False
+            return True
         
         try:
             # Get target employee's permission level
@@ -542,14 +535,9 @@ class EditEmployeeController(QObject):
             if target_permission is None:
                 return False
             
-            # Lower number = higher permission
-            # Current user can edit if their group_id is LOWER (higher permission) than target
-            # Example: Admin (group_id=1) can edit user (group_id=2), but not vice versa
+            # Can only edit employees with HIGHER group_id (lower authority)
+            # Cannot edit same or lower group_id (peers or superiors)
             can_edit = self.current_user_permission < target_permission
-            
-            if not can_edit:
-                # print(f"Permission denied: Current user group_id={self.current_user_permission}, Target group_id={target_permission}")
-                pass
 
             return can_edit
             
@@ -595,7 +583,7 @@ class EditEmployeeController(QObject):
             return None
     
     def create_employee_in_database(self, data):
-        """Create new employee using API"""
+        """Create new employee using API with version tracking"""
         try:
             employee_data = {
                 "title": data.get('title', ''),
@@ -605,7 +593,9 @@ class EditEmployeeController(QObject):
                 "username": data.get('username', ''),
                 "password": data.get('password', ''),
                 "group_id": data.get('group_id'),
-                "signature_base64": data.get('signature_base64')  # Send base64 signature to API
+                "signature_base64": data.get('signature_base64'),
+                "status": 1,  # New employee is active
+                "updater": self.current_user_permission  # Track who created this
             }
             
             result = self.api_app.create_employee(employee_data)
@@ -616,7 +606,11 @@ class EditEmployeeController(QObject):
             return False
     
     def update_employee_in_database(self, employee_id, data):
-        """Update employee data using API"""
+        """Update employee data using API with version history
+        This will:
+        1. Set old record status=0 with updater tracking
+        2. Insert new record with status=1 and updated data
+        """
         try:
             employee_data = {
                 "title": data.get('title', ''),
@@ -625,7 +619,9 @@ class EditEmployeeController(QObject):
                 "email": data.get('email', ''),
                 "username": data.get('username', ''),
                 "group_id": data.get('group_id'),
-                "signature_base64": data.get('signature_base64')  # Send base64 signature to API
+                "signature_base64": data.get('signature_base64'),
+                "status": 1,  # New version is active
+                "updater": self.current_user_permission  # Track who edited this
             }
             
             # print(f"Updating employee {employee_id} with data: {employee_data}")
@@ -640,9 +636,15 @@ class EditEmployeeController(QObject):
             return False
     
     def delete_employee_from_database(self, employee_id):
-        """Delete employee using API"""
+        """Soft delete employee using API
+        Sets status=0 and tracks who deleted it via updater field
+        """
         try:
-            result = self.api_app.delete_employee(employee_id)
+            # Send updater info for soft delete tracking
+            delete_data = {
+                "updater": self.current_user_permission  # Track who deleted this
+            }
+            result = self.api_app.delete_employee(employee_id, delete_data)
             return result is not None and result.get('status') == 'success'
         except Exception as e:
             print(f"Error deleting employee: {e}")
