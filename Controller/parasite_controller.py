@@ -130,8 +130,6 @@ class ParasiteController(QObject):
             {'name': 'Mc Master egg count', 'price': 100, 'checkbox': self.view.ui.parasite_mc_master_egg_count_checkBox}
         ]
         
-        # Build test items list (all tests, whether selected or not)
-        # Include price in test name for database storage
         test_items = []
         for config in test_configs:
             is_checked = config['checkbox'].isChecked()

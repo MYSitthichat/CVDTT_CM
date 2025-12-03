@@ -202,6 +202,7 @@ class NewWorkController(QObject):
             if hasattr(self.main_window, 'specimen_controller'):
                 self.main_window.specimen_controller.set_case_registration_id(case_id)
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.specimen_widget)
+            
         else:
             print("Warning: main_window or specimen_widget not available")
             

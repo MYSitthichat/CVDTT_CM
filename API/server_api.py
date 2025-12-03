@@ -129,7 +129,7 @@ def login(username: str, password: str):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, password FROM employee WHERE username = ? LIMIT 1", (username,))
+        cursor.execute("SELECT id, password FROM employee WHERE username = ? LIMIT 1 AND status = 1", (username,))
         user = cursor.fetchone()
         if not user:
             return {"success": False, "user_id": None}
