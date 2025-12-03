@@ -301,6 +301,29 @@ class APIApp(QWidget):
 
 # --- MOLECULAR BIOLOGY API ---
 
+# --- PARASITE BIOLOGY API ---
+
+    def save_parasite_biology(self, parasite_data):
+        try:
+            response = requests.post(
+                f"{API_URL}/save_parasite_biology",
+                json=parasite_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                try:
+                    error_detail = response.json()
+                    return {"status": "error", "detail": error_detail.get("detail", "Unknown error")}
+                except:
+                    return {"status": "error", "detail": f"HTTP {response.status_code}"}
+        except requests.RequestException as e:
+            print(f"Network error on save_parasite_biology: {e}")
+            return {"status": "error", "detail": str(e)}
+
+# --- PARASITE BIOLOGY API ---
+
 # EMPLOYEE MANAGEMENT API
 
     def get_max_sample_id(self):
