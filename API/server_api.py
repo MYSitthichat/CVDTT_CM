@@ -3,6 +3,9 @@ import mariadb
 from pydantic import BaseModel
 from typing import List, Optional
 from passlib.context import CryptContext
+import os
+import base64
+
 
 app = FastAPI()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -275,20 +278,15 @@ def get_max_sample_id():
         conn.close()
 
 @app.post("/add_new_work")
-<<<<<<< HEAD
-def add_work():
-=======
 def add_work(
     sender_id: Optional[int] = None, 
     owner_id: Optional[int] = None, 
     project_name: Optional[str] = "", 
     updater: Optional[int] = None ):
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
-<<<<<<< HEAD
         pass
         # cursor = conn.cursor()
         # sql = """INSERT INTO work (title, description, owner_id, created_at)
@@ -297,7 +295,6 @@ def add_work(
         # cursor.execute(sql, val)
         # conn.commit()
         # return {"status": "success", "work_id": cursor.lastrowid}
-=======
         if sender_id is None:
             raise HTTPException(status_code=422, detail="sender_id is required")
         if owner_id is None:
@@ -313,7 +310,6 @@ def add_work(
         
         return {"status": "success", "work_id": work_id}
     
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
     except mariadb.Error as e:
         print(f"❌ Insert Error: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to add work: {str(e)}")
@@ -334,8 +330,6 @@ def get_today_cases():
             return []
         
         cursor = conn.cursor()
-<<<<<<< HEAD
-=======
         cursor.execute("SELECT id, code, name, thai_name, nickname FROM room_information WHERE status = 1")
         rooms = [{"id": row[0], "code": row[1], "name": row[2], "thai_name": row[3], "nickname": row[4]} for row in cursor]
         return {"lab_rooms": rooms}
@@ -536,7 +530,6 @@ def search_employee(q: str):
                  LIMIT 20"""
         search_pattern = f"%{q}%"
         cursor.execute(sql, (search_pattern, search_pattern))
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
         
         # Query based on sample_registration.dtime (today's samples)
         sql = """
@@ -707,9 +700,7 @@ def search_barcode_cases(name: str = "", surname: str = ""):
         if conn: 
             conn.close()
 
-<<<<<<< HEAD
 print("Server Running ...")
-=======
 # Helper functions for signature management
 def save_signature_to_file(username: str, base64_data: str):
     """Save base64 encoded signature to file"""
@@ -758,7 +749,6 @@ def delete_signature_files(username: str):
 
 
 # print("Server Running ...")
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
 
 # สั่ง ในขั้นตอน Production : python -m uvicorn server_api:app --host 0.0.0.0 --port 8000 --reload --log-level warning
 
