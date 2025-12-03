@@ -141,7 +141,6 @@ class APIApp(QWidget):
             print(f"API Connect Error on get_max_sample_id: {e}")
             return None
 
-<<<<<<< HEAD
 
 # ADD BARCODE  API
 
@@ -150,7 +149,11 @@ class APIApp(QWidget):
             response = requests.get(f"{API_URL}/barcode/today", timeout=5)
             if response.status_code == 200:
                 return response.json() # Important: Return the JSON object
-=======
+        except requests.RequestException as e:
+            print(f"API Connect Error: {e}")
+            return []
+
+# ADD BARCODE  API
     def add_new_work(self, sender_id, owner_id, project_name, updater):
         """Add new work/case registration"""
         try:
@@ -336,7 +339,6 @@ class APIApp(QWidget):
             if response.status_code == 200:
                 data = response.json()
                 return data.get("employees", [])
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
             else:
                 print(f"Server Error: {response.status_code}")
                 return []
@@ -356,8 +358,6 @@ class APIApp(QWidget):
         except Exception as e:
             print(f"API Error: {e}")
             return []
-<<<<<<< HEAD
-=======
 
     def get_signature(self, username):
         """Get signature image for username as base64"""
@@ -375,5 +375,30 @@ class APIApp(QWidget):
             print(f"Network error: {e}")
             return None
 
+    def get_employee_groups(self):
+        """Get all employee groups/departments"""
+        try:
+            response = requests.get(f"{API_URL}/get_employee_groups", timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error on get_employee_groups: {response.status_code}")
+                return []
+        except Exception as e:
+            print(f"API Connect Error on get_employee_groups: {e}")
+            return []
+    
+    def get_employee_by_id(self, employee_id):
+        """Get employee data by ID"""
+        try:
+            response = requests.get(f"{API_URL}/get_employee/{employee_id}", timeout=10)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error on get_employee_by_id: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"API Connect Error on get_employee_by_id: {e}")
+            return None
 
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
+

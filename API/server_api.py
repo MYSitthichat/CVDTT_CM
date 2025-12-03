@@ -22,7 +22,7 @@ DB_CONFIG = {
     "host": "127.0.0.1",
     "user": "root",
     "password": "",
-    "database": "testdb",
+    "database": "cvdtt_lab",
     "port": 3306
 }
 
@@ -41,6 +41,29 @@ class MolecularBiologyData(BaseModel):
     qPCR_req: Optional[int] = 0
     extraction_req: Optional[int] = 0
     updater: Optional[int] = None  # user_id of person saving the data
+
+# --- Specimen Registration Data Model ---
+class SpecimenData(BaseModel):
+    case_id: Optional[int] = None
+    name: Optional[str] = ""
+    opd_number: Optional[str] = ""
+    sex: Optional[str] = ""
+    age_year: Optional[int] = 0
+    age_month: Optional[int] = 0
+    age_day: Optional[int] = 0
+    demise: Optional[str] = ""
+    species: str  # REQUIRED
+    breed: Optional[str] = ""
+    sample_type: Optional[str] = ""
+    weight: Optional[float] = 0.0
+    dead_date: Optional[str] = None
+    collect_date: Optional[str] = None
+    keep_method: Optional[str] = ""
+    speed: Optional[str] = ""
+    medical_record: Optional[str] = ""
+    dosage_record: Optional[str] = ""
+    sample_inspection: Optional[str] = ""
+    updater: Optional[int] = None
     
 # --- Helper Function เชื่อมต่อ DB ---
 def get_db_connection():
@@ -316,6 +339,77 @@ def add_work(
     finally:
         conn.close()
 
+# --- SPECIMEN REGISTRATION API ---
+
+@app.post("/add_new_specimen")
+def add_new_specimen(data: SpecimenData):
+    """Add new specimen/sample registration"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        
+        # Prepare SQL with all fields
+        sql = """INSERT INTO sample_registration 
+        (case_id, name, opd_number, sex, age_year, age_month, age_day, demise, 
+         species, breed, sample_type, weight, dead_date, collect_date, 
+         keep_method, speed, medical_record, dosage_record, sample_inspection, updater)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        
+        val = (
+            data.case_id,
+            data.name,
+            data.opd_number,
+            data.sex,
+            data.age_year,
+            data.age_month,
+            data.age_day,
+            data.demise,
+            data.species,
+            data.breed,
+            data.sample_type,
+            data.weight,
+            data.dead_date,
+            data.collect_date,
+            data.keep_method,
+            data.speed,
+            data.medical_record,
+            data.dosage_record,
+            data.sample_inspection,
+            data.updater
+        )
+        
+        cursor.execute(sql, val)
+        conn.commit()
+        specimen_id = cursor.lastrowid
+        
+        return {"status": "success", "specimen_id": specimen_id}
+    
+    except mariadb.Error as e:
+        print(f"❌ Specimen Insert Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to add specimen: {str(e)}")
+    finally:
+        conn.close()
+
+# --- ROOM INFORMATION API ---
+
+@app.get("/get_room_details")
+def get_room_details():
+    """Get all active lab room details"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, code, name, thai_name, nickname FROM room_information WHERE status = 1")
+        rooms = [{"id": row[0], "code": row[1], "name": row[2], "thai_name": row[3], "nickname": row[4]} for row in cursor]
+        return {"lab_rooms": rooms}
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve lab rooms")
+    finally:
+        conn.close()
 
 
 # --- BARCODE / STICKER API ---
@@ -339,8 +433,6 @@ def get_today_cases():
     finally:
         conn.close()
 
-
-# --- ADD NEW SPECIMEN API ---
 
 # --- ADD NEW LAB ORDER API ---
 class LabOrder(BaseModel):

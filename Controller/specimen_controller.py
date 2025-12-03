@@ -3,6 +3,7 @@ from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMessageBox
 import pyodbc
 from datetime import datetime
+from API.client_app import APIApp
 
 
 class SpecimenController(QObject):
@@ -33,10 +34,8 @@ class SpecimenController(QObject):
     
     def save_specimen_information(self):
         self.view.save_button_clicked()
-<<<<<<< HEAD
         print(f"save_specimen_information called - Case ID: {self.case_registration_id}")
     
-=======
         result_data_on_page = self.get_specimen_data()
 
         result = self.api.add_sample_registration(result_data_on_page)
@@ -184,70 +183,7 @@ class SpecimenController(QObject):
             return None
 
 
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
     def get_specimen_data(self):
-        # """Get all data from specimen form"""
-        # # Determine animal type from radio buttons
-        # animal_type = ""
-        # if self.view.ui.specimen_swine_radioButton.isChecked():
-        #     animal_type = "สุกร (Swine)"
-        # elif self.view.ui.specimen_avian_radioButton.isChecked():
-        #     animal_type = "สัตว์ปีก (Avian)"
-        # elif self.view.ui.specimen_bovine_radioButton.isChecked():
-        #     animal_type = "โค (Bovine)"
-        # elif self.view.ui.specimen_equine_radioButton.isChecked():
-        #     animal_type = "ม้า (Equine)"
-        # elif self.view.ui.specimen_conine_radioButton.isChecked():
-        #     animal_type = "สุนัข (Conine)"
-        # elif self.view.ui.specimen_elephant_radioButton.isChecked():
-        #     animal_type = "ช้าง (Elephant)"
-        # elif self.view.ui.specimen_felin_radioButton.isChecked():
-        #     animal_type = "แมว (Felin)"
-        # elif self.view.ui.specimen_unknown_radioButton.isChecked():
-        #     animal_type = "Unknow"
-        # elif self.view.ui.specimen_animal_other_radioButton.isChecked():
-        #     animal_type = f"อื่นๆ: {self.view.ui.specimen_animal_other_lineEdit.text()}"
-        
-<<<<<<< HEAD
-        # # Determine status
-        # status = "ปกติ" if self.view.ui.specimen_normal_radioButton.isChecked() else "ด่วนที่สุด"
-        
-        # # Determine keeping method
-        # keeping = ""
-        # if self.view.ui.specimen_chill_radioButton.isChecked():
-        #     keeping = "แช่เย็น (Chill)"
-        # elif self.view.ui.specimen_freeze_radioButton.isChecked():
-        #     keeping = "แช่แข็ง (Freeze)"
-        # elif self.view.ui.specimen_room_temperature_radioButton.isChecked():
-        #     keeping = "ไม่แช่ (Room Temperature)"
-        
-        # # Get sample type
-        # sample = self.view.ui.specimen_sample_comboBox.currentText()
-        # if self.view.ui.specimen_sample_other_radioButton.isChecked():
-        #     sample = f"อื่นๆ: {self.view.ui.specimen_sample_other_lineEdit.text()}"
-        
-        # return {
-        #     'name': self.view.ui.specimen_name_lineEdit.text(),
-        #     'specimen_id': self.view.ui.specimen_ID_lineEdit.text(),
-        #     'sex': self.view.ui.specimen_sex_comboBox.currentText(),
-        #     'age_year': self.view.ui.specimen_ageYear_lineEdit.text(),
-        #     'age_month': self.view.ui.specimen_ageMonth_lineEdit.text(),
-        #     'age_day': self.view.ui.specimen_ageDay_lineEdit.text(),
-        #     'age_unknown': self.view.ui.specimen_ageUnknown_checkBox.isChecked(),
-        #     'animal_type': animal_type,
-        #     'breed': self.view.ui.specimen_breed_lineEdit.text(),
-        #     'weight': self.view.ui.specimen_weight_lineEdit.text(),
-        #     'death_cause': self.view.ui.specimen_death_comboBox.currentText(),
-        #     'death_date': self.view.ui.specimen_day_of_death_dateTimeEdit.dateTime().toString("yyyy-MM-dd HH:mm:ss"),
-        #     'sample_date': self.view.ui.specimen_day_keep_sample_dateTimeEdit.dateTime().toString("yyyy-MM-dd HH:mm:ss"),
-        #     'sample_type': sample,
-        #     'keeping_method': keeping,
-        #     'status': status,
-        #     'treatment_history': self.view.ui.specimen_record_heal_textEdit.toPlainText(),
-        #     'antibiotics_history': self.view.ui.specimen_record_antibiotics_textEdit.toPlainText()
-        # }
-        pass
-=======
         animal_type = ""
         if self.view.ui.specimen_swine_radioButton.isChecked():
             animal_type = "สุกร (Swine)"
@@ -313,11 +249,15 @@ class SpecimenController(QObject):
             age_year = age_year if age_year is not None else 0
             age_month = age_month if age_month is not None else 0
             age_day = age_day if age_day is not None else 0
-            
+        
+        # Get case_id from stored value
+        case_id = self.case_registration_id
+        
         dead_date_str = self.view.ui.specimen_day_of_death_dateTimeEdit.dateTime().toString("yyyy-MM-dd HH:mm:ss")
         collect_date_str = self.view.ui.specimen_day_keep_sample_dateTimeEdit.dateTime().toString("yyyy-MM-dd HH:mm:ss")
         weight_value = safe_float(self.view.ui.specimen_weight_lineEdit.text())
         weight_value = weight_value if weight_value is not None else 0.0
+        
         data = {
             'case_id': int(case_id) if case_id else None,
             'name': self.view.ui.specimen_name_lineEdit.text().strip() or "",  # Optional
@@ -342,7 +282,6 @@ class SpecimenController(QObject):
         }
         
         return data
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
     
     
     def clear_specimen_information(self):
@@ -357,18 +296,11 @@ class SpecimenController(QObject):
             if hasattr(self.main_window, 'new_work_controller') and self.main_window.new_work_controller:
                 self.main_window.new_work_controller.update_treewidget_data()
         else:
-<<<<<<< HEAD
             print("Warning: Cannot navigate back to new work page")
-    
-    def goto_molecular_biology(self):
-        print("Navigate to Molecular Biology page")
-=======
-            print("Warning: Cannot navigate back to new work page")    
     
     def goto_molecular_biology(self):
         room_id = self.room_mapping.get('molecular_biology')
         # print(room_id)
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
         if self.main_window and hasattr(self.main_window, 'molecular_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.molecular_widget)
             if hasattr(self.main_window.molecular_widget, 'clear_page'):
@@ -377,7 +309,6 @@ class SpecimenController(QObject):
             print("⚠️ Error: Cannot navigate to molecular biology page")
 
     def goto_microbiology(self):
-<<<<<<< HEAD
         print("Navigate to Microbiology page")
         if self.main_window and hasattr(self.main_window, 'bacteria_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.bacteria_widget)
@@ -400,7 +331,6 @@ class SpecimenController(QObject):
         else:
             print("Warning: Cannot navigate to after death page")
     
-=======
         # room_id = self.room_mapping.get('microbiology')
         room_id = 2
         print(room_id)
@@ -428,7 +358,6 @@ class SpecimenController(QObject):
         #     print("⚠️ Error: Cannot navigate to after death page")
 
 
->>>>>>> bcc36f1d5cca15bb0478429603afb9a8512dc7ed
     def set_case_registration_id(self, case_id):
         """Set the case registration ID from new work page"""
         self.case_registration_id = case_id

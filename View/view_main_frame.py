@@ -50,10 +50,9 @@ class MainWindow(QMainWindow):
 
         # --- Setup Controllers ---
         # NewWorkController is now created in MainController
-        self.barcode_controller = BarcodePageController(self.barcode_widget)
         # Controllers that don't need main_controller are created here
         # Others (molecular, after_death, lab_report) are created in MainController
-        self.barcode_controller = BarcodePageController(model, self.barcode_widget)
+        self.barcode_controller = BarcodePageController(self.barcode_widget)
         self.check_job_controller = CheckJobProgressController(model, self.check_job_widget)
         self.lab_received_controller = LabReceivedSampleController(model, self.lab_received_widget)
         self.bacteria_controller = BacteriaController(self.bacteria_widget, self)

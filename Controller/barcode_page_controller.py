@@ -136,20 +136,8 @@ class BarcodePageController(QObject):
             self.is_selecting = False
 
     def event_bindings(self):
-        # Disconnect first to prevent double connections
-        try:
-            self.ui.btn_search_today.clicked.disconnect()
-        except:
-            pass
-        try:
-            self.ui.btn_search_customer.clicked.disconnect()
-        except:
-            pass
-        try:
-            self.ui.btn_print.clicked.disconnect()
-        except:
-            pass
-        
+        """ Bind UI events to controller methods """
+        # Connect signals (no need to disconnect first during initialization)
         self.ui.btn_search_today.clicked.connect(self.search_today_cases)
         self.ui.btn_search_customer.clicked.connect(self.search_by_customer)
         self.ui.btn_print.clicked.connect(self.print_barcode)
@@ -175,7 +163,15 @@ class BarcodePageController(QObject):
     def populate_table(self, api_response):
         """ Populates the QTableWidget with API data """
         table = self.ui.tableWidget
-        table.setRowCount(0) 
+        table.setRowCount(0)
+        
+        # Extract data from API response
+        if not api_response or not isinstance(api_response, dict):
+            return
+        
+        data = api_response.get('data', [])
+        if not data:
+            return
         
         for row_idx, item in enumerate(data):
             table.insertRow(row_idx)
