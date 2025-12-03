@@ -21,7 +21,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>8</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -33,7 +33,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>AVIAN</string>
@@ -46,7 +49,7 @@
     <property name="geometry">
      <rect>
       <x>240</x>
-      <y>10</y>
+      <y>8</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -58,7 +61,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -471,7 +477,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>430</y>
+      <y>428</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -483,7 +489,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Feline</string>
@@ -496,7 +505,7 @@
     <property name="geometry">
      <rect>
       <x>240</x>
-      <y>430</y>
+      <y>428</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -508,7 +517,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -665,7 +677,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>620</y>
+      <y>618</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -677,7 +689,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>CANINE</string>
@@ -690,7 +705,7 @@
     <property name="geometry">
      <rect>
       <x>240</x>
-      <y>620</y>
+      <y>618</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -702,7 +717,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -795,7 +813,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>740</y>
+      <y>738</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -807,7 +825,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Equine</string>
@@ -820,7 +841,7 @@
     <property name="geometry">
      <rect>
       <x>240</x>
-      <y>740</y>
+      <y>738</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -832,7 +853,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -925,7 +949,7 @@
     <property name="geometry">
      <rect>
       <x>355</x>
-      <y>10</y>
+      <y>8</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -937,7 +961,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Blood parasite</string>
@@ -950,7 +977,7 @@
     <property name="geometry">
      <rect>
       <x>585</x>
-      <y>10</y>
+      <y>8</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -962,7 +989,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -1247,7 +1277,7 @@
     <property name="geometry">
      <rect>
       <x>355</x>
-      <y>335</y>
+      <y>333</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -1259,7 +1289,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Blood parasite</string>
@@ -1272,7 +1305,7 @@
     <property name="geometry">
      <rect>
       <x>585</x>
-      <y>335</y>
+      <y>333</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -1284,7 +1317,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -1569,7 +1605,7 @@
     <property name="geometry">
      <rect>
       <x>355</x>
-      <y>660</y>
+      <y>658</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -1581,7 +1617,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Elephant</string>
@@ -1594,7 +1633,7 @@
     <property name="geometry">
      <rect>
       <x>585</x>
-      <y>660</y>
+      <y>658</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -1606,7 +1645,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -1795,7 +1837,7 @@
     <property name="geometry">
      <rect>
       <x>700</x>
-      <y>10</y>
+      <y>8</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -1807,7 +1849,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Others</string>
@@ -1820,7 +1865,7 @@
     <property name="geometry">
      <rect>
       <x>930</x>
-      <y>10</y>
+      <y>8</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -1832,7 +1877,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -2224,7 +2272,7 @@
     <widget class="QLineEdit" name="e_ot12_n">
      <property name="geometry">
       <rect>
-       <x>35</x>
+       <x>50</x>
        <y>350</y>
        <width>140</width>
        <height>25</height>
@@ -2279,7 +2327,7 @@
     <widget class="QLineEdit" name="e_ot13_n">
      <property name="geometry">
       <rect>
-       <x>40</x>
+       <x>50</x>
        <y>420</y>
        <width>140</width>
        <height>25</height>
@@ -2338,12 +2386,44 @@
       </rect>
      </property>
     </widget>
+    <zorder>e_ot13_p</zorder>
+    <zorder>e_ot13_n</zorder>
+    <zorder>e_ot12_p</zorder>
+    <zorder>e_ot12_n</zorder>
+    <zorder>c_ot1</zorder>
+    <zorder>e_ot1</zorder>
+    <zorder>c_ot2</zorder>
+    <zorder>e_ot2</zorder>
+    <zorder>c_ot3</zorder>
+    <zorder>e_ot3</zorder>
+    <zorder>c_ot4</zorder>
+    <zorder>e_ot4</zorder>
+    <zorder>c_ot5</zorder>
+    <zorder>e_ot5</zorder>
+    <zorder>c_ot6</zorder>
+    <zorder>e_ot6</zorder>
+    <zorder>c_ot7</zorder>
+    <zorder>e_ot7</zorder>
+    <zorder>c_ot8</zorder>
+    <zorder>e_ot8</zorder>
+    <zorder>c_ot9</zorder>
+    <zorder>e_ot9</zorder>
+    <zorder>c_ot10</zorder>
+    <zorder>e_ot10</zorder>
+    <zorder>c_ot11</zorder>
+    <zorder>e_ot11</zorder>
+    <zorder>e_ot11_2</zorder>
+    <zorder>e_ot11_3</zorder>
+    <zorder>c_ot12</zorder>
+    <zorder>c_ot13</zorder>
+    <zorder>l_pr1</zorder>
+    <zorder>l_pr2</zorder>
    </widget>
    <widget class="QLabel" name="l_bov_t">
     <property name="geometry">
      <rect>
       <x>700</x>
-      <y>540</y>
+      <y>538</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -2355,7 +2435,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Bovine</string>
@@ -2368,7 +2451,7 @@
     <property name="geometry">
      <rect>
       <x>930</x>
-      <y>540</y>
+      <y>538</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -2380,7 +2463,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -2537,7 +2623,7 @@
     <property name="geometry">
      <rect>
       <x>700</x>
-      <y>720</y>
+      <y>718</y>
       <width>230</width>
       <height>30</height>
      </rect>
@@ -2549,7 +2635,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Aquatic animal</string>
@@ -2562,7 +2651,7 @@
     <property name="geometry">
      <rect>
       <x>930</x>
-      <y>720</y>
+      <y>718</y>
       <width>100</width>
       <height>30</height>
      </rect>
@@ -2574,7 +2663,10 @@
      </font>
     </property>
     <property name="styleSheet">
-     <string>background-color: rgb(0, 255, 0); font-weight: bold; border: 1px solid black;</string>
+     <string notr="true">border: 1px solid black; background-color: white;</string>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>SAMPLE</string>
@@ -2715,7 +2807,7 @@
     <property name="geometry">
      <rect>
       <x>1050</x>
-      <y>40</y>
+      <y>43</y>
       <width>201</width>
       <height>35</height>
      </rect>
@@ -2726,8 +2818,8 @@
       <bold>true</bold>
      </font>
     </property>
-    <property name="styleSheet">
-     <string>background-color: rgb(255, 85, 0); color: white; font-weight: bold; border: 1px solid black;</string>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
     <property name="text">
      <string>Laboratory Request</string>
@@ -2932,9 +3024,6 @@
     <property name="tabletTracking">
      <bool>false</bool>
     </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(243, 81, 0);</string>
-    </property>
     <property name="text">
      <string>กลับหน้าหลัก</string>
     </property>
@@ -2957,9 +3046,6 @@
     <property name="tabletTracking">
      <bool>false</bool>
     </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(0, 229, 0);</string>
-    </property>
     <property name="text">
      <string>บันทึกข้อมูล</string>
     </property>
@@ -2981,9 +3067,6 @@
     </property>
     <property name="tabletTracking">
      <bool>false</bool>
-    </property>
-    <property name="styleSheet">
-     <string notr="true">background-color: rgb(85, 170, 255);</string>
     </property>
     <property name="text">
      <string>คำนวณค่าใช้จ่าย</string>

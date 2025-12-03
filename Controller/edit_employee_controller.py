@@ -14,6 +14,7 @@ class EditEmployeeController(QObject):
     def __init__(self, view: EditEmployeeWindow, parent=None):
         super().__init__(parent)
         self.view = view
+        self.view.controller = self  # Store reference for cleanup on close/hide
         self.api_app = APIApp()
         self.current_signature_path = None
         self.current_employee_id = None
@@ -21,7 +22,7 @@ class EditEmployeeController(QObject):
         self.current_user_id = None  # Store current user's ID
         self.setup_ui()
         self.bind_employee_events()
-        self.hide_employee_edit_frame()
+        self.reset_page()  # Ensure clean state on initialization
     
     def setup_ui(self):
         """Setup UI elements"""
@@ -89,12 +90,7 @@ class EditEmployeeController(QObject):
         """Search employee by name or surname (when button is clicked)"""
         search_text = self.view.employee_search_lineEdit.text().strip()
         
-        if not search_text:
-            QMessageBox.warning(self.view, "คำเตือน", "กรุณากรอกชื่อหรือนามสกุลที่ต้องการค้นหา!")
-            return
-        
         if len(search_text) < 2:
-            QMessageBox.warning(self.view, "คำเตือน", "กรุณากรอกอย่างน้อย 2 ตัวอักษร!")
             return
         
         self.perform_employee_search(search_text)
@@ -149,13 +145,14 @@ class EditEmployeeController(QObject):
                 # print(f"  -> Skipped: Current user (yourself)")
                 continue
             
-            # Show employees with HIGHER OR EQUAL group_id (same or lower permission) than current user
-            # Example: Admin (group_id=1) can see ALL users including other admins (group_id=1,2,3,4...)
-            if self.current_user_permission is not None and emp_group_id >= self.current_user_permission:
-                # print(f"  -> ACCEPTED: {emp_group_id} >= {self.current_user_permission}")
+            # Show employees with HIGHER group_id (lower permission) than current user
+            # Example: Admin (group_id=1) can see users with group_id=2,3,4... but not other admins
+            if self.current_user_permission is not None and emp_group_id > self.current_user_permission:
+                # print(f"  -> ACCEPTED: {emp_group_id} > {self.current_user_permission}")
                 filtered_employees.append(emp)
             else:
-                print(f"  -> REJECTED: {emp_group_id} < {self.current_user_permission}")
+                # print(f"  -> REJECTED: {emp_group_id} <= {self.current_user_permission}")
+                pass
         
         # print(f"Filtered results: {len(filtered_employees)} employees")
         
@@ -333,6 +330,17 @@ class EditEmployeeController(QObject):
                     )
                     return
                 
+                # Also check if the NEW permission level is valid for current user
+                new_employee_group_id = data.get('group_id')
+                if new_employee_group_id is not None and self.current_user_permission is not None:
+                    if new_employee_group_id <= self.current_user_permission:
+                        QMessageBox.warning(
+                            self.view,
+                            "ไม่มีสิทธิ์",
+                            "ระบบไม่อนุญาติ"
+                        )
+                        return
+                
                 # Update existing employee (no password field)
                 result = self.update_employee_in_database(self.current_employee_id, data)
                 message = "แก้ไขข้อมูลพนักงานสำเร็จ!"
@@ -345,6 +353,17 @@ class EditEmployeeController(QObject):
                 if len(data['password']) < 6:
                     QMessageBox.warning(self.view, "คำเตือน", "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร!")
                     return
+                
+                # Check permission: User can only create employees with LOWER permission (higher group_id)
+                new_employee_group_id = data.get('group_id')
+                if new_employee_group_id is not None and self.current_user_permission is not None:
+                    if new_employee_group_id <= self.current_user_permission:
+                        QMessageBox.warning(
+                            self.view,
+                            "ไม่มีสิทธิ์",
+                            "ระบบไม่อนุญาติ"
+                        )
+                        return
                 
                 result = self.create_employee_in_database(data)
                 message = "เพิ่มพนักงานใหม่สำเร็จ!"
@@ -453,14 +472,29 @@ class EditEmployeeController(QObject):
         """Hide employee edit frame"""
         self.view.frame_2.setVisible(False)
     
-    def back_to_home_from_employee(self):
-        """Go back to new work page (รับงานใหม่)"""
+    def reset_page(self):
+        """Reset page to clean state - called when window opens or closes"""
+        # Clear all form fields
         self.clear_employee_fields()
+        
+        # Hide edit frame
         self.hide_employee_edit_frame()
         
-        # Clear search
+        # Clear search results and search text
         self.view.employee_treeWidget.clear()
         self.view.employee_search_lineEdit.clear()
+        
+        # Reset current employee selection
+        self.current_employee_id = None
+    
+    def cleanup_on_close(self):
+        """Cleanup method called when window is closed/hidden - can be called externally"""
+        self.reset_page()
+    
+    def back_to_home_from_employee(self):
+        """Go back to new work page (รับงานใหม่)"""
+        # Reset page to clean state
+        self.reset_page()
         
         # Navigate back to new work page and trigger button click BEFORE closing window
         if self.parent():
@@ -509,8 +543,9 @@ class EditEmployeeController(QObject):
                 return False
             
             # Lower number = higher permission
-            # Current user can edit if their group_id is LOWER OR EQUAL (same or higher permission) than target
-            can_edit = self.current_user_permission <= target_permission
+            # Current user can edit if their group_id is LOWER (higher permission) than target
+            # Example: Admin (group_id=1) can edit user (group_id=2), but not vice versa
+            can_edit = self.current_user_permission < target_permission
             
             if not can_edit:
                 # print(f"Permission denied: Current user group_id={self.current_user_permission}, Target group_id={target_permission}")

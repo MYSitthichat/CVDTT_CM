@@ -17,11 +17,11 @@ from View.view_specimen_frame import SpecimenWidget
 from Controller.specimen_controller import SpecimenController
 from View.view_edit_employee_frame import EditEmployeeWindow
 from View.view_molecular_biology import MolecularBiologyPageWidget
-from Controller.molecular_biology_controller import MolecularBiologyController
+# MolecularBiologyController is now created in MainController
 from View.view_after_death import AfterDeathPageWidget
-from Controller.after_death_controller import AfterDeathPageController
+# AfterDeathPageController is now created in MainController
 from View.view_lab_report import LabReportPageWidget
-from Controller.lab_report_controller import LabReportPageController
+# LabReportPageController is now created in MainController
 class MainWindow(QMainWindow):
     
     def __init__(self, parent=None, model=None, add_work_widget=None):
@@ -51,14 +51,20 @@ class MainWindow(QMainWindow):
         # --- Setup Controllers ---
         # NewWorkController is now created in MainController
         self.barcode_controller = BarcodePageController(self.barcode_widget)
+        # Controllers that don't need main_controller are created here
+        # Others (molecular, after_death, lab_report) are created in MainController
+        self.barcode_controller = BarcodePageController(model, self.barcode_widget)
         self.check_job_controller = CheckJobProgressController(model, self.check_job_widget)
         self.lab_received_controller = LabReceivedSampleController(model, self.lab_received_widget)
         self.bacteria_controller = BacteriaController(self.bacteria_widget, self)
         self.parasite_controller = ParasiteController(self.parasite_widget, self)
         self.specimen_controller = SpecimenController(self.specimen_widget, self)
-        self.molecular_controller = MolecularBiologyController(model, self.molecular_widget, self)
-        self.after_death_controller = AfterDeathPageController(model, self.after_death_widget, self)
-        self.lab_report_controller = LabReportPageController(model, self.lab_report_widget, self)
+        
+        # These controllers will be created in MainController (after main_controller is set)
+        # and then assigned to these variables
+        self.molecular_controller = None
+        self.after_death_controller = None
+        self.lab_report_controller = None
 
         self.setup_stacked_widget()
         

@@ -55,10 +55,21 @@ class AfterDeathPageController(QObject):
             self.model.save_tracking_information(sample_id, user_id, user_id, f"After Death Service: {data['service_type']}")
             
             self.view.clear_page()
-            self.go_back()
+            self.go_back_to_new_work()  # ✅ Go back to New Work page instead of specimen
         else:
              QMessageBox.critical(self.view, "Error", "ไม่สามารถบันทึกข้อมูลได้")
 
     def go_back(self):
         if hasattr(self.main_controller, 'specimen_widget'):
             self.main_controller.ui.stackedWidget.setCurrentWidget(self.main_controller.specimen_widget)
+    
+    def go_back_to_new_work(self):
+        """Navigate back to New Work page and refresh data"""
+        if hasattr(self.main_controller, 'add_work_widget'):
+            self.main_controller.ui.stackedWidget.setCurrentWidget(self.main_controller.add_work_widget)
+            
+            # ✅ Refresh/update treewidget data when returning to New Work page
+            if hasattr(self.main_controller, 'new_work_controller') and self.main_controller.new_work_controller:
+                self.main_controller.new_work_controller.update_treewidget_data()
+        else:
+            print("Warning: Cannot navigate back to new work page")

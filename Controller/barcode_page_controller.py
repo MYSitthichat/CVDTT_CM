@@ -176,6 +176,32 @@ class BarcodePageController(QObject):
         """ Populates the QTableWidget with API data """
         table = self.ui.tableWidget
         table.setRowCount(0) 
+        
+        for row_idx, item in enumerate(data):
+            table.insertRow(row_idx)
+            
+            date_val = item[0]
+            if hasattr(date_val, 'strftime'):
+                date_val = date_val.strftime("%d-%m-%Y %H:%M:%S")
+            table.setItem(row_idx, 0, QTableWidgetItem(str(date_val)))
+            
+            # Col 1: Barcode ID (12 digits with leading zeros for barcode)
+            table.setItem(row_idx, 1, QTableWidgetItem(str(item[1]).zfill(12)))
+            
+            # Col 2: Species
+            table.setItem(row_idx, 2, QTableWidgetItem(str(item[2])))
+            
+            # Col 3: Lab Name (Already formatted by SQL)
+            table.setItem(row_idx, 3, QTableWidgetItem(str(item[3])))
+            
+            # Col 4: Storage
+            table.setItem(row_idx, 4, QTableWidgetItem(str(item[4])))
+            
+            # Col 5: Urgency
+            table.setItem(row_idx, 5, QTableWidgetItem(str(item[5])))
+            
+            # Col 6: Info (Empty column)
+            table.setItem(row_idx, 6, QTableWidgetItem(""))
 
         # --- FIX: Handle different API response formats ---
         data_list = []
