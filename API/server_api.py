@@ -42,6 +42,12 @@ class MolecularBiologyData(BaseModel):
     extraction_req: Optional[int] = 0
     updater: Optional[int] = None  # user_id of person saving the data
 
+# --- parasite Biology Data Model ---
+class ParasiteBiologyData(BaseModel):
+    sample_id: str
+    tests: List[dict]  # List of test items with name, amount, price
+    updater: Optional[int] = None  # user_id of person saving the data
+
 # --- Specimen Registration Data Model ---
 class SpecimenData(BaseModel):
     case_id: Optional[int] = None
@@ -598,7 +604,67 @@ def save_molecular_biology(data: MolecularBiologyData):
         
 # --- MOLECULAR BIOLOGY API ---
 
+# --- PARASITE BIOLOGY API ---
 
+@app.post("/save_parasite_biology")
+def save_parasite_biology(data: ParasiteBiologyData):
+    """Save parasite biology test data to database"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        test_data = []
+        for i in range(1, 13):  # 12 tests for parasite
+            if i <= len(data.tests):
+                test = data.tests[i-1]
+                name_with_price = test.get('name', '')  # Already includes price
+                quantity = test.get('quantity', 0)
+                price = test.get('price', 0)
+                
+                test_data.extend([
+                    name_with_price,  
+                    quantity,         
+                    price             
+                ])
+            else:
+                test_data.extend(['', 0, 0])  # Empty test slot
+        sql = """INSERT INTO lab_parasite_biology 
+        (sample_id, t1_name, t1_state, t1_price, t2_name, t2_state, t2_price, 
+         t3_name, t3_state, t3_price, t4_name, t4_state, t4_price, 
+         t5_name, t5_state, t5_price, t6_name, t6_state, t6_price, 
+         t7_name, t7_state, t7_price, t8_name, t8_state, t8_price, 
+         t9_name, t9_state, t9_price, t10_name, t10_state, t10_price, 
+         t11_name, t11_state, t11_price, t12_name, t12_state, t12_price, updater) 
+        VALUES (""" + ",".join(["?"] * 38) + ")"
+        
+        params = [data.sample_id] + test_data + [data.updater]
+        
+        # Validate parameter count
+        if len(params) != 38:
+            raise ValueError(f"Parameter mismatch: Expected 38, got {len(params)}")
+        
+        cursor.execute(sql, params)
+        conn.commit()
+        
+        return {
+            "status": "success",
+            "message": "Parasite biology data saved successfully",
+            "sample_id": data.sample_id,
+            "tests_count": len(data.tests)
+        }
+        
+    except mariadb.Error as e:
+        print(f"❌ Parasite Biology Database Error: {e}")
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save parasite biology data: {str(e)}")
+    except ValueError as e:
+        print(f"❌ Parasite Biology Validation Error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        conn.close()
+
+# --- PARASITE BIOLOGY API ---
 
 # --- EMPLOYEE MANAGEMENT API ---
 
