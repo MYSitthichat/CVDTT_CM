@@ -215,13 +215,13 @@ class BarcodePageController(QObject):
         
         try:
             records = self.employee_records_map.get(text, [])
-            print(f"[DEBUG] _on_employee_selected: text='{text}', records={records}")
+            # print(f"[DEBUG] _on_employee_selected: text='{text}', records={records}")
             if records:
                 r = records[0]
                 
                 # Store the selected employee ID for later search
                 self.selected_employee_id = r.get('id')
-                print(f"[DEBUG] Selected employee ID set to: {self.selected_employee_id}")
+                # print(f"[DEBUG] Selected employee ID set to: {self.selected_employee_id}")
                 
                 name_val = str(r.get('name', '') or '')
                 surname_val = str(r.get('surname', '') or '')
@@ -281,7 +281,7 @@ class BarcodePageController(QObject):
         
         # If we have a selected employee ID from autocomplete, use it directly
         if self.selected_employee_id is not None:
-            print(f"[DEBUG] Using selected employee ID: {self.selected_employee_id}")
+            # print(f"[DEBUG] Using selected employee ID: {self.selected_employee_id}")
             response_data = self.api.search_barcode_by_employee(self.selected_employee_id)
             if response_data and len(response_data) > 0:
                 self.populate_table(response_data)
@@ -291,9 +291,9 @@ class BarcodePageController(QObject):
         
         # Split full name and search with first part (name) to improve matching
         search_term = sender_name.split()[0] if ' ' in sender_name else sender_name
-        print(f"[DEBUG] Searching for employee: {search_term} (original: {sender_name})")
+        # print(f"[DEBUG] Searching for employee: {search_term} (original: {sender_name})")
         results = self.api.search_employee(search_term)
-        print(f"[DEBUG] Employee search results: {results}")
+        # print(f"[DEBUG] Employee search results: {results}")
         
         if results and len(results) > 0:
             # Try each matching employee until we find one with data
@@ -304,12 +304,12 @@ class BarcodePageController(QObject):
                 emp_surname = str(emp.get('surname', '') or '').strip()
                 full_name = f"{emp_name} {emp_surname}".strip()
                 
-                print(f"[DEBUG] Trying employee ID: {employee_id} ({full_name})")
+                # print(f"[DEBUG] Trying employee ID: {employee_id} ({full_name})")
                 
                 # Only try employees that match the search name
                 if sender_name in full_name or full_name in sender_name or emp_name in sender_name:
                     response_data = self.api.search_barcode_by_employee(employee_id)
-                    print(f"[DEBUG] Barcode search response for ID {employee_id}: {len(response_data) if response_data else 0} results")
+                    # print(f"[DEBUG] Barcode search response for ID {employee_id}: {len(response_data) if response_data else 0} results")
                     
                     if response_data and len(response_data) > 0:
                         self.populate_table(response_data)
@@ -335,7 +335,7 @@ class BarcodePageController(QObject):
                 data_list = api_response["data"]
             else:
                 # API returned a dict but not the expected format, or error message
-                print(f"API returned dictionary: {api_response}")
+                # print(f"API returned dictionary: {api_response}")
                 return
 
         # Case B: API returns direct list [...]
