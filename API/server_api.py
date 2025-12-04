@@ -578,118 +578,6 @@ def save_molecular_biology(data: MolecularBiologyData):
 
 
 
-# --- EMPLOYEE MANAGEMENT API ---
-
-@app.get("/search_employee_barcode")
-def search_employee_barcode(q: str):
-    """Search employee by name or surname"""
-    if not q or len(q) < 2:
-        return []
-    
-    conn = get_db_connection()
-    if not conn:
-        raise HTTPException(status_code=500, detail="Database connection failed")
-    
-    try:
-        cursor = conn.cursor()
-        
-        # Split the search query to handle "name surname" format
-        parts = q.strip().split()
-        
-        if len(parts) >= 2:
-            # Search with both name and surname
-            name_part = parts[0]
-            surname_part = " ".join(parts[1:])
-            sql = """SELECT e.id, e.title, e.name, e.surname, e.email, e.username, e.group_id, eg.name as position
-                     FROM employee e
-                     LEFT JOIN employee_group eg ON e.group_id = eg.id
-                     WHERE (e.name LIKE ? AND e.surname LIKE ?)
-                        OR e.name LIKE ? 
-                        OR e.surname LIKE ?
-                     ORDER BY e.name
-                     LIMIT 20"""
-            search_pattern = f"%{q}%"
-            name_pattern = f"%{name_part}%"
-            surname_pattern = f"%{surname_part}%"
-            cursor.execute(sql, (name_pattern, surname_pattern, search_pattern, search_pattern))
-        else:
-            # Single word search
-            sql = """SELECT e.id, e.title, e.name, e.surname, e.email, e.username, e.group_id, eg.name as position
-                     FROM employee e
-                     LEFT JOIN employee_group eg ON e.group_id = eg.id
-                     WHERE e.name LIKE ? OR e.surname LIKE ?
-                     ORDER BY e.name
-                     LIMIT 20"""
-            search_pattern = f"%{q}%"
-            cursor.execute(sql, (search_pattern, search_pattern))
-        
-        results = []
-        for row in cursor:
-            results.append({
-                "id": row[0],
-                "title": row[1],
-                "name": row[2],
-                "surname": row[3],
-                "email": row[4],
-                "username": row[5],
-                "group_id": row[6],
-                "position": row[7]
-            })
-        
-        print(f"[DEBUG] search_employee_barcode('{q}') returned {len(results)} results")
-        return results
-    except mariadb.Error as e:
-        print(f"Query Error (search_employee_barcode): {e}")
-        return []
-    finally:
-        if conn: 
-            conn.close()
-
-# Helper functions for signature management
-def save_signature_to_file(username: str, base64_data: str):
-    """Save base64 encoded signature to file"""
-    try:
-        signatures_dir = "signatures"
-        if not os.path.exists(signatures_dir):
-            os.makedirs(signatures_dir)
-        
-        # Decode base64 to bytes
-        image_data = base64.b64decode(base64_data)
-        
-        # Generate filename with timestamp
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"signature_{username}_{timestamp}.png"
-        filepath = os.path.join(signatures_dir, filename)
-        
-        # Save to file
-        with open(filepath, 'wb') as f:
-            f.write(image_data)
-        
-        print(f"Signature saved: {filepath}")
-        return filepath
-    except Exception as e:
-        print(f"Error saving signature: {e}")
-        return None
-
-def delete_signature_files(username: str):
-    """Delete all signature files for a username"""
-    try:
-        signatures_dir = "signatures"
-        if not os.path.exists(signatures_dir):
-            return
-        
-        for filename in os.listdir(signatures_dir):
-            if f"signature_{username}_" in filename and filename.endswith('.png'):
-                filepath = os.path.join(signatures_dir, filename)
-                os.remove(filepath)
-                print(f"Deleted signature: {filepath}")
-    except Exception as e:
-        print(f"Error deleting signatures: {e}")
-
-# --- EMPLOYEE MANAGEMENT API ---
-
-
 # --- BARCODE / STICKER API ---
 
 @app.get("/barcode/today")
@@ -945,6 +833,12 @@ def search_by_employee(employee_id: int):
     finally:
         if conn: 
             conn.close()
+
+
+
+
+
+
 
 # print("Server Running ...")
 

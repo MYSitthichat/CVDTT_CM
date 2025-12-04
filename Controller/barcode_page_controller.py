@@ -182,7 +182,7 @@ class BarcodePageController(QObject):
             return
             
         try:
-            results = self.api.search_employee_barcode(text)
+            results = self.api.search_employee(text)
             if not results:
                 self.employee_completer_model.setStringList([])
                 return
@@ -279,9 +279,20 @@ class BarcodePageController(QObject):
             QMessageBox.warning(self.view, "Warning", "กรุณากรอกชื่อพนักงานเพื่อค้นหา")
             return
         
-        # Always search for employee by name to get all matching IDs
-        print(f"[DEBUG] Searching for employee: {sender_name}")
-        results = self.api.search_employee_barcode(sender_name)
+        # If we have a selected employee ID from autocomplete, use it directly
+        if self.selected_employee_id is not None:
+            print(f"[DEBUG] Using selected employee ID: {self.selected_employee_id}")
+            response_data = self.api.search_barcode_by_employee(self.selected_employee_id)
+            if response_data and len(response_data) > 0:
+                self.populate_table(response_data)
+            else:
+                QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+            return
+        
+        # Split full name and search with first part (name) to improve matching
+        search_term = sender_name.split()[0] if ' ' in sender_name else sender_name
+        print(f"[DEBUG] Searching for employee: {search_term} (original: {sender_name})")
+        results = self.api.search_employee(search_term)
         print(f"[DEBUG] Employee search results: {results}")
         
         if results and len(results) > 0:

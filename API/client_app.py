@@ -297,86 +297,8 @@ class APIApp(QWidget):
 
 # --- MOLECULAR BIOLOGY API ---
 
-# EMPLOYEE MANAGEMENT API
 
-    def get_max_sample_id(self):
-        try:
-            response = requests.get(f"{API_URL}/get_max_sample_id", timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                # print(data)
-                return data.get("max_id") # คืนค่า max_id ที่ได้จาก JSON
-            else:
-                print(f"Server Error on get_max_sample_id: {response.status_code}")
-                return None
-        except requests.RequestException as e:
-            print(f"API Connect Error on get_max_sample_id: {e}")
-            return None
 
-# EMPLOYEE MANAGEMENT API
-
-    def search_employee_barcode(self, search_text):
-        """Search employee by name or surname"""
-        try:
-            response = requests.get(
-                f"{API_URL}/search_employee_barcode",
-                params={"q": search_text},
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                # Return the list directly (API returns list, not dict with "employees")
-                if isinstance(data, list):
-                    return data
-                return data.get("employees", [])
-            else:
-                print(f"Server Error: {response.status_code}")
-                return []
-        except Exception as e:
-            print(f"API Error: {e}")
-            return []
-
-    def get_signature(self, username):
-        """Get signature image for username as base64"""
-        try:
-            response = requests.get(
-                f"{API_URL}/get_signature/{username}",
-                timeout=10
-            )
-            if response.status_code == 200:
-                data = response.json()
-                return data.get("signature_base64")
-            else:
-                return None
-        except requests.RequestException as e:
-            print(f"Network error: {e}")
-            return None
-
-    def get_employee_groups(self):
-        """Get all employee groups/departments"""
-        try:
-            response = requests.get(f"{API_URL}/get_employee_groups", timeout=10)
-            if response.status_code == 200:
-                return response.json()
-            else:
-                print(f"Server Error on get_employee_groups: {response.status_code}")
-                return []
-        except Exception as e:
-            print(f"API Connect Error on get_employee_groups: {e}")
-            return []
-    
-    def get_employee_by_id(self, employee_id):
-        """Get employee data by ID"""
-        try:
-            response = requests.get(f"{API_URL}/get_employee/{employee_id}", timeout=10)
-            if response.status_code == 200:
-                return response.json()
-            else:
-                print(f"Server Error on get_employee_by_id: {response.status_code}")
-                return None
-        except Exception as e:
-            print(f"API Connect Error on get_employee_by_id: {e}")
-            return None
 
 # ADD BARCODE  API
 
