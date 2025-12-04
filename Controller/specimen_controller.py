@@ -291,8 +291,6 @@ class SpecimenController(QObject):
         self.view.cancel_button_clicked()
         if self.main_window and hasattr(self.main_window, 'add_work_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.add_work_widget)
-            
-            # ✅ Refresh/update treewidget data when returning to New Work page
             if hasattr(self.main_window, 'new_work_controller') and self.main_window.new_work_controller:
                 self.main_window.new_work_controller.update_treewidget_data()
         else:
@@ -300,7 +298,6 @@ class SpecimenController(QObject):
     
     def goto_molecular_biology(self):
         room_id = self.room_mapping.get('molecular_biology')
-        # print(room_id)
         if self.main_window and hasattr(self.main_window, 'molecular_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.molecular_widget)
             if hasattr(self.main_window.molecular_widget, 'clear_page'):
@@ -316,46 +313,22 @@ class SpecimenController(QObject):
             print("Warning: Cannot navigate to microbiology page")
     
     def goto_parasitology(self):
-        print("Navigate to Parasitology page")
+        room_id = self.room_mapping.get('parasitology')
+        print(room_id)
         if self.main_window and hasattr(self.main_window, 'parasite_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.parasite_widget)
         else:
-            print("Warning: Cannot navigate to parasitology page")
+            print("⚠️ Error: Cannot navigate to parasitology page")
     
     def goto_after_death(self):
-        print("Navigate to After Death Service page")
+        room_id = self.room_mapping.get('after_death')
+        print(room_id)
         if self.main_window and hasattr(self.main_window, 'after_death_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.after_death_widget)
             if hasattr(self.main_window.after_death_widget, 'clear_page'):
                 self.main_window.after_death_widget.clear_page()
         else:
-            print("Warning: Cannot navigate to after death page")
-    
-        # room_id = self.room_mapping.get('microbiology')
-        room_id = 2
-        print(room_id)
-        # if self.main_window and hasattr(self.main_window, 'bacteria_widget'):
-        #     self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.bacteria_widget)
-        # else:
-        #     print("⚠️ Error: Cannot navigate to microbiology page")
-    
-    def goto_parasitology(self):
-        room_id = self.room_mapping.get('parasitology')
-        print(room_id)
-        # if self.main_window and hasattr(self.main_window, 'parasite_widget'):
-        #     self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.parasite_widget)
-        # else:
-        #     print("⚠️ Error: Cannot navigate to parasitology page")
-    
-    def goto_after_death(self):
-        room_id = self.room_mapping.get('after_death')
-        print(room_id)
-        # if self.main_window and hasattr(self.main_window, 'after_death_widget'):
-        #     self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.after_death_widget)
-        #     if hasattr(self.main_window.after_death_widget, 'clear_page'):
-        #         self.main_window.after_death_widget.clear_page()
-        # else:
-        #     print("⚠️ Error: Cannot navigate to after death page")
+            print("⚠️ Error: Cannot navigate to after death page")
 
 
     def set_case_registration_id(self, case_id):

@@ -20,6 +20,7 @@ class EditEmployeeController(QObject):
         self.current_employee_id = None
         self.current_user_permission = None  # Store current user's permission level
         self.current_user_id = None  # Store current user's ID
+        self.current_user_info = None  # Store complete user information from login
         self.setup_ui()
         self.bind_employee_events()
         self.reset_page()  # Ensure clean state on initialization
@@ -29,17 +30,57 @@ class EditEmployeeController(QObject):
         # Load employee groups/positions into ComboBox
         self.load_employee_groups()
     
-    def set_current_user(self, user_id):
-        """Set current logged-in user and get their permission level"""
+    def set_current_user(self, user_id, group_id=None, user_info=None):
+        """Set current logged-in user and their permission level
+        
+        Args:
+            user_id: The user's ID
+            group_id: The user's group_id (permission level) - if provided, use directly
+            user_info: Complete user information dict (username, email, etc.) - cache this
+        """
         self.current_user_id = user_id
-        try:
-            user_data = self.api_app.get_employee_by_id(user_id)
-            if user_data:
-                self.current_user_permission = user_data.get('group_id')
-                # print(f"Current user permission level: {self.current_user_permission}")
-        except Exception as e:
-            print(f"Error getting current user permission: {e}")
-            self.current_user_permission = 999  # Default to lowest permission
+        
+        # If user_info not provided, fetch it now and cache it
+        if user_info is None:
+            try:
+                user_info = self.api_app.get_employee_by_id(user_id, include_archived=True)
+                # print(f"[DEBUG] Fetched user info for caching: {user_info}")
+            except Exception as e:
+                print(f"[DEBUG] Error fetching user info: {e}")
+                user_info = None
+        
+        self.current_user_info = user_info  # Store complete user info
+        
+        # print(f"[DEBUG] set_current_user - user_id={user_id}, group_id={group_id}")
+        if user_info:
+            # print(f"[DEBUG] Cached user info: username={user_info.get('username')}, group_id={user_info.get('group_id')}")
+            pass
+
+        if group_id is not None:
+            # Use group_id directly from login response
+            self.current_user_permission = group_id
+            # print(f"[DEBUG] Using provided group_id: {group_id}")
+        elif user_info and user_info.get('group_id') is not None:
+            # Use group_id from cached user info
+            self.current_user_permission = user_info.get('group_id')
+            # print(f"[DEBUG] Using group_id from cached user_info: {self.current_user_permission}")
+        else:
+            # Fallback: API call to get permission
+            # print(f"[DEBUG] Calling get_employee_permission_by_id for user_id={user_id}")
+            try:
+                permission = self.api_app.get_employee_permission_by_id(user_id)
+                # print(f"[DEBUG] API returned permission: {permission}")
+                if permission is not None:
+                    self.current_user_permission = permission
+                    # print(f"[DEBUG]  Permission set to: {permission}")
+                else:
+                    self.current_user_permission = 999  # Default to lowest permission
+                    print(f"[DEBUG]  No permission returned, defaulting to 999")
+            except Exception as e:
+                print(f"[DEBUG]  Error getting current user permission: {e}")
+                self.current_user_permission = 999  # Default to lowest permission
+        
+        # print(f"[DEBUG] Final: current_user_permission = {self.current_user_permission}")
     
     def load_employee_groups(self):
         """Load employee groups from database into position ComboBox"""
@@ -140,19 +181,19 @@ class EditEmployeeController(QObject):
                 # print(f"  -> Skipped: No group_id")
                 continue
             
-            # Skip current user (cannot edit yourself)
-            if emp_id == self.current_user_id:
-                # print(f"  -> Skipped: Current user (yourself)")
-                continue
+            # Show current user (can edit yourself)
+            # Show employees with HIGHER group_id (lower permission)
+            # Hide employees with SAME group_id who are not you (peers - cannot edit)
+            # Hide employees with LOWER group_id (higher permission - cannot edit)
             
-            # Show employees with HIGHER group_id (lower permission) than current user
-            # Example: Admin (group_id=1) can see users with group_id=2,3,4... but not other admins
-            if self.current_user_permission is not None and emp_group_id > self.current_user_permission:
-                # print(f"  -> ACCEPTED: {emp_group_id} > {self.current_user_permission}")
+            # Compare by username (stays same) instead of ID (changes on update)
+            emp_username = emp.get('username')
+            current_username = self.current_user_info.get('username') if self.current_user_info else None
+            is_self = (emp_username and current_username and emp_username == current_username)
+            has_lower_permission = (self.current_user_permission is not None and emp_group_id > self.current_user_permission)
+            
+            if is_self or has_lower_permission:
                 filtered_employees.append(emp)
-            else:
-                # print(f"  -> REJECTED: {emp_group_id} <= {self.current_user_permission}")
-                pass
         
         # print(f"Filtered results: {len(filtered_employees)} employees")
         
@@ -330,19 +371,68 @@ class EditEmployeeController(QObject):
                     )
                     return
                 
-                # Also check if the NEW permission level is valid for current user
+                # Check if the NEW permission level is valid for current user
+                # If editing yourself, can lower permission but not raise it
+                # If editing others, can only assign lower permission (higher group_id)
                 new_employee_group_id = data.get('group_id')
+                is_editing_self = (self.current_employee_id == self.current_user_id)
+                
                 if new_employee_group_id is not None and self.current_user_permission is not None:
-                    if new_employee_group_id <= self.current_user_permission:
-                        QMessageBox.warning(
-                            self.view,
-                            "ไม่มีสิทธิ์",
-                            "ระบบไม่อนุญาติ"
-                        )
-                        return
+                    if is_editing_self:
+                        # When editing yourself, can only keep same OR lower to lower permission (increase group_id)
+                        # Cannot raise your permission (decrease group_id)
+                        if new_employee_group_id < self.current_user_permission:
+                            QMessageBox.warning(
+                                self.view,
+                                "ไม่มีสิทธิ์",
+                                "คุณไม่สามารถเพิ่มสิทธิ์ของตัวเองได้"
+                            )
+                            return
+                    else:
+                        # When editing others, can only assign lower permission (higher group_id)
+                        if new_employee_group_id <= self.current_user_permission:
+                            QMessageBox.warning(
+                                self.view,
+                                "ไม่มีสิทธิ์",
+                                "ระบบไม่อนุญาติให้กำหนดสิทธิ์ที่สูงกว่าหรือเท่ากับตัวเอง"
+                            )
+                            return
                 
                 # Update existing employee (no password field)
-                result = self.update_employee_in_database(self.current_employee_id, data)
+                success, new_employee_id = self.update_employee_in_database(self.current_employee_id, data)
+                
+                # If editing yourself, update your cached user info with new ID
+                if success and new_employee_id:
+                    # Check if we edited ourselves (compare by username)
+                    current_username = self.current_user_info.get('username') if self.current_user_info else None
+                    edited_username = data.get('username')
+                    
+                    # print(f"[DEBUG] Self-edit check: current_username='{current_username}', edited_username='{edited_username}'")
+                    
+                    if current_username and edited_username and current_username == edited_username:
+                        # We edited ourselves - update our cached ID, permission, and info
+                        # print(f"[DEBUG] ✓ Self-edit detected: Updating current_user_id from {self.current_user_id} to {new_employee_id}")
+                        self.current_user_id = new_employee_id
+                        
+                        # Update permission if it changed
+                        new_permission = data.get('group_id')
+                        if new_permission is not None and new_permission != self.current_user_permission:
+                            # print(f"[DEBUG] Self-edit: Updating permission from {self.current_user_permission} to {new_permission}")
+                            self.current_user_permission = new_permission
+                        
+                        # Refresh cached user info with new ID
+                        try:
+                            new_user_info = self.api_app.get_employee_by_id(new_employee_id, include_archived=True)
+                            if new_user_info:
+                                self.current_user_info = new_user_info
+                                # print(f"[DEBUG] Updated cached user info: {new_user_info}")
+                        except Exception as e:
+                            print(f"[DEBUG] Error refreshing user info: {e}")
+                    else:
+                        # print(f"[DEBUG] ✗ Not a self-edit (different user)")
+                        pass
+                
+                result = success
                 message = "แก้ไขข้อมูลพนักงานสำเร็จ!"
             else:
                 # Create new employee
@@ -514,42 +604,38 @@ class EditEmployeeController(QObject):
     
     def check_permission_to_edit(self, target_employee_id):
         """Check if current user has permission to edit/delete target employee
-        Lower group_id = higher permission (1 = highest, can edit anyone)
-        Returns True if allowed, False if not
+        Rules:
+        - CAN edit yourself
+        - CAN edit lower permission (higher group_id)
+        - CANNOT edit same permission peers (same group_id, different user)
+        - CANNOT edit higher permission (lower group_id)
         """
         # If no permission level set, deny access
         if self.current_user_permission is None:
-            # print("No permission level set for current user")
-            return False
-        
-        # Can't edit yourself
-        if target_employee_id == self.current_user_id:
-            # print("Cannot edit your own account")
-            QMessageBox.warning(
-                self.view,
-                "ไม่สามารถดำเนินการได้",
-                "คุณไม่สามารถแก้ไขข้อมูลของตัวเองได้"
-            )
             return False
         
         try:
-            # Get target employee's permission level
-            target_employee = self.api_app.get_employee_by_id(target_employee_id)
+            # Get target employee info (including archived)
+            target_employee = self.api_app.get_employee_by_id(target_employee_id, include_archived=True)
             if not target_employee:
                 return False
             
+            # Check if editing yourself by comparing usernames (stays constant)
+            # ID comparison would fail after self-update (ID changes from 135→148)
+            target_username = target_employee.get('username')
+            current_username = self.current_user_info.get('username') if self.current_user_info else None
+            
+            if target_username and current_username and target_username == current_username:
+                return True  # Can always edit yourself
+            
+            # Check permission for editing others
             target_permission = target_employee.get('group_id')
             if target_permission is None:
                 return False
             
-            # Lower number = higher permission
-            # Current user can edit if their group_id is LOWER (higher permission) than target
-            # Example: Admin (group_id=1) can edit user (group_id=2), but not vice versa
+            # Can only edit employees with HIGHER group_id (lower authority)
+            # Cannot edit same or lower group_id (peers or superiors)
             can_edit = self.current_user_permission < target_permission
-            
-            if not can_edit:
-                # print(f"Permission denied: Current user group_id={self.current_user_permission}, Target group_id={target_permission}")
-                pass
 
             return can_edit
             
@@ -577,7 +663,13 @@ class EditEmployeeController(QObject):
     def search_employee_in_database(self, search_text):
         """Search employee by name or surname using API"""
         try:
-            employees = self.api_app.search_employee(search_text)
+            # If we have cached user info, pass username for self-search
+            # Username stays the same even after updates (unlike ID)
+            current_username = None
+            if self.current_user_info:
+                current_username = self.current_user_info.get('username')
+            
+            employees = self.api_app.search_employee(search_text, current_username)
             if employees is None:
                 return None
             return employees if isinstance(employees, list) else []
@@ -588,14 +680,16 @@ class EditEmployeeController(QObject):
     def get_employee_by_id(self, employee_id):
         """Get employee by ID using API"""
         try:
-            employee_data = self.api_app.get_employee_by_id(employee_id)
+            # If getting current user (self), include archived employees
+            include_archived = (employee_id == self.current_user_id)
+            employee_data = self.api_app.get_employee_by_id(employee_id, include_archived=include_archived)
             return employee_data
         except Exception as e:
             print(f"Error getting employee: {e}")
             return None
     
     def create_employee_in_database(self, data):
-        """Create new employee using API"""
+        """Create new employee using API with version tracking"""
         try:
             employee_data = {
                 "title": data.get('title', ''),
@@ -605,7 +699,9 @@ class EditEmployeeController(QObject):
                 "username": data.get('username', ''),
                 "password": data.get('password', ''),
                 "group_id": data.get('group_id'),
-                "signature_base64": data.get('signature_base64')  # Send base64 signature to API
+                "signature_base64": data.get('signature_base64'),
+                "status": 1,  # New employee is active
+                "updater": self.current_user_permission  # Track who created this
             }
             
             result = self.api_app.create_employee(employee_data)
@@ -616,8 +712,19 @@ class EditEmployeeController(QObject):
             return False
     
     def update_employee_in_database(self, employee_id, data):
-        """Update employee data using API"""
+        """Update employee data using API with version history
+        This will:
+        1. Set old record status=0 with updater tracking
+        2. Insert new record with status=1 and updated data
+        Returns: (success: bool, new_employee_id: int or None)
+        """
         try:
+            # print(f"[DEBUG] ========== UPDATE EMPLOYEE ==========")
+            # print(f"[DEBUG] employee_id: {employee_id}")
+            # print(f"[DEBUG] current_user_id: {self.current_user_id}")
+            # print(f"[DEBUG] current_user_permission: {self.current_user_permission}")
+            # print(f"[DEBUG] Type: {type(self.current_user_permission)}")
+            
             employee_data = {
                 "title": data.get('title', ''),
                 "name": data.get('name', ''),
@@ -625,24 +732,38 @@ class EditEmployeeController(QObject):
                 "email": data.get('email', ''),
                 "username": data.get('username', ''),
                 "group_id": data.get('group_id'),
-                "signature_base64": data.get('signature_base64')  # Send base64 signature to API
+                "signature_base64": data.get('signature_base64'),
+                "status": 1,  # New version is active
+                "updater": self.current_user_permission  # Track who edited this
             }
             
-            # print(f"Updating employee {employee_id} with data: {employee_data}")
+            # print(f"[DEBUG] updater value being sent: {employee_data['updater']}")
+            # print(f"[DEBUG] =======================================")
+            
             result = self.api_app.update_employee(employee_id, employee_data)
-            # print(f"Update result: {result}")
-            return result is not None and result.get('status') == 'success'
+            
+            if result and result.get('status') == 'success':
+                new_employee_id = result.get('employee_id')
+                return (True, new_employee_id)
+            else:
+                return (False, None)
             
         except Exception as e:
             print(f"Error updating employee: {e}")
             import traceback
             traceback.print_exc()
-            return False
+            return (False, None)
     
     def delete_employee_from_database(self, employee_id):
-        """Delete employee using API"""
+        """Soft delete employee using API
+        Sets status=0 and tracks who deleted it via updater field
+        """
         try:
-            result = self.api_app.delete_employee(employee_id)
+            # Send updater info for soft delete tracking
+            delete_data = {
+                "updater": self.current_user_permission  # Track who deleted this
+            }
+            result = self.api_app.delete_employee(employee_id, delete_data)
             return result is not None and result.get('status') == 'success'
         except Exception as e:
             print(f"Error deleting employee: {e}")

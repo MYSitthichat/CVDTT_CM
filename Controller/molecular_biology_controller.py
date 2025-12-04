@@ -19,7 +19,7 @@ class MolecularBiologyController(QObject):
         # Using button names found in your molecular.py file
         self.view.ui.cal_pushButton.clicked.connect(self.compute_summary)
         self.view.ui.save_pushButton.clicked.connect(self.save_data)
-        self.view.ui.back_pushButton.clicked.connect(self.go_back)
+        self.view.ui.back_pushButton.clicked.connect(self.go_to_specimen)
 
     def compute_summary(self):
         # Let the view calculate and display the summary
@@ -173,3 +173,9 @@ class MolecularBiologyController(QObject):
                 self.main_window.new_work_controller.update_treewidget_data()
         else:
             print("Error: Add Work Widget not found in Main Window")
+            
+    def go_to_specimen(self):
+        if hasattr(self.main_window, 'specimen_widget'):
+            self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.specimen_widget)
+        else:
+            print("Error: Specimen Widget not found in Main Window")

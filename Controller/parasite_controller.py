@@ -1,6 +1,7 @@
 from View.view_parasite_frame import parasiteFrameView
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMessageBox
+from API.client_app import APIApp
 import pyodbc
 from datetime import datetime
 
@@ -12,6 +13,7 @@ class ParasiteController(QObject):
         super().__init__(parent)
         self.view = view
         self.main_window = parent  # Store reference to main window
+        self.api_client = APIApp()  # Initialize API client
         # Test prices (adjust as needed) - CORRECTED based on UI labels
         self.test_prices = {
             'PCV': 50,
@@ -108,80 +110,161 @@ class ParasiteController(QObject):
         self.view.ui.parasit_cost_lineEdit.setText(f"{total_cost:.2f}")  # Note: typo in UI "parasit" not "parasite"
     
     def get_parasite_data(self):
-        """Get all parasite form data - CORRECTED WIDGET NAMES"""
-        return {
-            'PCV': self.view.ui.parasite_PCV_checkBox.isChecked(),
-            'Floatation': self.view.ui.parasite_floatation_checkBox.isChecked(),
-            'Parasite_in_meat': self.view.ui.parasite_parasite_in_meat_checkBox.isChecked(),
-            'Parasite_identification': self.view.ui.parasite_parasite_identification_checkBox.isChecked(),
-            'Stained_Woo_PCV': self.view.ui.parasite_stained_Woo_PCV_checkBox.isChecked(),
-            'Centrifugal_dog_cat': self.view.ui.parasite_centrifugal_dog_cat_checkBox.isChecked(),
-            'Floatation_centrifugal': self.view.ui.parasite_floatation_centrifugal_checkBox.isChecked(),
-            'Floatation_dog_cat': self.view.ui.parasite_floatation_dog_cat_checkBox.isChecked(),
-            'Stained_blood_smear': self.view.ui.parasite_stained_blood_smear_checkBox.isChecked(),
-            'Sedimentation': self.view.ui.parasite_sedimentation_checkBox.isChecked(),
-            'Woo': self.view.ui.parasite_Woo_checkBox.isChecked(),
-            'Mc_Master': self.view.ui.parasite_mc_master_egg_count_checkBox.isChecked(),
-            'total_tests': self.view.ui.parasite_num_lineEdit.text(),
-            'total_cost': self.view.ui.parasit_cost_lineEdit.text()
-        }
+        """
+        Get all parasite test data in the same format as molecular biology.
+        Returns a list of dictionaries with test name (with price), quantity, and price separated.
+        """
+        # Define test mappings with proper names and prices - in order t1 to t12
+        test_configs = [
+            {'name': 'PCV', 'price': 50, 'checkbox': self.view.ui.parasite_PCV_checkBox},
+            {'name': 'Floatation', 'price': 50, 'checkbox': self.view.ui.parasite_floatation_checkBox},
+            {'name': 'Parasite in meat', 'price': 300, 'checkbox': self.view.ui.parasite_parasite_in_meat_checkBox},
+            {'name': 'Parasite identification', 'price': 100, 'checkbox': self.view.ui.parasite_parasite_identification_checkBox},
+            {'name': 'Stained + Woo + PCV', 'price': 150, 'checkbox': self.view.ui.parasite_stained_Woo_PCV_checkBox},
+            {'name': 'Centrifugal for dog/cat', 'price': 150, 'checkbox': self.view.ui.parasite_centrifugal_dog_cat_checkBox},
+            {'name': 'Floatation + Centrifugal', 'price': 200, 'checkbox': self.view.ui.parasite_floatation_centrifugal_checkBox},
+            {'name': 'Floatation for dog/cat', 'price': 100, 'checkbox': self.view.ui.parasite_floatation_dog_cat_checkBox},
+            {'name': 'Stained blood smear', 'price': 100, 'checkbox': self.view.ui.parasite_stained_blood_smear_checkBox},
+            {'name': 'Sedimentation', 'price': 50, 'checkbox': self.view.ui.parasite_sedimentation_checkBox},
+            {'name': 'Woo\'s', 'price': 50, 'checkbox': self.view.ui.parasite_Woo_checkBox},
+            {'name': 'Mc Master egg count', 'price': 100, 'checkbox': self.view.ui.parasite_mc_master_egg_count_checkBox}
+        ]
+        
+        # Build test items list (all tests, whether selected or not)
+        # Include price in test name for database storage
+        test_items = []
+        for config in test_configs:
+            is_checked = config['checkbox'].isChecked()
+            name_with_price = f"{config['name']} ({config['price']})"
+            test_items.append({
+                'name': name_with_price,  # Name with price e.g., "PCV (50)"
+                'quantity': 1 if is_checked else 0,  # 1 if selected, 0 if not
+                'price': config['price']  # Always include unit price
+            })
+        
+        return test_items
     
     def save_parasite_data(self):
-        """Save parasite test data to database"""
         try:
-            # Get data
-            data = self.get_parasite_data()
+            # Get all test items
+            all_test_items = self.get_parasite_data()
             
-            # Validate - at least one test must be selected
-            if data['total_tests'] == '0' or not data['total_tests']:
-                QMessageBox.warning(self.view, "คำเตือน", "กรุณาเลือกการตรวจอย่างน้อย 1 รายการ!")
+            # Get only selected items for validation
+            selected_items = [item for item in all_test_items if item['quantity'] > 0]
+            
+            if not selected_items:
+                QMessageBox.warning(
+                    self.view, 
+                    "Warning", 
+                    "กรุณาเลือกรายการที่ต้องการส่งตรวจ\n(Please select at least one test)"
+                )
                 return
             
-            # Connect to database
-            connection = self.connect_database()
-            cursor = connection.cursor()
+            # Get sample_id from specimen_controller
+            sample_id = None
+            if hasattr(self.main_window, 'specimen_controller'):
+                specimen_ctrl = self.main_window.specimen_controller
+                if hasattr(specimen_ctrl, 'specimen_id') and specimen_ctrl.specimen_id:
+                    sample_id = str(specimen_ctrl.specimen_id)
             
-            # SQL insert
-            sql = """
-            INSERT INTO parasite_biology_tests 
-            (PCV, Floatation, Parasite_in_meat, Parasite_identification,
-             Stained_Woo_PCV, Centrifugal_dog_cat, Floatation_centrifugal,
-             Floatation_dog_cat, Stained_blood_smear, Sedimentation,
-             Woo, Mc_Master, total_tests, total_cost, created_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """
+            if not sample_id:
+                QMessageBox.warning(
+                    self.view,
+                    "ไม่พบหมายเลข Sample ID",
+                    "กรุณาบันทึกข้อมูล Specimen ในหน้าก่อนหน้านี้ก่อน\n"
+                    "แล้วจึงกลับมาเลือกรายการตรวจ Parasite"
+                )
+                return
             
-            cursor.execute(sql, (
-                data['PCV'],
-                data['Floatation'],
-                data['Parasite_in_meat'],
-                data['Parasite_identification'],
-                data['Stained_Woo_PCV'],
-                data['Centrifugal_dog_cat'],
-                data['Floatation_centrifugal'],
-                data['Floatation_dog_cat'],
-                data['Stained_blood_smear'],
-                data['Sedimentation'],
-                data['Woo'],
-                data['Mc_Master'],
-                data['total_tests'],
-                data['total_cost'],
-                datetime.now()
-            ))
+            # Get user_id from main controller
+            user_id = None
+            if hasattr(self.main_window, 'main_controller'):
+                main_ctrl = self.main_window.main_controller
+                if hasattr(main_ctrl, 'logged_in_user_id') and main_ctrl.logged_in_user_id:
+                    user_id = main_ctrl.logged_in_user_id
             
-            connection.commit()
-            cursor.close()
-            connection.close()
+            if not user_id:
+                QMessageBox.warning(
+                    self.view,
+                    "ไม่พบข้อมูลผู้ใช้",
+                    "กรุณา Login ใหม่อีกครั้ง"
+                )
+                return
             
-            QMessageBox.information(self.view, "สำเร็จ", "บันทึกข้อมูลการตรวจปรสิตสำเร็จ!")
-            self.clear_parasite_information()
-            self.go_back_to_new_work()  # ✅ Go back to New Work page instead of staying
+            # Get room_id for parasite lab
+            room_id = None
+            if hasattr(self.main_window, 'specimen_controller'):
+                specimen_ctrl = self.main_window.specimen_controller
+                if hasattr(specimen_ctrl, 'room_mapping') and 'parasitology' in specimen_ctrl.room_mapping:
+                    room_id = specimen_ctrl.room_mapping['parasitology']
+            
+            # Prepare data for parasite biology API
+            parasite_data = {
+                "sample_id": sample_id,
+                "tests": all_test_items,
+                "updater": user_id
+            }
+            # Prepare data for lab order API
+            lab_order_data = {
+                "sample_id": sample_id,
+                "room_id": str(room_id) if room_id else None,
+                "comments": "",
+                "state": "0",
+                "status": "1",
+                "updater": user_id
+            }
+            
+            # Prepare first tracking entry
+            first_update_tracking_lab_order_data = {
+                "lab_order_id": sample_id,
+                "tracking_info": "รับงานเข้าระบบ",
+                "receiver": str(user_id),
+                "updater": str(user_id)
+            }
+            
+            # Call APIs
+            save_parasite_result = self.api_client.save_parasite_biology(parasite_data)
+            insert_lab_order = self.api_client.add_new_lab_order(lab_order_data)
+            first_update_tracking = self.api_client.update_tracking_lab_order(first_update_tracking_lab_order_data)
+            
+            # Check results
+            if (save_parasite_result and save_parasite_result.get("status") == "success" and
+                insert_lab_order and first_update_tracking and 
+                first_update_tracking.get("status") == "success"):
+                
+                selected_count = len(selected_items)
+                total_cost = sum(item['price'] * item['quantity'] for item in selected_items)
+                
+                QMessageBox.information(
+                    self.view,
+                    "สำเร็จ",
+                    f"บันทึกข้อมูลการตรวจปรสิตเรียบร้อย\n\n"
+                    f"Sample ID: {sample_id}\n"
+                    f"รายการที่เลือก: {selected_count} รายการ\n"
+                    f"ราคารวม: {total_cost:.2f} บาท"
+                )
+                
+                self.clear_parasite_information()
+                self.go_back_to_new_work()
+            else:
+                error_msg = "Unknown error"
+                if save_parasite_result and isinstance(save_parasite_result, dict):
+                    error_msg = save_parasite_result.get('detail', error_msg)
+                
+                QMessageBox.critical(
+                    self.view,
+                    "ข้อผิดพลาด",
+                    f"บันทึกข้อมูลไม่สำเร็จ\n\n{error_msg}"
+                )
             
         except Exception as e:
-            QMessageBox.critical(self.view, "ข้อผิดพลาด", f"เกิดข้อผิดพลาดในการบันทึก: {str(e)}")
+            QMessageBox.critical(
+                self.view,
+                "ข้อผิดพลาด",
+                f"เกิดข้อผิดพลาดในการบันทึก: {str(e)}"
+            )
     
     def clear_parasite_information(self):
-        """Clear all parasite form fields - CORRECTED WIDGET NAMES"""
         # Uncheck all test checkboxes
         self.view.ui.parasite_PCV_checkBox.setChecked(False)
         self.view.ui.parasite_floatation_checkBox.setChecked(False)
@@ -201,7 +284,6 @@ class ParasiteController(QObject):
         self.view.ui.parasit_cost_lineEdit.clear()
     
     def cancel_parasite(self):
-        """Cancel and clear form"""
         reply = QMessageBox.question(
             self.view,
             "ยืนยันการยกเลิก",

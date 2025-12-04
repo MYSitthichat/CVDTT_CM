@@ -42,6 +42,12 @@ class MolecularBiologyData(BaseModel):
     extraction_req: Optional[int] = 0
     updater: Optional[int] = None  # user_id of person saving the data
 
+# --- parasite Biology Data Model ---
+class ParasiteBiologyData(BaseModel):
+    sample_id: str
+    tests: List[dict]  # List of test items with name, amount, price
+    updater: Optional[int] = None  # user_id of person saving the data
+
 # --- Specimen Registration Data Model ---
 class SpecimenData(BaseModel):
     case_id: Optional[int] = None
@@ -123,33 +129,42 @@ def login(username: str, password: str):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT id, password FROM employee WHERE username = ? LIMIT 1", (username,))
+        # Get id, password, and group_id from the LATEST record (highest id = newest version)
+        # This ensures we get the current active record, not an archived one
+        cursor.execute("""
+            SELECT id, password, group_id 
+            FROM employee 
+            WHERE username = ? 
+            ORDER BY id DESC 
+            LIMIT 1
+        """, (username,))
         user = cursor.fetchone()
         if not user:
-            return {"success": False, "user_id": None}
+            return {"success": False, "user_id": None, "group_id": None}
         
         user_id = user[0]
         stored_password = user[1]
+        group_id = user[2]
         password_to_verify = password[:72]
         if stored_password.startswith("$2b$"):
             try:
                 is_valid = pwd_context.verify(password_to_verify, stored_password)
-                return {"success": is_valid, "user_id": user_id if is_valid else None}
+                return {"success": is_valid, "user_id": user_id if is_valid else None, "group_id": group_id if is_valid else None}
             except Exception as e:
                 print(f"Password verification error: {e}")
-                return {"success": False, "user_id": None}
+                return {"success": False, "user_id": None, "group_id": None}
         else:
             if password != stored_password:
-                return {"success": False, "user_id": None}
+                return {"success": False, "user_id": None, "group_id": None}
             try:
                 new_hashed = pwd_context.hash(password_to_verify)
                 cursor.execute("UPDATE employee SET password = ? WHERE id = ?", (new_hashed, user_id))
                 conn.commit()
                 print(f"Password encrypted for user_id: {user_id}")
-                return {"success": True, "user_id": user_id}
+                return {"success": True, "user_id": user_id, "group_id": group_id}
             except Exception as e:
                 print(f" Error encrypting password: {e}")
-                return {"success": True, "user_id": user_id}
+                return {"success": True, "user_id": user_id, "group_id": group_id}
                 
     except mariadb.Error as e:
         print(f"Database error: {e}")
@@ -576,6 +591,481 @@ def save_molecular_biology(data: MolecularBiologyData):
         
 # --- MOLECULAR BIOLOGY API ---
 
+# --- PARASITE BIOLOGY API ---
+
+@app.post("/save_parasite_biology")
+def save_parasite_biology(data: ParasiteBiologyData):
+    """Save parasite biology test data to database"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        test_data = []
+        for i in range(1, 13):  # 12 tests for parasite
+            if i <= len(data.tests):
+                test = data.tests[i-1]
+                name_with_price = test.get('name', '')  # Already includes price
+                quantity = test.get('quantity', 0)
+                price = test.get('price', 0)
+                
+                test_data.extend([
+                    name_with_price,  
+                    quantity,         
+                    price             
+                ])
+            else:
+                test_data.extend(['', 0, 0])  # Empty test slot
+        sql = """INSERT INTO lab_parasite_biology 
+        (sample_id, t1_name, t1_state, t1_price, t2_name, t2_state, t2_price, 
+         t3_name, t3_state, t3_price, t4_name, t4_state, t4_price, 
+         t5_name, t5_state, t5_price, t6_name, t6_state, t6_price, 
+         t7_name, t7_state, t7_price, t8_name, t8_state, t8_price, 
+         t9_name, t9_state, t9_price, t10_name, t10_state, t10_price, 
+         t11_name, t11_state, t11_price, t12_name, t12_state, t12_price, updater) 
+        VALUES (""" + ",".join(["?"] * 38) + ")"
+        
+        params = [data.sample_id] + test_data + [data.updater]
+        
+        # Validate parameter count
+        if len(params) != 38:
+            raise ValueError(f"Parameter mismatch: Expected 38, got {len(params)}")
+        
+        cursor.execute(sql, params)
+        conn.commit()
+        
+        return {
+            "status": "success",
+            "message": "Parasite biology data saved successfully",
+            "sample_id": data.sample_id,
+            "tests_count": len(data.tests)
+        }
+        
+    except mariadb.Error as e:
+        print(f"❌ Parasite Biology Database Error: {e}")
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save parasite biology data: {str(e)}")
+    except ValueError as e:
+        print(f"❌ Parasite Biology Validation Error: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        conn.close()
+
+# --- PARASITE BIOLOGY API ---
+
+# --- EMPLOYEE MANAGEMENT API ---
+
+@app.get("/search_employee")
+def search_employee(q: str, current_username: str = None):
+    """Search employee by name or surname
+    Returns active employees (status=1) that match search
+    If current_username is provided, also includes that user's LATEST record even if archived
+    """
+    if not q or len(q) < 2:
+        return []
+    
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        if current_username:
+            # Include active employees + current user's latest record (even if archived)
+            sql = """SELECT e.id, e.title, e.name, e.surname, e.email, e.username, e.group_id, eg.name as position
+                     FROM employee e
+                     LEFT JOIN employee_group eg ON e.group_id = eg.id
+                     WHERE (e.name LIKE ? OR e.surname LIKE ?) 
+                     AND (e.status = 1 OR (e.username = ? AND e.id = (
+                         SELECT MAX(id) FROM employee WHERE username = ?
+                     )))
+                     ORDER BY e.name
+                     LIMIT 20"""
+            search_pattern = f"%{q}%"
+            cursor.execute(sql, (search_pattern, search_pattern, current_username, current_username))
+        else:
+            # Only active employees
+            sql = """SELECT e.id, e.title, e.name, e.surname, e.email, e.username, e.group_id, eg.name as position
+                     FROM employee e
+                     LEFT JOIN employee_group eg ON e.group_id = eg.id
+                     WHERE (e.name LIKE ? OR e.surname LIKE ?) AND e.status = 1
+                     ORDER BY e.name
+                     LIMIT 20"""
+            search_pattern = f"%{q}%"
+            cursor.execute(sql, (search_pattern, search_pattern))
+        
+        employees = []
+        for row in cursor:
+            employees.append({
+                "id": row[0],
+                "title": row[1] if row[1] else "",
+                "name": row[2] if row[2] else "",
+                "surname": row[3] if row[3] else "",
+                "email": row[4] if row[4] else "",
+                "username": row[5] if row[5] else "",
+                "group_id": row[6] if row[6] is not None else None,
+                "position": row[7] if row[7] else ""
+            })
+        
+        return {"employees": employees}
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to search employee")
+    finally:
+        conn.close()
+
+@app.get("/get_employee/{employee_id}")
+def get_employee(employee_id: int, include_archived: bool = False):
+    """Get employee details by ID
+    
+    Args:
+        employee_id: The employee ID
+        include_archived: If True, includes archived employees (status=0)
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        if include_archived:
+            # No status filter - allows getting archived employees
+            sql = """SELECT e.id, e.title, e.name, e.surname, e.email, e.username, e.group_id, eg.name as position
+                     FROM employee e
+                     LEFT JOIN employee_group eg ON e.group_id = eg.id
+                     WHERE e.id = ?"""
+        else:
+            # Only active employees
+            sql = """SELECT e.id, e.title, e.name, e.surname, e.email, e.username, e.group_id, eg.name as position
+                     FROM employee e
+                     LEFT JOIN employee_group eg ON e.group_id = eg.id
+                     WHERE e.id = ? AND e.status = 1"""
+        cursor.execute(sql, (employee_id,))
+        row = cursor.fetchone()
+        
+        if not row:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        return {
+            "id": row[0],
+            "title": row[1] if row[1] else "",
+            "name": row[2] if row[2] else "",
+            "surname": row[3] if row[3] else "",
+            "email": row[4] if row[4] else "",
+            "username": row[5] if row[5] else "",
+            "group_id": row[6] if row[6] else None,
+            "position": row[7] if row[7] else ""
+        }
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get employee")
+    finally:
+        conn.close()
+
+@app.get("/get_employee_permission/{employee_id}")
+def get_employee_permission(employee_id: int):
+    """Get employee permission (group_id) - NO status filter for archived users"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        # NO status filter - allows getting permission for archived users
+        sql = """SELECT group_id FROM employee WHERE id = ? ORDER BY id DESC LIMIT 1"""
+        cursor.execute(sql, (employee_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        return {"group_id": result[0]}
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get employee permission")
+    finally:
+        conn.close()
+
+class EmployeeData(BaseModel):
+    title: Optional[str] = ""
+    name: Optional[str] = ""
+    surname: Optional[str] = ""
+    email: Optional[str] = ""
+    username: Optional[str] = ""
+    password: Optional[str] = None
+    group_id: Optional[int] = None
+    signature_base64: Optional[str] = None  # Base64 encoded signature image
+    status: Optional[int] = 1  # 1=active, 0=deleted/archived
+    updater: Optional[int] = None  # group_id of user who created/edited this record
+
+@app.post("/create_employee")
+def create_employee(employee: EmployeeData):
+    """Create new employee"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if username already exists
+        cursor.execute("SELECT id FROM employee WHERE username = ?", (employee.username,))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Username already exists")
+        
+        # Hash password
+        password_to_hash = employee.password[:72] if employee.password else ""
+        hashed_password = pwd_context.hash(password_to_hash)
+        
+        print(f"[API DEBUG] create_employee - Received updater: {employee.updater}")
+        print(f"[API DEBUG] create_employee - Will save updater: {employee.updater if employee.updater is not None else 1}")
+        
+        sql = """INSERT INTO employee 
+                 (title, name, surname, email, username, password, group_id, status, updater)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        
+        cursor.execute(sql, (
+            employee.title,
+            employee.name,
+            employee.surname,
+            employee.email,
+            employee.username,
+            hashed_password,
+            employee.group_id,
+            employee.status if employee.status is not None else 1,
+            employee.updater if employee.updater is not None else 1
+        ))
+        
+        employee_id = cursor.lastrowid
+        
+        # Save signature image if provided
+        if employee.signature_base64:
+            save_signature_to_file(employee.username, employee.signature_base64)
+        
+        conn.commit()
+        return {"status": "success", "employee_id": employee_id}
+        
+    except mariadb.Error as e:
+        print(f"Insert Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create employee")
+    finally:
+        conn.close()
+
+@app.put("/update_employee/{employee_id}")
+def update_employee(employee_id: int, employee: EmployeeData):
+    """Update employee data with version history
+    1. Archives old record by setting status=0 and updater
+    2. Inserts new record with updated data, status=1 and updater
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Get the most recent record for this employee (regardless of status)
+        # This allows updating archived employees
+        cursor.execute("""
+            SELECT username, password, status 
+            FROM employee 
+            WHERE id = ? 
+            ORDER BY dtime DESC 
+            LIMIT 1
+        """, (employee_id,))
+        result = cursor.fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        old_username = result[0]
+        old_password = result[1]
+        old_status = result[2]
+        
+        # Check if username exists for other employees (excluding this employee's records)
+        cursor.execute("""
+            SELECT e.id 
+            FROM employee e
+            WHERE e.username = ? 
+            AND e.id != ?
+            AND e.status = 1
+        """, (employee.username, employee_id))
+        if cursor.fetchone():
+            raise HTTPException(status_code=400, detail="Username already exists")
+        
+        print(f"[API DEBUG] update_employee - Received updater: {employee.updater}")
+        print(f"[API DEBUG] update_employee - Will save updater: {employee.updater if employee.updater is not None else 1}")
+        
+        # Step 1: Archive old record (set status=0 and update updater)
+        cursor.execute(
+            "UPDATE employee SET status = 0, updater = ? WHERE id = ?",
+            (employee.updater if employee.updater is not None else 1, employee_id)
+        )
+        
+        # Step 2: Insert new record with updated data
+        sql = """INSERT INTO employee 
+                 (title, name, surname, email, username, password, group_id, status, updater)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        
+        cursor.execute(sql, (
+            employee.title,
+            employee.name,
+            employee.surname,
+            employee.email,
+            employee.username,
+            old_password,  # Keep the same password (user cannot change password through this endpoint)
+            employee.group_id,
+            1,  # New record is active
+            employee.updater if employee.updater is not None else 1
+        ))
+        
+        new_employee_id = cursor.lastrowid
+        
+        # Save signature image if provided
+        if employee.signature_base64:
+            save_signature_to_file(employee.username, employee.signature_base64)
+        
+        conn.commit()
+        
+        return {"status": "success", "employee_id": new_employee_id, "old_employee_id": employee_id}
+        
+    except HTTPException:
+        raise
+    except mariadb.Error as e:
+        print(f"Update Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    except Exception as e:
+        print(f"Unexpected error: {e}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    finally:
+        conn.close()
+
+@app.get("/get_employee_groups")
+def get_employee_groups():
+    """Get all employee groups/positions"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, name FROM employee_group ORDER BY name")
+        groups = [{"id": row[0], "name": row[1]} for row in cursor]
+        return {"employee_groups": groups}
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to get employee groups")
+    finally:
+        conn.close()
+
+@app.delete("/delete_employee/{employee_id}")
+def delete_employee(employee_id: int, updater: Optional[int] = None):
+    """Soft delete employee by setting status=0 and tracking who deleted it"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        # Check if employee exists and is active
+        cursor.execute("SELECT id FROM employee WHERE id = ? AND status = 1", (employee_id,))
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Employee not found or already deleted")
+        
+        # Soft delete: set status=0 and update updater field
+        cursor.execute(
+            "UPDATE employee SET status = 0, updater = ? WHERE id = ?",
+            (updater if updater is not None else 1, employee_id)
+        )
+        conn.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Employee not found")
+        
+        return {"status": "success", "message": "Employee deleted (soft delete)"}
+        
+    except mariadb.Error as e:
+        print(f"Delete Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete employee")
+    finally:
+        conn.close()
+
+@app.get("/get_signature/{username}")
+def get_signature(username: str):
+    """Get the latest signature image for a username as base64"""
+    try:
+        signatures_dir = "signatures"
+        if not os.path.exists(signatures_dir):
+            return {"signature_base64": None}
+        
+        # Find all signature files for this username
+        matching_files = []
+        for filename in os.listdir(signatures_dir):
+            if f"signature_{username}_" in filename and filename.endswith('.png'):
+                filepath = os.path.join(signatures_dir, filename)
+                matching_files.append((filepath, os.path.getmtime(filepath)))
+        
+        if not matching_files:
+            return {"signature_base64": None}
+        
+        # Get the newest file
+        matching_files.sort(key=lambda x: x[1], reverse=True)
+        newest_file = matching_files[0][0]
+        
+        # Read and encode to base64
+        with open(newest_file, 'rb') as f:
+            image_data = f.read()
+            base64_data = base64.b64encode(image_data).decode('utf-8')
+            return {"signature_base64": base64_data}
+            
+    except Exception as e:
+        print(f"Error getting signature: {e}")
+        return {"signature_base64": None}
+
+# Helper functions for signature management
+def save_signature_to_file(username: str, base64_data: str):
+    """Save base64 encoded signature to file"""
+    try:
+        signatures_dir = "signatures"
+        if not os.path.exists(signatures_dir):
+            os.makedirs(signatures_dir)
+        
+        # Decode base64 to bytes
+        image_data = base64.b64decode(base64_data)
+        
+        # Generate filename with timestamp
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"signature_{username}_{timestamp}.png"
+        filepath = os.path.join(signatures_dir, filename)
+        
+        # Save to file
+        with open(filepath, 'wb') as f:
+            f.write(image_data)
+        
+        print(f"Signature saved: {filepath}")
+        return filepath
+    except Exception as e:
+        print(f"Error saving signature: {e}")
+        return None
+
+def delete_signature_files(username: str):
+    """Delete all signature files for a username"""
+    try:
+        signatures_dir = "signatures"
+        if not os.path.exists(signatures_dir):
+            return
+        
+        for filename in os.listdir(signatures_dir):
+            if f"signature_{username}_" in filename and filename.endswith('.png'):
+                filepath = os.path.join(signatures_dir, filename)
+                os.remove(filepath)
+                print(f"Deleted signature: {filepath}")
+    except Exception as e:
+        print(f"Error deleting signatures: {e}")
+
+# --- EMPLOYEE MANAGEMENT API ---
 
 
 # --- BARCODE / STICKER API ---
@@ -833,8 +1323,6 @@ def search_by_employee(employee_id: int):
     finally:
         if conn: 
             conn.close()
-
-
 
 
 
