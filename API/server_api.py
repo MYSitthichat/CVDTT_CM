@@ -426,28 +426,6 @@ def get_room_details():
         conn.close()
 
 
-# --- BARCODE / STICKER API ---
-
-@app.get("/barcode/today")
-def get_today_cases():
-    """ Get all cases registered today """
-    conn = None
-    try:
-        conn = get_db_connection()
-        if not conn: 
-            return []
-        
-        cursor = conn.cursor()
-        cursor.execute("SELECT id, code, name, thai_name, nickname FROM room_information WHERE status = 1")
-        rooms = [{"id": row[0], "code": row[1], "name": row[2], "thai_name": row[3], "nickname": row[4]} for row in cursor]
-        return {"lab_rooms": rooms}
-    except mariadb.Error as e:
-        print(f"Query Error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to retrieve lab rooms")
-    finally:
-        conn.close()
-
-
 # --- ADD NEW LAB ORDER API ---
 class LabOrder(BaseModel):
     sample_id: Optional[str] = ""
@@ -1099,6 +1077,7 @@ def get_today_cases():
         cursor = conn.cursor()
         
         # Query based on sample_registration.dtime (today's samples)
+        # Room flow: sample_registration.id -> lab_order.sample_id -> lab_order.room_id -> room_information.id
         sql = """
             SELECT 
                 s.dtime, 
@@ -1107,9 +1086,10 @@ def get_today_cases():
                 CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
                 s.keep_method, 
                 s.speed,
-                s.room AS room_debug
+                lo.room_id AS room_debug
             FROM sample_registration s
-            LEFT JOIN room_information r ON s.room = r.code
+            LEFT JOIN lab_order lo ON s.id = lo.sample_id
+            LEFT JOIN room_information r ON lo.room_id = r.id
             WHERE DATE(s.dtime) = CURDATE()
             ORDER BY s.dtime DESC
         """
@@ -1137,9 +1117,10 @@ def get_today_cases():
                     CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
                     s.keep_method, 
                     s.speed,
-                    s.room AS room_debug
+                    lo.room_id AS room_debug
                 FROM sample_registration s
-                LEFT JOIN room_information r ON s.room = r.code
+                LEFT JOIN lab_order lo ON s.id = lo.sample_id
+                LEFT JOIN room_information r ON lo.room_id = r.id
                 ORDER BY s.dtime DESC
                 LIMIT 100
             """
@@ -1221,6 +1202,7 @@ def search_barcode_cases(name: str = "", surname: str = ""):
         
         # Search by both owner_id and sender_id
         # Use DISTINCT to avoid duplicates from owner_id/sender_id OR condition
+        # Room flow: sample_registration.id -> lab_order.sample_id -> lab_order.room_id -> room_information.id
         sql = f"""
             SELECT DISTINCT
                 s.id AS sample_id,
@@ -1234,7 +1216,8 @@ def search_barcode_cases(name: str = "", surname: str = ""):
             FROM sample_registration s
             LEFT JOIN case_registration c ON s.case_id = c.id
             LEFT JOIN customer cust ON (c.owner_id = cust.id OR c.sender_id = cust.id)
-            LEFT JOIN room_information r ON s.room = r.code
+            LEFT JOIN lab_order lo ON s.id = lo.sample_id
+            LEFT JOIN room_information r ON lo.room_id = r.id
             WHERE {where_clause}
             ORDER BY s.dtime DESC, s.id
         """
@@ -1266,6 +1249,78 @@ def search_barcode_cases(name: str = "", surname: str = ""):
     finally:
         if conn: 
             conn.close()
+
+
+@app.get("/barcode/search_by_employee")
+def search_by_employee(employee_id: int):
+    """ Search cases by Employee ID (updater in lab_order table)
+    Flow: employee.id -> lab_order.updater -> sample_registration.id -> room_information
+    """
+    print(f"[DEBUG] search_by_employee called with employee_id={employee_id}")
+    conn = None
+    try:
+        conn = get_db_connection()
+        if not conn: 
+            return []
+        
+        cursor = conn.cursor()
+        
+        # First, let's debug: find all lab_order records with this updater
+        debug_sql = "SELECT id, sample_id, room_id, updater FROM lab_order WHERE updater = ? LIMIT 10"
+        cursor.execute(debug_sql, (employee_id,))
+        debug_results = cursor.fetchall()
+        print(f"[DEBUG] lab_order records with updater={employee_id}: {debug_results}")
+        
+        # Correct flow: 
+        # 1. lab_order.updater = employee_id
+        # 2. sample_registration.id = lab_order.sample_id
+        # 3. room_information.id = lab_order.room_id
+        sql = """
+            SELECT DISTINCT
+                s.id AS sample_id,
+                s.dtime, 
+                s.case_id, 
+                s.name AS sample_name,
+                s.species, 
+                CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
+                s.keep_method, 
+                s.speed 
+            FROM lab_order lo
+            LEFT JOIN sample_registration s ON lo.sample_id = s.id
+            LEFT JOIN room_information r ON lo.room_id = r.id
+            WHERE lo.updater = ?
+            ORDER BY s.dtime DESC, s.id
+        """
+        cursor.execute(sql, (employee_id,))
+        results = []
+        seen_sample_ids = set()
+        for row in cursor:
+            sample_id = row[0]
+            # Skip if we've already seen this sample
+            if sample_id in seen_sample_ids:
+                continue
+            seen_sample_ids.add(sample_id)
+            
+            results.append({
+                "date": str(row[1]) if row[1] else None,
+                "barcode": row[2],
+                "sample_name": row[3],
+                "species": row[4],
+                "lab_name": row[5],
+                "storage": row[6],
+                "urgency": row[7]
+            })
+        print(f"[DEBUG] Search by employee {employee_id} returned {len(results)} results")
+        return results
+    except mariadb.Error as e:
+        print(f"Query Error (Search by Employee): {e}")
+        return []
+    finally:
+        if conn: 
+            conn.close()
+
+
+
 
 
 # print("Server Running ...")

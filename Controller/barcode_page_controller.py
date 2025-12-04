@@ -1,6 +1,6 @@
+import warnings
 from PySide6.QtWidgets import QTableWidgetItem, QMessageBox, QCompleter
 from PySide6.QtCore import QObject, QStringListModel, Qt, QTimer
-# Ensure this path matches where you keep your barcode generator
 from barcode_utils.barcode_generator import BarcodeGenerator
 from API.client_app import APIApp 
 
@@ -20,6 +20,7 @@ class BarcodePageController(QObject):
         
         # Setup autocomplete
         self._setup_autocomplete()
+        self._setup_employee_autocomplete()
         
         self.event_bindings()
 
@@ -135,27 +136,125 @@ class BarcodePageController(QObject):
         finally:
             self.is_selecting = False
 
-    def event_bindings(self):
-        # Disconnect first to prevent double connections
-        try:
-            self.ui.btn_search_today.clicked.disconnect()
-        except:
-            pass
-        try:
-            self.ui.btn_search_customer.clicked.disconnect()
-        except:
-            pass
-        try:
-            self.ui.btn_print.clicked.disconnect()
-        except:
-            pass
+    def _setup_employee_autocomplete(self):
+        """ Setup autocomplete for employee name search (ชื่อผู้นำส่ง) """
+        # Initialize employee autocomplete variables
+        self.employee_records_map = {}
+        self.is_selecting_employee = False
+        self.last_employee_search_text = ""
+        self.selected_employee_id = None
         
+        # Timer for debouncing search
+        self.employee_search_timer = QTimer()
+        self.employee_search_timer.setSingleShot(True)
+        self.employee_search_timer.timeout.connect(self._perform_employee_search)
+        self.employee_search_delay = 400
+        
+        # Completer setup for employee
+        self.employee_completer_model = QStringListModel()
+        self.employee_completer = QCompleter(self.employee_completer_model, self.view)
+        self.employee_completer.setCaseSensitivity(Qt.CaseInsensitive)
+        self.employee_completer.setFilterMode(Qt.MatchContains)
+        self.employee_completer.setCompletionMode(QCompleter.PopupCompletion)
+        
+        # Connect activated signal
+        self.employee_completer.activated.connect(self._on_employee_selected)
+        
+        # Set completer on the sender line edit
+        self.ui.lineEdit_sender.setCompleter(self.employee_completer)
+        self.ui.lineEdit_sender.textChanged.connect(self._on_employee_text_changed)
+    
+    def _on_employee_text_changed(self, text):
+        """ Called when user types in the employee/sender field """
+        if self.is_selecting_employee:
+            return
+        self.last_employee_search_text = text
+        self.employee_search_timer.start(self.employee_search_delay)
+    
+    def _perform_employee_search(self):
+        """ Perform API search for employee names """
+        if self.is_selecting_employee:
+            return
+            
+        text = self.last_employee_search_text.strip()
+        if len(text) < 2:
+            self.employee_completer_model.setStringList([])
+            return
+            
+        try:
+            results = self.api.search_employee(text)
+            if not results:
+                self.employee_completer_model.setStringList([])
+                return
+
+            # Create display names and map to records
+            display_names = []
+            self.employee_records_map = {}
+            
+            for r in results:
+                name = str(r.get('name', '') or '').strip()
+                surname = str(r.get('surname', '') or '').strip()
+                display_name = f"{name} {surname}".strip()
+                
+                if display_name:
+                    display_names.append(display_name)
+                    if display_name not in self.employee_records_map:
+                        self.employee_records_map[display_name] = []
+                    self.employee_records_map[display_name].append(r)
+
+            # Update model and show popup
+            self.employee_completer_model.setStringList(display_names)
+            
+        except Exception as e:
+            print(f"Employee Search Error: {e}")
+            self.employee_completer_model.setStringList([])
+    
+    def _on_employee_selected(self, text):
+        """ Called when user selects an employee from autocomplete """
+        self.is_selecting_employee = True
+        
+        try:
+            records = self.employee_records_map.get(text, [])
+            print(f"[DEBUG] _on_employee_selected: text='{text}', records={records}")
+            if records:
+                r = records[0]
+                
+                # Store the selected employee ID for later search
+                self.selected_employee_id = r.get('id')
+                print(f"[DEBUG] Selected employee ID set to: {self.selected_employee_id}")
+                
+                name_val = str(r.get('name', '') or '')
+                surname_val = str(r.get('surname', '') or '')
+                
+                # Store values for delayed update
+                self._pending_employee_name = f"{name_val} {surname_val}".strip()
+                
+                # Use QTimer to set values AFTER completer finishes
+                QTimer.singleShot(10, self._apply_employee_selection)
+                
+        except Exception as e:
+            print(f"Employee Selection Error: {e}")
+    
+    def _apply_employee_selection(self):
+        """ Apply the employee selection after completer finishes """
+        try:
+            # Block signals to prevent recursive calls
+            self.ui.lineEdit_sender.blockSignals(True)
+            self.ui.lineEdit_sender.setText(self._pending_employee_name)
+            self.ui.lineEdit_sender.blockSignals(False)
+        finally:
+            self.is_selecting_employee = False
+
+    def event_bindings(self):
+        # Connect signals - since this is called once in __init__, no need to disconnect
         self.ui.btn_search_today.clicked.connect(self.search_today_cases)
         self.ui.btn_search_customer.clicked.connect(self.search_by_customer)
+        self.ui.btn_search_employee.clicked.connect(self.search_by_employee)
         self.ui.btn_print.clicked.connect(self.print_barcode)
 
     def search_today_cases(self):
         self.view.clear_inputs()
+        self.selected_employee_id = None  # Reset employee selection
         
         # Call API
         response_data = self.api.get_today_cases()
@@ -171,6 +270,56 @@ class BarcodePageController(QObject):
 
         response_data = self.api.search_barcode_cases(name, surname)
         self.populate_table(response_data)
+
+    def search_by_employee(self):
+        """ Search cases by employee (ชื่อผู้นำส่ง) """
+        sender_name = self.ui.lineEdit_sender.text().strip()
+        
+        if sender_name == "":
+            QMessageBox.warning(self.view, "Warning", "กรุณากรอกชื่อพนักงานเพื่อค้นหา")
+            return
+        
+        # If we have a selected employee ID from autocomplete, use it directly
+        if self.selected_employee_id is not None:
+            print(f"[DEBUG] Using selected employee ID: {self.selected_employee_id}")
+            response_data = self.api.search_barcode_by_employee(self.selected_employee_id)
+            if response_data and len(response_data) > 0:
+                self.populate_table(response_data)
+            else:
+                QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+            return
+        
+        # Split full name and search with first part (name) to improve matching
+        search_term = sender_name.split()[0] if ' ' in sender_name else sender_name
+        print(f"[DEBUG] Searching for employee: {search_term} (original: {sender_name})")
+        results = self.api.search_employee(search_term)
+        print(f"[DEBUG] Employee search results: {results}")
+        
+        if results and len(results) > 0:
+            # Try each matching employee until we find one with data
+            found_data = False
+            for emp in results:
+                employee_id = emp.get('id')
+                emp_name = str(emp.get('name', '') or '').strip()
+                emp_surname = str(emp.get('surname', '') or '').strip()
+                full_name = f"{emp_name} {emp_surname}".strip()
+                
+                print(f"[DEBUG] Trying employee ID: {employee_id} ({full_name})")
+                
+                # Only try employees that match the search name
+                if sender_name in full_name or full_name in sender_name or emp_name in sender_name:
+                    response_data = self.api.search_barcode_by_employee(employee_id)
+                    print(f"[DEBUG] Barcode search response for ID {employee_id}: {len(response_data) if response_data else 0} results")
+                    
+                    if response_data and len(response_data) > 0:
+                        self.populate_table(response_data)
+                        found_data = True
+                        break
+            
+            if not found_data:
+                QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+        else:
+            QMessageBox.warning(self.view, "Warning", "ไม่พบพนักงานที่ค้นหา")
 
     def populate_table(self, api_response):
         """ Populates the QTableWidget with API data """

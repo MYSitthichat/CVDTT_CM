@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'barcode_page.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.9.2
+## Created by: Qt User Interface Compiler version 6.8.1
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -40,7 +40,7 @@ class Ui_barcode_page_MainWindow(object):
         self.label_sender.setGeometry(QRect(20, 50, 121, 31))
         self.lineEdit_sender = QLineEdit(self.centralwidget)
         self.lineEdit_sender.setObjectName(u"lineEdit_sender")
-        self.lineEdit_sender.setGeometry(QRect(20, 80, 1231, 41))
+        self.lineEdit_sender.setGeometry(QRect(20, 80, 941, 41))
         self.label_firstname = QLabel(self.centralwidget)
         self.label_firstname.setObjectName(u"label_firstname")
         self.label_firstname.setGeometry(QRect(20, 140, 41, 31))
@@ -90,6 +90,9 @@ class Ui_barcode_page_MainWindow(object):
         self.btn_print = QPushButton(self.centralwidget)
         self.btn_print.setObjectName(u"btn_print")
         self.btn_print.setGeometry(QRect(1080, 830, 171, 51))
+        self.btn_search_employee = QPushButton(self.centralwidget)
+        self.btn_search_employee.setObjectName(u"btn_search_employee")
+        self.btn_search_employee.setGeometry(QRect(1000, 80, 251, 51))
         barcode_page_MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(barcode_page_MainWindow)
@@ -121,5 +124,6 @@ class Ui_barcode_page_MainWindow(object):
         ___qtablewidgetitem6 = self.tableWidget.horizontalHeaderItem(6)
         ___qtablewidgetitem6.setText(QCoreApplication.translate("barcode_page_MainWindow", u"\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e1e\u0e34\u0e48\u0e21\u0e40\u0e15\u0e34\u0e21", None));
         self.btn_print.setText(QCoreApplication.translate("barcode_page_MainWindow", u"\u0e1e\u0e34\u0e21\u0e1e\u0e4c\u0e1a\u0e32\u0e23\u0e4c\u0e42\u0e04\u0e49\u0e14", None))
+        self.btn_search_employee.setText(QCoreApplication.translate("barcode_page_MainWindow", u"\u0e04\u0e49\u0e19\u0e2b\u0e32\u0e14\u0e49\u0e27\u0e22\u0e0a\u0e37\u0e48\u0e2d\u0e1e\u0e19\u0e31\u0e01\u0e07\u0e32\u0e19", None))
     # retranslateUi
 

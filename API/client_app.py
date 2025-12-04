@@ -326,19 +326,6 @@ class APIApp(QWidget):
 
 # EMPLOYEE MANAGEMENT API
 
-    def get_max_sample_id(self):
-        try:
-            response = requests.get(f"{API_URL}/get_max_sample_id", timeout=5)
-            if response.status_code == 200:
-                data = response.json()
-                # print(data)
-                return data.get("max_id") # คืนค่า max_id ที่ได้จาก JSON
-            else:
-                print(f"Server Error on get_max_sample_id: {response.status_code}")
-                return None
-        except requests.RequestException as e:
-            print(f"API Connect Error on get_max_sample_id: {e}")
-            return None
 
 # EMPLOYEE MANAGEMENT API
 
@@ -508,6 +495,20 @@ class APIApp(QWidget):
         try:
             params = {"name": name, "surname": surname}
             response = requests.get(f"{API_URL}/barcode/search", params=params, timeout=5)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error: {response.status_code}")
+                return []
+        except Exception as e:
+            print(f"API Error: {e}")
+            return []
+
+    def search_barcode_by_employee(self, employee_id):
+        """Search barcode cases by employee ID (updater)"""
+        try:
+            params = {"employee_id": employee_id}
+            response = requests.get(f"{API_URL}/barcode/search_by_employee", params=params, timeout=5)
             if response.status_code == 200:
                 return response.json()
             else:

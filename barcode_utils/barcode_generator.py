@@ -76,7 +76,8 @@ class BarcodeGenerator:
         writer = ImageWriter()
         barcode_code128 = barcode.get('code128', str(sample_code), writer=writer)
         barcode_image = barcode_code128.render({"mode": "RGBA"})
-        barcode_image = barcode_image.resize((1650, 1500), Image.Resampling.LANCZOS)
+        # Resize barcode - make it shorter so number fits below
+        barcode_image = barcode_image.resize((1650, 450), Image.Resampling.LANCZOS)
 
         text_layer = Image.new('RGBA', (2000, 2000))
         draw = ImageDraw.Draw(text_layer)
@@ -93,11 +94,17 @@ class BarcodeGenerator:
 
         background_layer.paste(text_layer, (0, 0), text_layer)
         
-        # <--- FIX 1: Moved Barcode UP (from 530 to 480) --->
-        Image.Image.paste(background_layer, barcode_image, (1, 480))
+        # Paste barcode image at y=550
+        Image.Image.paste(background_layer, barcode_image, (1, 550))
+        
+        # Add barcode number below barcode image (centered)
+        # Barcode ends at 550 + 450 = 1000, so place text at 1020
+        barcode_number = str(sample_code).zfill(10)
+        draw_on_bg = ImageDraw.Draw(background_layer)
+        draw_on_bg.text((825, 1020), barcode_number, font=text_font, anchor='mt', fill="#000000")
 
-        # <--- FIX 2: Reduced Crop Height (from 1200 to 950) to remove white space --->
-        final_layer = background_layer.crop((0, 0, 2100, 920))
+        # Crop to final size including barcode number
+        final_layer = background_layer.crop((0, 0, 2100, 1180))
         return final_layer
 
     def print_barcode(self):
