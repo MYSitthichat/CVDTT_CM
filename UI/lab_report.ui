@@ -13,9 +13,6 @@
   <property name="windowTitle">
    <string>Lab Report</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">font-size: 16pt;</string>
-  </property>
   <widget class="QLabel" name="label_barcode_search">
    <property name="geometry">
     <rect>

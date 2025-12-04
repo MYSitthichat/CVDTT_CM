@@ -129,19 +129,14 @@ def login(username: str, password: str):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-<<<<<<< HEAD
-        cursor.execute("SELECT id, password FROM employee WHERE username = ? LIMIT 1 AND status = 1", (username,))
-=======
-        # Get id, password, and group_id from the LATEST record (highest id = newest version)
-        # This ensures we get the current active record, not an archived one
         cursor.execute("""
-            SELECT id, password, group_id 
-            FROM employee 
-            WHERE username = ? 
-            ORDER BY id DESC 
-            LIMIT 1
+                    SELECT id, password, group_id 
+                    FROM employee 
+                    WHERE username = 'nut' 
+                    AND status = 1
+                    ORDER BY id DESC 
+                    LIMIT 1
         """, (username,))
->>>>>>> 72f3d8db0b9d1536b9aee35458d04cfa594eecfe
         user = cursor.fetchone()
         if not user:
             return {"success": False, "user_id": None, "group_id": None}
@@ -683,10 +678,6 @@ def save_parasite_biology(data: ParasiteBiologyData):
 
 @app.get("/search_employee")
 def search_employee(q: str, current_username: str = None):
-    """Search employee by name or surname
-    Returns active employees (status=1) that match search
-    If current_username is provided, also includes that user's LATEST record even if archived
-    """
     if not q or len(q) < 2:
         return []
     

@@ -24,7 +24,6 @@ class Ui_lab_report_MainWindow(object):
         if not lab_report_MainWindow.objectName():
             lab_report_MainWindow.setObjectName(u"lab_report_MainWindow")
         lab_report_MainWindow.resize(1270, 890)
-        lab_report_MainWindow.setStyleSheet(u"font-size: 16pt;")
         self.label_barcode_search = QLabel(lab_report_MainWindow)
         self.label_barcode_search.setObjectName(u"label_barcode_search")
         self.label_barcode_search.setGeometry(QRect(20, 20, 200, 40))

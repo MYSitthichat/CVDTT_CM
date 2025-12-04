@@ -28,34 +28,22 @@ class MolecularBiologyController(QObject):
             return
 
     def save_data(self):
-        
-        # First validate and calculate to ensure data is correct
         summary = self.view.calculate_summary()
-        
-        # Check if validation failed
         if summary is None:
             return
-        
-        # Get ALL test items (selected and unselected) for database saving
         all_test_items = self.view.get_data()
-        
-        # Get only selected items for validation and display
         selected_items = summary['items']
         
         if not selected_items:
             QMessageBox.warning(self.view, "Warning", "กรุณาเลือกรายการที่ต้องการส่งตรวจ (Please select items)")
             return
         
-        # Get sample_id from specimen_controller
         sample_id = None
         
-        # Try to get specimen_id from specimen_controller
         if hasattr(self.main_window, 'specimen_controller'):
             specimen_ctrl = self.main_window.specimen_controller
             if hasattr(specimen_ctrl, 'specimen_id') and specimen_ctrl.specimen_id:
                 sample_id = str(specimen_ctrl.specimen_id)  # ✅ Convert to string
-        
-        # Fallback: Try to get from specimen widget UI
         if not sample_id:
             if hasattr(self.main_window, 'specimen_widget') and hasattr(self.main_window.specimen_widget, 'ui'):
                 if hasattr(self.main_window.specimen_widget.ui, 'specimen_ID_lineEdit'):
