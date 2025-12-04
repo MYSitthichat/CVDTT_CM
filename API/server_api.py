@@ -132,7 +132,7 @@ def login(username: str, password: str):
         cursor.execute("""
                     SELECT id, password, group_id 
                     FROM employee 
-                    WHERE username = 'nut' 
+                    WHERE username = ?
                     AND status = 1
                     ORDER BY id DESC 
                     LIMIT 1
