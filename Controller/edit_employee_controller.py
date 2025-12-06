@@ -271,9 +271,21 @@ class EditEmployeeController(QObject):
         if employee_data:
             self.populate_employee_fields(employee_data)
             self.show_employee_edit_frame()
-            # Disable password field when viewing existing employee
-            self.view.employee_password_lineEdit.setEnabled(False)
-            self.view.employee_password_lineEdit.setPlaceholderText("(ไม่แสดงรหัสผ่าน)")
+            
+            # Check password change permission
+            can_change_password = self.check_permission_to_change_password(employee_id)
+            
+            if can_change_password:
+                # Enable password field if user has permission
+                self.view.employee_password_lineEdit.setEnabled(True)
+                self.view.employee_password_lineEdit.setPlaceholderText("กรอกรหัสผ่านใหม่ (เว้นว่างหากไม่ต้องการเปลี่ยน)")
+                self.view.employee_password_lineEdit.clear()
+            else:
+                # Disable password field if no permission
+                self.view.employee_password_lineEdit.setEnabled(False)
+                self.view.employee_password_lineEdit.setPlaceholderText("(ไม่มีสิทธิ์เปลี่ยนรหัสผ่าน)")
+                self.view.employee_password_lineEdit.clear()
+            
             # Disable signature drawing until edit button is clicked
             self.view.signature_canvas.setEnabled(False)
         else:
@@ -398,7 +410,26 @@ class EditEmployeeController(QObject):
                             )
                             return
                 
-                # Update existing employee (no password field)
+                # Check if password change was attempted BEFORE updating
+                new_password = data.get('password', '').strip()
+                if new_password:
+                    # Validate password change permission
+                    if not self.check_permission_to_change_password(self.current_employee_id):
+                        QMessageBox.warning(self.view, "ไม่มีสิทธิ์", "คุณไม่มีสิทธิ์เปลี่ยนรหัสผ่านของพนักงานคนนี้!")
+                        return
+                    
+                    # Validate password length
+                    if len(new_password) < 6:
+                        QMessageBox.warning(self.view, "คำเตือน", "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร!")
+                        return
+                    
+                    # Password is valid and will be included in data sent to API
+                else:
+                    # No password change - remove password from data
+                    if 'password' in data:
+                        del data['password']
+                
+                # Update existing employee with validated data (including password if changed)
                 success, new_employee_id = self.update_employee_in_database(self.current_employee_id, data)
                 
                 # If editing yourself, update your cached user info with new ID
@@ -492,9 +523,11 @@ class EditEmployeeController(QObject):
         else:
             data['signature_image'] = None
         
-        # Only include password for new employees
+        # Include password if field is enabled and has value
         if self.view.employee_password_lineEdit.isEnabled():
-            data['password'] = self.view.employee_password_lineEdit.text()
+            password = self.view.employee_password_lineEdit.text().strip()
+            if password:  # Only include if not empty
+                data['password'] = password
         
         return data
     
@@ -643,6 +676,48 @@ class EditEmployeeController(QObject):
             print(f"Error checking permission: {e}")
             return False
     
+    # ========== PASSWORD CHANGE FUNCTIONS ==========
+    
+    def check_permission_to_change_password(self, target_employee_id):
+        """Check if current user has permission to change target employee's password
+        Rules:
+        - CAN change your own password
+        - Permission 1 or 2: CAN change lower permission passwords (higher group_id)
+        - Permission 1 or 2: CANNOT change same or higher permission passwords
+        - Other permissions: CAN ONLY change their own password
+        """
+        if self.current_user_permission is None:
+            return False
+        
+        try:
+            # Get target employee info
+            target_employee = self.api_app.get_employee_by_id(target_employee_id, include_archived=True)
+            if not target_employee:
+                return False
+            
+            # Check if changing your own password (compare by username)
+            target_username = target_employee.get('username')
+            current_username = self.current_user_info.get('username') if self.current_user_info else None
+            
+            if target_username and current_username and target_username == current_username:
+                return True  # Can always change your own password
+            
+            # Only permission 1 or 2 can change other's passwords
+            if self.current_user_permission not in [1, 2]:
+                return False
+            
+            # Permission 1 or 2: Can change lower permission passwords only
+            target_permission = target_employee.get('group_id')
+            if target_permission is None:
+                return False
+            
+            # Can change password if target has lower permission (higher group_id)
+            return self.current_user_permission < target_permission
+            
+        except Exception as e:
+            print(f"Error checking password change permission: {e}")
+            return False
+    
     # ========== SIGNATURE FUNCTIONS ==========
     
     def pixmap_to_base64(self, pixmap):
@@ -736,6 +811,10 @@ class EditEmployeeController(QObject):
                 "status": 1,  # New version is active
                 "updater": self.current_user_permission  # Track who edited this
             }
+            
+            # Include password only if provided (for password changes)
+            if 'password' in data and data['password']:
+                employee_data['password'] = data['password']
             
             # print(f"[DEBUG] updater value being sent: {employee_data['updater']}")
             # print(f"[DEBUG] =======================================")

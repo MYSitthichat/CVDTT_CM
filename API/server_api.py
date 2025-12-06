@@ -898,6 +898,15 @@ def update_employee(employee_id: int, employee: EmployeeData):
         )
         
         # Step 2: Insert new record with updated data
+        # If new password provided, hash it; otherwise keep old password
+        password_to_save = old_password  # Default: keep old password
+        if employee.password:
+            # Hash the new password
+            password_to_save = pwd_context.hash(employee.password)
+            print(f"[API DEBUG] New password provided, hashing it")
+        else:
+            print(f"[API DEBUG] No new password, keeping old password")
+        
         sql = """INSERT INTO employee 
                  (title, name, surname, email, username, password, group_id, status, updater)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
@@ -908,7 +917,7 @@ def update_employee(employee_id: int, employee: EmployeeData):
             employee.surname,
             employee.email,
             employee.username,
-            old_password,  # Keep the same password (user cannot change password through this endpoint)
+            password_to_save,  # Use new password if provided, else old password
             employee.group_id,
             1,  # New record is active
             employee.updater if employee.updater is not None else 1
