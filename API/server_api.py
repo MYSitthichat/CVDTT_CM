@@ -48,6 +48,20 @@ class ParasiteBiologyData(BaseModel):
     tests: List[dict]  # List of test items with name, amount, price
     updater: Optional[int] = None  # user_id of person saving the data
 
+# --- Bacteria Biology Data Model ---
+class BacteriaBiologyData(BaseModel):
+    sample_id: str
+    # Sample Preparation - 21 items
+    sample_preparation: List[dict]  # Each: {name, state, amount}
+    # Drug Sensitivity - 41 items
+    drug_sensitivity: List[dict]  # Each: {name, state}
+    # Bacterial Identification - 12 items
+    bacteria_identification: List[dict]  # Each: {name, state}
+    # Laboratory Request - 5 items
+    lab_request: List[dict]  # Each: {name, state, price}
+    remark: Optional[str] = ""
+    updater: Optional[int] = None
+
 # --- Specimen Registration Data Model ---
 class SpecimenData(BaseModel):
     case_id: Optional[int] = None
@@ -651,6 +665,90 @@ def save_parasite_biology(data: ParasiteBiologyData):
         conn.close()
 
 # --- PARASITE BIOLOGY API ---
+
+# --- BACTERIA BIOLOGY API ---
+
+@app.post("/save_bacteria_biology")
+def save_bacteria_biology(data: BacteriaBiologyData):
+    """Save bacteria biology test data to database"""
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        
+        # Build column names and values dynamically
+        columns = ["sample_id"]
+        values = [data.sample_id]
+        
+        # Sample Preparation - 21 items (preparation_p1 to preparation_p21)
+        for i in range(1, 22):
+            if i <= len(data.sample_preparation):
+                item = data.sample_preparation[i-1]
+                columns.extend([f"preparation_p{i}_name", f"preparation_p{i}_state", f"preparation_p{i}_amount"])
+                values.extend([item.get('name', ''), item.get('state', 0), item.get('amount', 0)])
+            else:
+                columns.extend([f"preparation_p{i}_name", f"preparation_p{i}_state", f"preparation_p{i}_amount"])
+                values.extend(['', 0, 0])
+        
+        # Drug Sensitivity - 41 items (drug_sensitivity1 to drug_sensitivity41)
+        for i in range(1, 42):
+            if i <= len(data.drug_sensitivity):
+                item = data.drug_sensitivity[i-1]
+                columns.extend([f"drug_sensitivity{i}_name", f"drug_sensitivity{i}_state"])
+                values.extend([item.get('name', ''), item.get('state', 0)])
+            else:
+                columns.extend([f"drug_sensitivity{i}_name", f"drug_sensitivity{i}_state"])
+                values.extend(['', 0])
+        
+        # Bacterial Identification - 12 items (bacteria_id1 to bacteria_id12)
+        for i in range(1, 13):
+            if i <= len(data.bacteria_identification):
+                item = data.bacteria_identification[i-1]
+                columns.extend([f"bacteria_id{i}_name", f"bacteria_id{i}_state"])
+                values.extend([item.get('name', ''), item.get('state', 0)])
+            else:
+                columns.extend([f"bacteria_id{i}_name", f"bacteria_id{i}_state"])
+                values.extend(['', 0])
+        
+        # Laboratory Request - 5 items (lab_request1 to lab_request5)
+        for i in range(1, 6):
+            if i <= len(data.lab_request):
+                item = data.lab_request[i-1]
+                columns.extend([f"lab_request{i}_name", f"lab_request{i}_state", f"lab_request{i}_price"])
+                values.extend([item.get('name', ''), item.get('state', 0), item.get('price', 0)])
+            else:
+                columns.extend([f"lab_request{i}_name", f"lab_request{i}_state", f"lab_request{i}_price"])
+                values.extend(['', 0, 0])
+        
+        # Add remark and updater
+        columns.extend(["remark", "updater"])
+        values.extend([data.remark, data.updater])
+        
+        # Build SQL
+        placeholders = ",".join(["?"] * len(values))
+        sql = f"INSERT INTO lab_bacteria_biology ({','.join(columns)}) VALUES ({placeholders})"
+        
+        cursor.execute(sql, values)
+        conn.commit()
+        
+        return {
+            "status": "success",
+            "message": "Bacteria biology data saved successfully",
+            "sample_id": data.sample_id
+        }
+        
+    except mariadb.Error as e:
+        print(f"❌ Bacteria Biology Database Error: {e}")
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save bacteria biology data: {str(e)}")
+    except Exception as e:
+        print(f"❌ Bacteria Biology Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()
+
+# --- BACTERIA BIOLOGY API ---
 
 # --- EMPLOYEE MANAGEMENT API ---
 

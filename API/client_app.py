@@ -324,6 +324,30 @@ class APIApp(QWidget):
 
 # --- PARASITE BIOLOGY API ---
 
+# --- BACTERIA BIOLOGY API ---
+
+    def save_bacteria_biology(self, bacteria_data):
+        """Save bacteria biology test data to database"""
+        try:
+            response = requests.post(
+                f"{API_URL}/save_bacteria_biology",
+                json=bacteria_data,
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                try:
+                    error_detail = response.json()
+                    return {"status": "error", "detail": error_detail.get("detail", "Unknown error")}
+                except:
+                    return {"status": "error", "detail": f"HTTP {response.status_code}"}
+        except requests.RequestException as e:
+            print(f"Network error on save_bacteria_biology: {e}")
+            return {"status": "error", "detail": str(e)}
+
+# --- BACTERIA BIOLOGY API ---
+
 # EMPLOYEE MANAGEMENT API
 
 
