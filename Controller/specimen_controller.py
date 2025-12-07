@@ -4,6 +4,8 @@ from PySide6.QtWidgets import QMessageBox
 import pyodbc
 from datetime import datetime
 from API.client_app import APIApp
+from SERVICES_REGISTER.work_service import WorkService
+from SERVICES_REGISTER.lab_service import LabService
 
 
 class SpecimenController(QObject):
@@ -15,7 +17,8 @@ class SpecimenController(QObject):
         self.main_window = parent  # Store reference to main window
         self.case_registration_id = None  # Store the case registration ID
         self.specimen_id = None  # Store the specimen ID after saving
-        self.api = APIApp()  # Initialize API client
+        self.api = WorkService()  # Initialize API client
+        self.lab_api = LabService()
         self.room_mapping = {}  # Store dynamic room mapping
         self.bind_specimen_events()
         self.load_room_mapping()  # Load room mapping on initialization
@@ -38,7 +41,7 @@ class SpecimenController(QObject):
     
         result_data_on_page = self.get_specimen_data()
 
-        result = self.api.add_sample_registration(result_data_on_page)
+        result = self.api.add_specimen(result_data_on_page)
 
         if result and isinstance(result, dict):
             if result.get('status') == 'success':
@@ -66,7 +69,7 @@ class SpecimenController(QObject):
 
     def load_room_mapping(self):
         try:
-            room_details = self.api.get_room_details()
+            room_details = self.lab_api.get_room_details()
             
             if room_details and 'lab_rooms' in room_details:
                 rooms = room_details['lab_rooms']
@@ -135,7 +138,7 @@ class SpecimenController(QObject):
 
     def get_room_details(self):
         """Fetch and display lab room details with dynamic button mapping"""
-        room_details = self.api.get_room_details()
+        room_details = self.lab_api.get_room_details()
         
         if room_details and 'lab_rooms' in room_details:
             rooms = sorted(room_details['lab_rooms'], key=lambda x: x.get('id', 0))

@@ -3,7 +3,7 @@ from Controller.main_controller import MainController
 from Controller.forgot_password_controller import ForgotPasswordController
 from PySide6.QtCore import QObject, QTimer
 import sys
-from API.client_app import APIApp
+from SERVICES_REGISTER.auth_service import AuthService
 from PySide6.QtWidgets import QMessageBox
 
 DEBUG = False
@@ -14,7 +14,7 @@ class Login_Controller(QObject):
         super(Login_Controller, self).__init__()
         self.login_window = LoginWindow()
         self.main_window = MainController(login_controller=self)
-        self.login_api_app = APIApp()
+        self.login_api_app = AuthService()
         self.forgot_password_widget = ForgotPasswordController()
         self.main_window.hide_main_page()
         
@@ -40,7 +40,7 @@ class Login_Controller(QObject):
         else:
             if username == "" and password == "":
                 return False
-            user_info = self.login_api_app.get_status_login(username, password)
+            user_info = self.login_api_app.login(username, password)
             if user_info:
                 self.logged_in_user_id = user_info.get('id') or user_info.get('user_id')
                 self.main_window.set_logged_in_user(self.logged_in_user_id)

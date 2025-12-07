@@ -1,6 +1,7 @@
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMessageBox
-from API.client_app import APIApp
+# from API.client_app import APIApp
+from SERVICES_REGISTER.lab_service import LabService
 
 class MolecularBiologyController(QObject):
     """ Controller for the Molecular Biology Page """
@@ -10,7 +11,7 @@ class MolecularBiologyController(QObject):
         self.model = model
         self.view = view # MolecularBiologyPageWidget
         self.main_window = main_window_view
-        self.api_client = APIApp()
+        self.api_client = LabService()
         
         self.event_bindings()
 

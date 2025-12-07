@@ -1,8 +1,8 @@
 from PySide6.QtCore import QObject,QStringListModel, Qt, QTimer, Slot
 from PySide6.QtWidgets import (QCompleter, QMessageBox, QTreeWidgetItem)
-import mariadb
-from API.client_app import APIApp
 from View.view_new_work_frame import AddNewWorkWidget
+from SERVICES_REGISTER.work_service import WorkService
+from SERVICES_REGISTER.customer_service import CustomerService
 
 
 class NewWorkController(QObject):
@@ -14,7 +14,8 @@ class NewWorkController(QObject):
             self.main_nw = new_work_widget
         self.main_window = main_window
         self.main_controller = main_controller
-        self.API_new_work = APIApp()
+        self.API_new_work = WorkService()
+        self.API_customer = CustomerService()
 
         self.last_sender_search_text = ""
         self.sender_search_timer = QTimer(self)
@@ -240,7 +241,7 @@ class NewWorkController(QObject):
             self.sender_model.setStringList([])
             return
         try:
-            sender_results = self.API_new_work.fetch_search_results(text)
+            sender_results = self.API_customer.search_customer(text)
             if not sender_results:
                 self.sender_model.setStringList([])
                 return
@@ -310,7 +311,7 @@ class NewWorkController(QObject):
             self.owner_model.setStringList([])
             return
         try:
-            owner_results = self.API_new_work.fetch_search_results(text)
+            owner_results = self.API_customer.search_customer(text)
             if not owner_results:
                 self.owner_model.setStringList([])
                 return

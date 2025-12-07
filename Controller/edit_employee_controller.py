@@ -1,11 +1,9 @@
 from View.view_edit_employee_frame import EditEmployeeWindow
-from PySide6.QtCore import QObject, Qt, QBuffer, QIODevice, QTimer, QEvent, QPoint
-from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem, QFileDialog
-from PySide6.QtGui import QPixmap, QMouseEvent
-from API.client_app import APIApp
-from datetime import datetime
-import os
+from PySide6.QtCore import QObject, Qt, QBuffer, QIODevice
+from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem
+from PySide6.QtGui import QPixmap
 import base64
+from SERVICES_REGISTER.employee_service import EmployeeService
 
 
 class EditEmployeeController(QObject):
@@ -15,7 +13,7 @@ class EditEmployeeController(QObject):
         super().__init__(parent)
         self.view = view
         self.view.controller = self  # Store reference for cleanup on close/hide
-        self.api_app = APIApp()
+        self.api_app = EmployeeService()
         self.current_signature_path = None
         self.current_employee_id = None
         self.current_user_permission = None  # Store current user's permission level
@@ -68,7 +66,7 @@ class EditEmployeeController(QObject):
             # Fallback: API call to get permission
             # print(f"[DEBUG] Calling get_employee_permission_by_id for user_id={user_id}")
             try:
-                permission = self.api_app.get_employee_permission_by_id(user_id)
+                permission = self.api_app.get_permission(user_id)
                 # print(f"[DEBUG] API returned permission: {permission}")
                 if permission is not None:
                     self.current_user_permission = permission
@@ -85,7 +83,7 @@ class EditEmployeeController(QObject):
     def load_employee_groups(self):
         """Load employee groups from database into position ComboBox"""
         try:
-            groups = self.api_app.get_employee_groups()
+            groups = self.api_app.get_groups()
             self.view.employee_position_comboBox.clear()
             self.view.employee_position_comboBox.addItem("เลือกตำแหน่ง", None)  # Default option
             

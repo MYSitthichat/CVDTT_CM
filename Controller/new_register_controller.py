@@ -1,7 +1,7 @@
 from PySide6.QtCore import QObject, Qt, QTimer
 from PySide6.QtWidgets import QMessageBox
-from API.client_app import APIApp
 from View.view_register_new_customer_frame import RegisterNewCustomerWidget
+from SERVICES_REGISTER.customer_service import CustomerService
 
 class NewRegisterController(QObject):
     def __init__(self, register_widget=None):
@@ -11,7 +11,8 @@ class NewRegisterController(QObject):
         else:
             self.main_nr = register_widget
             
-        self.api_app = APIApp()
+        # self.api_app = APIApp()
+        self.customer_api = CustomerService()
         self.main_nr.ui.Add_new_costumer_save_pushButton.clicked.connect(self.save_register_clicked)
         self.main_nr.ui.Add_new_costumer_cancel_pushButton.clicked.connect(self.cancel_register_clicked)
 
@@ -27,7 +28,7 @@ class NewRegisterController(QObject):
         self.phone = self.main_nr.ui.phone_lineEdit.text()
         self.address = self.main_nr.ui.address_contact_textEdit.toPlainText()
         self.bill_address = self.main_nr.ui.address_billing_textEdit.toPlainText()
-        api_response = self.api_app.get_customer_group_id()
+        api_response = self.customer_api.get_customer_groups()
         all_groups_list = []
         if isinstance(api_response, dict) and 'customer_groups' in api_response:
             all_groups_list = api_response['customer_groups']
@@ -56,7 +57,7 @@ class NewRegisterController(QObject):
             "address": self.address,
             "bill_address": self.bill_address
         }
-        result = self.api_app.add_new_customer(customer_data)
+        result = self.customer_api.add_new_customer(customer_data)
         if result:
             QMessageBox.information(
             self.main_nr, 

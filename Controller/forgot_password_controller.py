@@ -1,15 +1,16 @@
 from View.view_forgot_password_frame import ForgotPasswordWidget
 from PySide6.QtCore import QObject
-from API.client_app import APIApp
+from SERVICES_REGISTER.auth_service import AuthService
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMessageBox
+
 
 class ForgotPasswordController(QObject):
     return_to_login = Signal()
     def __init__(self):
         super(ForgotPasswordController, self).__init__()
         self.forgot_password_widget = ForgotPasswordWidget()
-        self.api_app = APIApp()
+        self.api_app = AuthService()
         self.confirm_password_is_like = False
         self.forgot_password_widget.ui.FP_save_pushButton.clicked.connect(self.save_forgot_password)
         self.forgot_password_widget.ui.FP_cancel_pushButton.clicked.connect(self.cancel_forgot_password)

@@ -1,10 +1,9 @@
 from View.view_bacteria_frame import bacterieFrameView
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMessageBox
-from API.client_app import APIApp
 import pyodbc
 from datetime import datetime
-
+from SERVICES_REGISTER.lab_service import LabService
 
 class BacteriaController(QObject):
     """Controller for Bacteria Biology Page - mimicking lab_manager structure"""
@@ -13,7 +12,7 @@ class BacteriaController(QObject):
         super().__init__(parent)
         self.view = view
         self.main_window = parent  # Store reference to main window
-        self.api_client = APIApp()  # Initialize API client
+        self.api_client = LabService()  # Initialize API client
         
         # Test prices for Laboratory Request
         self.lab_request_prices = {

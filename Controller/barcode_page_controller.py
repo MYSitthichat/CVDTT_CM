@@ -2,7 +2,9 @@ import warnings
 from PySide6.QtWidgets import QTableWidgetItem, QMessageBox, QCompleter
 from PySide6.QtCore import QObject, QStringListModel, Qt, QTimer
 from barcode_utils.barcode_generator import BarcodeGenerator
-from API.client_app import APIApp 
+from SERVICES_REGISTER.barcode_service import BarcodeService
+from SERVICES_REGISTER.customer_service import CustomerService
+from SERVICES_REGISTER.employee_service import EmployeeService
 
 class BarcodePageController(QObject):
     """ Controller for the Barcode/Sticker Page """
@@ -10,8 +12,10 @@ class BarcodePageController(QObject):
     def __init__(self, view):
         super().__init__()
         self.view = view 
-        self.api = APIApp() 
-        
+        self.api = BarcodeService() 
+        self.customer_api = CustomerService()
+        self.employee_api = EmployeeService()
+
         # Initialize autocomplete variables
         self.customer_records_map = {}
         self.is_selecting = False
@@ -70,7 +74,7 @@ class BarcodePageController(QObject):
             return
             
         try:
-            results = self.api.fetch_search_results(text)
+            results = self.customer_api.fetch_search_results(text)
             if not results:
                 self.completer_model.setStringList([])
                 return
@@ -182,7 +186,7 @@ class BarcodePageController(QObject):
             return
             
         try:
-            results = self.api.search_employee(text)
+            results = self.employee_api.search_employee(text)
             if not results:
                 self.employee_completer_model.setStringList([])
                 return
@@ -292,7 +296,7 @@ class BarcodePageController(QObject):
         # Split full name and search with first part (name) to improve matching
         search_term = sender_name.split()[0] if ' ' in sender_name else sender_name
         # print(f"[DEBUG] Searching for employee: {search_term} (original: {sender_name})")
-        results = self.api.search_employee(search_term)
+        results = self.employee_api.search_employee(search_term)
         # print(f"[DEBUG] Employee search results: {results}")
         
         if results and len(results) > 0:

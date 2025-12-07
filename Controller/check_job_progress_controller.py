@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QTableWidgetItem, QMessageBox
 from PySide6.QtCore import QObject, Qt
-from API.client_app import APIApp
+from SERVICES_REGISTER.check_job_service import CheckJobService
 import traceback
 
 
@@ -11,7 +11,7 @@ class CheckJobProgressController(QObject):
         super().__init__()
         self.model = model
         self.view = view
-        self.api = APIApp()
+        self.api = CheckJobService()
         
         # Store job progress data
         self.job_data = []
