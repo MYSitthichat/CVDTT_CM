@@ -25,6 +25,10 @@ class Login_Controller(QObject):
         self.login_window.cancel_pushButton.clicked.connect(self.cancel_login)
         self.login_window.forgot_password_commandLinkButton.clicked.connect(self.show_forgot_password)
         self.forgot_password_widget.return_to_login.connect(self.show_login_from_forgot)
+        
+        # Connect Enter key press to login
+        self.login_window.user_lineEdit.returnPressed.connect(self.check_login)
+        self.login_window.password_lineEdit.returnPressed.connect(self.check_login)
 
     def check_login(self):
         username = self.login_window.user_lineEdit.text()

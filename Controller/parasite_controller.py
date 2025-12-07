@@ -190,7 +190,7 @@ class ParasiteController(QObject):
                 return
             
             # Get room_id for parasite lab
-            room_id = None
+            room_id = "5"  # Default room_id for Parasitology (ปรสิตวิทยา)
             if hasattr(self.main_window, 'specimen_controller'):
                 specimen_ctrl = self.main_window.specimen_controller
                 if hasattr(specimen_ctrl, 'room_mapping') and 'parasitology' in specimen_ctrl.room_mapping:
@@ -205,7 +205,7 @@ class ParasiteController(QObject):
             # Prepare data for lab order API
             lab_order_data = {
                 "sample_id": sample_id,
-                "room_id": str(room_id) if room_id else None,
+                "room_id": str(room_id),
                 "comments": "",
                 "state": "0",
                 "status": "1",

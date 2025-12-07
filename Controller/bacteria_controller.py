@@ -629,11 +629,15 @@ class BacteriaController(QObject):
                 return
             
             # Get room_id for bacteria lab
-            room_id = None
+            room_id = "2"  # Default room_id for Microbiology (จุลชีววิทยา)
             if hasattr(self.main_window, 'specimen_controller'):
                 specimen_ctrl = self.main_window.specimen_controller
-                if hasattr(specimen_ctrl, 'room_mapping') and 'bacteriology' in specimen_ctrl.room_mapping:
-                    room_id = specimen_ctrl.room_mapping['bacteriology']
+                # Try both 'bacteriology' and 'microbiology' keys
+                if hasattr(specimen_ctrl, 'room_mapping'):
+                    if 'bacteriology' in specimen_ctrl.room_mapping:
+                        room_id = specimen_ctrl.room_mapping['bacteriology']
+                    elif 'microbiology' in specimen_ctrl.room_mapping:
+                        room_id = specimen_ctrl.room_mapping['microbiology']
             
             # Prepare data for bacteria biology API - matching database structure
             bacteria_data = {
@@ -649,7 +653,7 @@ class BacteriaController(QObject):
             # Prepare data for lab order API
             lab_order_data = {
                 "sample_id": sample_id,
-                "room_id": str(room_id) if room_id else None,
+                "room_id": str(room_id),
                 "comments": "",
                 "state": "0",
                 "status": "1",

@@ -91,7 +91,7 @@ class MolecularBiologyController(QObject):
             total_samples += quantity
         
         # Get room_id from specimen_controller's room mapping
-        room_id = None
+        room_id = "8"  # Default room_id for Molecular Biology (อณูชีววิทยา)
         if hasattr(self.main_window, 'specimen_controller'):
             specimen_ctrl = self.main_window.specimen_controller
             if hasattr(specimen_ctrl, 'room_mapping') and 'molecular_biology' in specimen_ctrl.room_mapping:
@@ -109,7 +109,7 @@ class MolecularBiologyController(QObject):
         
         lab_order_data = {
             "sample_id": sample_id,
-            "room_id": str(room_id) if room_id else None,
+            "room_id": str(room_id),
             "comments": "",
             "state": "0",
             "status": "1",

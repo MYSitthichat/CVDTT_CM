@@ -543,3 +543,21 @@ class APIApp(QWidget):
             return []
 
 # ADD BARCODE  API
+
+
+# --- CHECK JOB PROGRESS ---
+    def get_job_progress(self, offset=0, limit=100):
+        try:
+            response = requests.get(
+                f"{API_URL}/get_job_progress",
+                params={"offset": offset, "limit": limit},
+                timeout=10
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"Server Error: {response.status_code}")
+                return None
+        except Exception as e:
+            print(f"API Error: {e}")
+            return None
