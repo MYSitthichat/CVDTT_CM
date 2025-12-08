@@ -661,7 +661,7 @@ class BacteriaController(QObject):
             
             # Prepare first tracking entry
             first_update_tracking_lab_order_data = {
-                "lab_order_id": sample_id,
+                "sample_id": sample_id,
                 "tracking_info": "รับงานเข้าระบบ",
                 "receiver": str(user_id),
                 "updater": str(user_id)

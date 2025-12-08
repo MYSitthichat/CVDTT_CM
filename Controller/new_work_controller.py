@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (QCompleter, QMessageBox, QTreeWidgetItem)
 from View.view_new_work_frame import AddNewWorkWidget
 from SERVICES_REGISTER.work_service import WorkService
 from SERVICES_REGISTER.customer_service import CustomerService
+from barcode_utils.barcode_generator import BarcodeGenerator
 
 
 class NewWorkController(QObject):
@@ -59,7 +60,6 @@ class NewWorkController(QObject):
         self.selected_sender_id = None
         self.selected_owner_id = None
         
-        
         self.main_nw.ui.nw_save_pushButton.clicked.connect(self.save_clicked)
         self.main_nw.ui.nw_cancel_pushButton.clicked.connect(self.cancel_clicked_button)
         self.main_nw.ui.nw_add_result_pushButton.clicked.connect(self.add_result_clicked)
@@ -72,9 +72,111 @@ class NewWorkController(QObject):
         self.main_nw.ui.nw_tex_id_sender_lineEdit.textChanged.connect(lambda: self.clear_selected_id('sender'))
         self.main_nw.ui.nw_sure_name_owner_lineEdit.textChanged.connect(lambda: self.clear_selected_id('owner'))
         self.main_nw.ui.nw_tex_id_owner_lineEdit.textChanged.connect(lambda: self.clear_selected_id('owner'))
+            
+        checkbox = self.main_nw.ui.nw_owner_same_sender_checkBox
+        checkbox.stateChanged.connect(self.on_owner_same_as_sender_changed)
+        self.is_printing = False
         
-    @Slot()
         
+    
+    
+    
+    def send_report_clicked(self):
+        print("Send report button clicked")
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    def delete_result_clicked(self):
+        """Delete selected item from tree widget and database"""
+        tree = self.main_nw.ui.nw_work_register_treeWidget
+        selected_items = tree.selectedItems()
+        
+        if not selected_items:
+            QMessageBox.warning(self.main_nw, "เตือน", "กรุณาเลือกรายการที่ต้องการลบ")
+            return
+        order_id = selected_items[0].text(1).lstrip('0') or '0'
+        
+        reply = QMessageBox.question(
+            self.main_nw,
+            "ยืนยันการลบ",
+            f"คุณต้องการลบรายการหมายเลข {order_id} หรือไม่?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No
+        )
+        
+        if reply == QMessageBox.No:
+            return
+        
+        try:
+            result = self.API_new_work.delete_sample_registration(order_id)
+            
+            if result and result.get('status') == 'success':
+                QMessageBox.information(self.main_nw, "สำเร็จ", "ลบข้อมูลเรียบร้อยแล้ว")
+                self.update_treewidget_data()
+            else:
+                error_detail = result.get('detail', 'ไม่ทราบสาเหตุ') if result else 'ไม่ได้รับการตอบกลับจาก API'
+                QMessageBox.warning(self.main_nw, "ข้อผิดพลาด", f"เกิดข้อผิดพลาดในการลบข้อมูล\n{error_detail}")
+                print(f"Error result: {result}")
+                
+        except Exception as e:
+            QMessageBox.critical(self.main_nw, "ข้อผิดพลาด", f"เกิดข้อผิดพลาด: {str(e)}")
+            print(f"Exception in delete_result_clicked: {e}")
+    
+    def print_sticker_clicked(self):
+        if self.is_printing:
+            return
+        self.is_printing = True
+        try:
+            tree = self.main_nw.ui.nw_work_register_treeWidget
+            selected_items = tree.selectedItems()
+            
+            if not selected_items:
+                QMessageBox.critical(self.main_nw, "Error", "กรุณาเลือกรายการในตารางเพื่อพิมพ์สติกเกอร์")
+                return
+            item = selected_items[0]
+            row_data = []
+            for col in range(6): 
+                text = item.text(col)
+                row_data.append(text)
+            data_to_print = [row_data]
+
+            try:
+                barcode_obj = BarcodeGenerator()
+                barcode_obj.generate(data_to_print)
+                barcode_obj.print_barcode()
+            except Exception as e:
+                QMessageBox.critical(self.main_nw, "Error", f"เกิดข้อผิดพลาดในการพิมพ์: {str(e)}")
+                
+        except Exception as e:
+            print(f"Print Error: {e}")
+        finally:
+            self.is_printing = False
+    
+    @Slot(int)
+    def on_owner_same_as_sender_changed(self, state):
+        if state == Qt.Checked or state == 2:
+            sender_name = self.main_nw.ui.nw_name_sender_lineEdit.text()
+            sender_surname = self.main_nw.ui.nw_sure_name_sender_lineEdit.text()
+            sender_tax_id = self.main_nw.ui.nw_tex_id_sender_lineEdit.text()
+            self.main_nw.ui.nw_name_owner_lineEdit.setText(sender_name)
+            self.main_nw.ui.nw_sure_name_owner_lineEdit.setText(sender_surname)
+            self.main_nw.ui.nw_tex_id_owner_lineEdit.setText(sender_tax_id)
+            self.selected_owner_id = self.selected_sender_id
+        else:
+            self.main_nw.ui.nw_sure_name_owner_lineEdit.clear()
+            self.main_nw.ui.nw_tex_id_owner_lineEdit.clear()
+            self.main_nw.ui.nw_name_owner_lineEdit.clear()
+            self.selected_owner_id = None
+
+
     def update_id_sample(self):
         try:
             max_id = self.API_new_work.get_max_sample_id()
@@ -174,7 +276,7 @@ class NewWorkController(QObject):
         reply = QMessageBox.question(self.main_nw, "CONFIRMATION", "คุณแน่ใจหรือไม่ว่ายกเลิกการบันทึกข้อมูล?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return
-        self.cancel_clicked()
+        # self.cancel_clicked() #comment for debug 
 
 
     def cancel_clicked(self):
@@ -192,10 +294,12 @@ class NewWorkController(QObject):
         self.selected_owner_id = None
         self.lock_sender_id = False
         self.lock_owner_id = False
+        self.main_nw.ui.nw_work_register_treeWidget.clear()
         self.main_nw.unlock_all_input()
 
     def setup_ui(self):
-        self.cancel_clicked()
+        # self.cancel_clicked() #comment for debug 
+        pass
 
     def add_result_clicked(self):
         case_id = self.main_nw.ui.nw_id_lineEdit.text()
@@ -207,18 +311,6 @@ class NewWorkController(QObject):
         else:
             print("Warning: main_window or specimen_widget not available")
             
-
-    def delete_result_clicked(self):
-        print("Delete result button clicked")
-        pass
-    
-    def print_sticker_clicked(self):
-        print("Print sticker button clicked")
-        pass
-
-    def send_report_clicked(self):
-        print("Send report button clicked")
-        pass
 
 # SENDER SEARCH
     def clear_selected_id(self, user_type):
@@ -382,16 +474,17 @@ class NewWorkController(QObject):
             print(f"Failed to get case details: {result}")
     
     def populate_treewidget(self, data):
-        # Clear existing items
         self.main_nw.ui.nw_work_register_treeWidget.clear()
         
         if not data:
             return
-        # Populate with new data
         for row in data:
             try:
-                # Extract data from row
                 dtime = str(row[0]) if row[0] else ""
+                if 'T' in dtime:
+                    dtime = dtime.replace('T', ' ')
+                # --------------------------------
+                
                 order_id_raw = str(row[1]) if row[1] else ""
                 species = str(row[2]) if row[2] else ""
                 room_code = str(row[3]) if row[3] else ""
@@ -399,13 +492,11 @@ class NewWorkController(QObject):
                 keep_method = str(row[5]) if row[5] else ""
                 speed = str(row[6]) if row[6] else ""
                 
-                # Format order ID with leading zeros (12 digits for barcode)
                 if order_id_raw:
                     order_id = order_id_raw.zfill(12)
                 else:
                     order_id = ""
                 
-                # Combine room code and nickname for display
                 if room_code and room_nickname:
                     lab_room = f"{room_code} ({room_nickname})"
                 elif room_code:
@@ -415,22 +506,19 @@ class NewWorkController(QObject):
                 else:
                     lab_room = ""
                 
-                # Create tree widget item
                 item = QTreeWidgetItem([
-                    dtime,           # วันที่รับเคส
-                    order_id,        # หมายเลขการตรวจ (12 digits with leading zeros)
+                    dtime,           # วันที่รับเคส (แก้ไขแล้ว ไม่มี T)
+                    order_id,        # หมายเลขการตรวจ
                     species,         # ชนิดสัตว์
                     lab_room,        # ห้องปฏิบัติการ
                     keep_method,     # การเก็บรักษา
                     speed,           # ระดับความด่วน
-                    ""               # ข้อมูลเพิ่มเติม (empty for now)
+                    ""               # ข้อมูลเพิ่มเติม
                 ])
                 
-                # Center-align all columns
                 for col in range(7):
                     item.setTextAlignment(col, Qt.AlignmentFlag.AlignCenter)
                 
-                # Add item to treewidget
                 self.main_nw.ui.nw_work_register_treeWidget.addTopLevelItem(item)
                 
             except Exception as e:

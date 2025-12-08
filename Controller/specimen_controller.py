@@ -3,7 +3,6 @@ from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QMessageBox
 import pyodbc
 from datetime import datetime
-from API.client_app import APIApp
 from SERVICES_REGISTER.work_service import WorkService
 from SERVICES_REGISTER.lab_service import LabService
 
@@ -37,7 +36,7 @@ class SpecimenController(QObject):
     
     def save_specimen_information(self):
         self.view.save_button_clicked()
-        print(f"save_specimen_information called - Case ID: {self.case_registration_id}")
+        # print(f"save_specimen_information called - Case ID: {self.case_registration_id}")
     
         result_data_on_page = self.get_specimen_data()
 
@@ -208,7 +207,7 @@ class SpecimenController(QObject):
             other_text = self.view.ui.specimen_animal_other_lineEdit.text().strip()
             animal_type = f"อื่นๆ: {other_text}" if other_text else "อื่นๆ"
 
-        speed = "ปกติ" if self.view.ui.specimen_normal_radioButton.isChecked() else "ปกติ"
+        speed = "ปกติ" if self.view.ui.specimen_normal_radioButton.isChecked() else "ด่วนที่สุด"
 
         keeping = ""
         if self.view.ui.specimen_chill_radioButton.isChecked():
@@ -260,6 +259,7 @@ class SpecimenController(QObject):
         collect_date_str = self.view.ui.specimen_day_keep_sample_dateTimeEdit.dateTime().toString("yyyy-MM-dd HH:mm:ss")
         weight_value = safe_float(self.view.ui.specimen_weight_lineEdit.text())
         weight_value = weight_value if weight_value is not None else 0.0
+        updater_id = self.main_window.get_logged_in_user_id() if self.main_window else None
         
         data = {
             'case_id': int(case_id) if case_id else None,
@@ -281,7 +281,7 @@ class SpecimenController(QObject):
             'medical_record': self.view.ui.specimen_record_heal_textEdit.toPlainText().strip() or "",  # Optional
             'dosage_record': self.view.ui.specimen_record_antibiotics_textEdit.toPlainText().strip() or "",  # Optional
             'sample_inspection': sample_inspection,  # Optional
-            'updater': self.main_window.get_logged_in_user_id() if self.main_window else None
+            'updater': updater_id
         }
         
         return data
@@ -309,7 +309,7 @@ class SpecimenController(QObject):
             print("⚠️ Error: Cannot navigate to molecular biology page")
 
     def goto_microbiology(self):
-        print("Navigate to Microbiology page")
+        # print("Navigate to Microbiology page")
         if self.main_window and hasattr(self.main_window, 'bacteria_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.bacteria_widget)
         else:
@@ -317,7 +317,7 @@ class SpecimenController(QObject):
     
     def goto_parasitology(self):
         room_id = self.room_mapping.get('parasitology')
-        print(room_id)
+        # print(room_id)
         if self.main_window and hasattr(self.main_window, 'parasite_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.parasite_widget)
         else:
@@ -325,7 +325,7 @@ class SpecimenController(QObject):
     
     def goto_after_death(self):
         room_id = self.room_mapping.get('after_death')
-        print(room_id)
+        # print(room_id)
         if self.main_window and hasattr(self.main_window, 'after_death_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.after_death_widget)
             if hasattr(self.main_window.after_death_widget, 'clear_page'):

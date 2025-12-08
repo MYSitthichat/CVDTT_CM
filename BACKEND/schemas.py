@@ -20,6 +20,7 @@ class NewCustomer(BaseModel):
     line_ID: Optional[str] = ""
     address: Optional[str] = ""
     bill_address: Optional[str] = ""
+    updater: Optional[int] = None
 
 class MolecularBiologyData(BaseModel):
     sample_id: str
@@ -27,11 +28,13 @@ class MolecularBiologyData(BaseModel):
     cPCR_req: Optional[int] = 0
     qPCR_req: Optional[int] = 0
     extraction_req: Optional[int] = 0
+    status: Optional[int] = 1
     updater: Optional[int] = None
 
 class ParasiteBiologyData(BaseModel):
     sample_id: str
     tests: List[dict]
+    status: Optional[int] = 1
     updater: Optional[int] = None
 
 class BacteriaBiologyData(BaseModel):
@@ -41,6 +44,7 @@ class BacteriaBiologyData(BaseModel):
     bacteria_identification: List[dict]
     lab_request: List[dict]
     remark: Optional[str] = ""
+    status: Optional[int] = 1
     updater: Optional[int] = None
 
 class SpecimenData(BaseModel):
@@ -74,7 +78,7 @@ class LabOrder(BaseModel):
     updater: Optional[int] = None
 
 class UpdateTrackingLabOrder(BaseModel):
-    lab_order_id: Optional[str] = ""
+    sample_id: Optional[str] = ""
     tracking_info: Optional[str] = "รับงานเข้าระบบ"
     receiver: Optional[str] = None
     updater: Optional[str] = None

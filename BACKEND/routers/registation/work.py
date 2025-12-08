@@ -89,3 +89,88 @@ def get_case_details(case_id: str):
     finally:
         conn.close()
         
+
+@router.get("/delete_sample_registration/{order_id}")
+def delete_sample_registration(order_id: int):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        sql = """SELECT sample_id, room_id FROM lab_order WHERE id = %s AND status = 1"""
+        cursor.execute(sql, (order_id,))
+        fine_info = cursor.fetchone()
+        
+        if not fine_info:
+            raise HTTPException(status_code=404, detail=f"Order ID {order_id} not found or already deleted")
+        
+        sample_id = fine_info[0]
+        room_id = fine_info[1]
+        room_code = None
+        if room_id:
+            get_room_code = """SELECT code FROM room_information WHERE id = %s"""
+            cursor.execute(get_room_code, (room_id,))
+            room_info = cursor.fetchone()
+            
+            if room_info:
+                room_code = room_info[0]
+                if room_code and room_code.startswith('E304'):  # Parasite
+                    update_parasite = """UPDATE lab_parasite_biology SET status = 0 WHERE sample_id = %s"""
+                    cursor.execute(update_parasite, (sample_id,))
+                    
+                elif room_code and room_code.startswith('E315'):  # Bacteria
+                    update_bacteria = """UPDATE lab_bacteria_biology SET status = 0 WHERE sample_id = %s"""
+                    cursor.execute(update_bacteria, (sample_id,))
+                    
+                elif room_code and room_code.startswith('E410'):  # Molecular Biology
+                    update_molecular = """UPDATE lab_molecular_biology SET status = 0 WHERE sample_id = %s"""
+                    cursor.execute(update_molecular, (sample_id,))
+                else:
+                    print(f"Unknown room_code: {room_code}, skipping result table update")
+                    
+        update_tracking_status = """UPDATE tracking_lab_order SET status = 0 WHERE lab_order_id = %s"""
+        cursor.execute(update_tracking_status, (order_id,))
+        print(f"Updated tracking_lab_order")
+
+        update_lab_order_status = """UPDATE lab_order SET status = 0 WHERE id = %s"""
+        cursor.execute(update_lab_order_status, (order_id,))
+        print(f"Updated lab_order")
+
+        update_sample_registration_status = """UPDATE sample_registration SET status = 0 WHERE id = %s"""
+        cursor.execute(update_sample_registration_status, (sample_id,))
+        print(f"Updated sample_registration")
+
+        conn.commit()
+        print(f"All changes committed successfully")
+        
+        return {
+            "status": "success",
+            "deleted_order_id": order_id,
+            "sample_id": sample_id,
+            "room_id": room_id,
+            "room_code": room_code
+        }
+    
+    except mariadb.Error as e:
+        if conn:
+            conn.rollback()
+        print(f"❌ MariaDB Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"❌ Unexpected Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+            
+
+
+

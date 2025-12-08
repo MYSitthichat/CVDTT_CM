@@ -4,13 +4,13 @@ from View.view_register_new_customer_frame import RegisterNewCustomerWidget
 from SERVICES_REGISTER.customer_service import CustomerService
 
 class NewRegisterController(QObject):
-    def __init__(self, register_widget=None):
+    def __init__(self, register_widget=None, parent=None):
         super().__init__()
         if register_widget is None:
             self.main_nr = RegisterNewCustomerWidget()
         else:
             self.main_nr = register_widget
-            
+        self.main_window = parent
         # self.api_app = APIApp()
         self.customer_api = CustomerService()
         self.main_nr.ui.Add_new_costumer_save_pushButton.clicked.connect(self.save_register_clicked)
@@ -29,6 +29,7 @@ class NewRegisterController(QObject):
         self.address = self.main_nr.ui.address_contact_textEdit.toPlainText()
         self.bill_address = self.main_nr.ui.address_billing_textEdit.toPlainText()
         api_response = self.customer_api.get_customer_groups()
+        updater_id = self.main_window.get_logged_in_user_id() if self.main_window else None
         all_groups_list = []
         if isinstance(api_response, dict) and 'customer_groups' in api_response:
             all_groups_list = api_response['customer_groups']
@@ -55,7 +56,8 @@ class NewRegisterController(QObject):
             "email": self.email,
             "line_ID": self.line_ID,         
             "address": self.address,
-            "bill_address": self.bill_address
+            "bill_address": self.bill_address,
+            "updater": updater_id
         }
         result = self.customer_api.add_new_customer(customer_data)
         if result:

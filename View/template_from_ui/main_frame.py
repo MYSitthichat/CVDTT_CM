@@ -3,7 +3,7 @@
 ################################################################################
 ## Form generated from reading UI file 'main_window_app.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.8.1
+## Created by: Qt User Interface Compiler version 6.9.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
@@ -59,20 +59,16 @@ class Ui_MainWindow(object):
         self.check_job_pushButton.setFont(font)
         self.lab_received_pushButton = QPushButton(self.frame)
         self.lab_received_pushButton.setObjectName(u"lab_received_pushButton")
-        self.lab_received_pushButton.setGeometry(QRect(7, 250, 251, 51))
+        self.lab_received_pushButton.setGeometry(QRect(7, 310, 251, 51))
         self.lab_received_pushButton.setFont(font)
-        self.specimen_pushButton = QPushButton(self.frame)
-        self.specimen_pushButton.setObjectName(u"specimen_pushButton")
-        self.specimen_pushButton.setGeometry(QRect(7, 530, 251, 51))
-        self.specimen_pushButton.setFont(font)
         self.edit_employee_pushButton = QPushButton(self.frame)
         self.edit_employee_pushButton.setObjectName(u"edit_employee_pushButton")
         self.edit_employee_pushButton.setGeometry(QRect(7, 750, 251, 51))
         self.edit_employee_pushButton.setFont(font)
-        self.lab_report_pushButton = QPushButton(self.frame)
-        self.lab_report_pushButton.setObjectName(u"lab_report_pushButton")
-        self.lab_report_pushButton.setGeometry(QRect(7, 310, 251, 51))
-        self.lab_report_pushButton.setFont(font)
+        self.print_lab_order_pushButton = QPushButton(self.frame)
+        self.print_lab_order_pushButton.setObjectName(u"print_lab_order_pushButton")
+        self.print_lab_order_pushButton.setGeometry(QRect(7, 250, 251, 51))
+        self.print_lab_order_pushButton.setFont(font)
         self.stackedWidget = QStackedWidget(self.centralwidget)
         self.stackedWidget.setObjectName(u"stackedWidget")
         self.stackedWidget.setGeometry(QRect(275, 5, 1270, 890))
@@ -99,11 +95,10 @@ class Ui_MainWindow(object):
         self.register_new_customer_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e25\u0e07\u0e17\u0e30\u0e40\u0e1a\u0e35\u0e22\u0e19\u0e25\u0e39\u0e01\u0e04\u0e49\u0e32\u0e43\u0e2b\u0e21\u0e48", None))
         self.new_work_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e23\u0e31\u0e1a\u0e07\u0e32\u0e19\u0e43\u0e2b\u0e21\u0e48", None))
         self.logout_pushButton.setText(QCoreApplication.translate("MainWindow", u"LOGOUT", None))
-        self.barcode_print_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e1b\u0e23\u0e34\u0e49\u0e19 \u0e1a\u0e32\u0e23\u0e4c\u0e42\u0e04\u0e49\u0e14", None))
+        self.barcode_print_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e1e\u0e34\u0e21\u0e1e\u0e4c \u0e1a\u0e32\u0e23\u0e4c\u0e42\u0e04\u0e49\u0e14", None))
         self.check_job_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e15\u0e23\u0e27\u0e08\u0e07\u0e32\u0e19", None))
         self.lab_received_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e23\u0e31\u0e1a\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07", None))
-        self.specimen_pushButton.setText(QCoreApplication.translate("MainWindow", u"Specimen", None))
         self.edit_employee_pushButton.setText(QCoreApplication.translate("MainWindow", u"Edit employee", None))
-        self.lab_report_pushButton.setText(QCoreApplication.translate("MainWindow", u"Lab Report", None))
+        self.print_lab_order_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e1e\u0e34\u0e21\u0e1e\u0e4c \u0e43\u0e1a\u0e2a\u0e48\u0e07\u0e41\u0e25\u0e1b", None))
     # retranslateUi
 

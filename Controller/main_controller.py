@@ -33,7 +33,7 @@ class MainController(QObject):
         self.main_window.main_controller = self
         
         # Create ALL controllers here to prevent duplicate creation
-        self.new_register_controller = NewRegisterController(self.main_window.register_widget)
+        self.new_register_controller = NewRegisterController(self.main_window.register_widget,self.main_window)
         self.new_work_controller = NewWorkController(self.add_work_widget, self.main_window)
         self.barcode_controller = BarcodePageController(self.main_window.barcode_widget)
         self.check_job_controller = CheckJobProgressController(None, self.main_window.check_job_widget)
@@ -91,7 +91,6 @@ class MainController(QObject):
     
     def set_logged_in_user(self, user_id):
         self.logged_in_user_id = user_id
-        # print(f"ID: {user_id}")
         
         # Set user ID in edit employee controller for permission checking
         # Only set if user_id is valid (not None)

@@ -37,16 +37,38 @@ def add_lab_order(lab_order: LabOrder):
         conn.close()
 
 @router.post("/update_tracking_lab_order")
-def update_tracking_lab_order(lab_order: UpdateTrackingLabOrder):
+def update_tracking_lab_order(data: UpdateTrackingLabOrder):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        cursor.execute("INSERT INTO tracking_lab_order (lab_order_id, tracking_info, receiver, updater) VALUES (?, ?, ?, ?)", 
-                       (lab_order.lab_order_id, lab_order.tracking_info, lab_order.receiver, lab_order.updater))
+        find_sql = "SELECT id FROM lab_order WHERE sample_id = ? LIMIT 1"
+        cursor.execute(find_sql, (data.sample_id,))
+        result = cursor.fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Lab Order not found for sample_id: {data.sample_id}")
+        found_lab_order_id = result[0]  # ดึงค่า ID ออกมา
+        insert_sql = """
+            INSERT INTO tracking_lab_order (lab_order_id, tracking_info, receiver, updater) 
+            VALUES (?, ?, ?, ?)
+        """
+        cursor.execute(insert_sql, (
+            found_lab_order_id, 
+            data.tracking_info, 
+            data.receiver, 
+            data.updater
+        ))
         conn.commit()
-        return {"status": "success", "lab_order_id": lab_order.lab_order_id}
+        return {
+            "status": "success", 
+            "sample_id": data.sample_id,
+            "lab_order_id": found_lab_order_id, # ส่งกลับไปบอกด้วยว่าบันทึกใส่ ID ไหน
+            "message": "Tracking updated successfully"
+        }
+    except mariadb.Error as e:
+        print(f"Database Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     finally:
         conn.close()
 
@@ -100,18 +122,19 @@ def save_molecular_biology(data: MolecularBiologyData):
         test55_name, test55_amount, test55_price, test56_name, test56_amount, test56_price, 
         test57_name, test57_amount, test57_price, test58_name, test58_amount, test58_price, 
         test59_name, test59_amount, test59_price, test60_name, test60_amount, test60_price, 
-        test61_name, test61_amount, test61_price, cPCR_req, qPCR_req, extraction_req, updater) 
-        VALUES (""" + ",".join(["?"] * 188) + ")"
+        test61_name, test61_amount, test61_price, cPCR_req, qPCR_req, extraction_req, status, updater) 
+        VALUES (""" + ",".join(["?"] * 189) + ")"
         
         params = [data.sample_id] + test_data + [
             data.cPCR_req, 
             data.qPCR_req, 
-            data.extraction_req, 
+            data.extraction_req,
+            data.status, 
             data.updater
         ]
         
-        if len(params) != 188:
-            raise ValueError(f"Parameter mismatch: Expected 188, got {len(params)}")
+        if len(params) != 189:
+            raise ValueError(f"Parameter mismatch: Expected 189, got {len(params)}")
         
         cursor.execute(sql, params)
         conn.commit()
@@ -159,13 +182,13 @@ def save_parasite_biology(data: ParasiteBiologyData):
          t5_name, t5_state, t5_price, t6_name, t6_state, t6_price, 
          t7_name, t7_state, t7_price, t8_name, t8_state, t8_price, 
          t9_name, t9_state, t9_price, t10_name, t10_state, t10_price, 
-         t11_name, t11_state, t11_price, t12_name, t12_state, t12_price, updater) 
-        VALUES (""" + ",".join(["?"] * 38) + ")"
+         t11_name, t11_state, t11_price, t12_name, t12_state, t12_price, status, updater) 
+        VALUES (""" + ",".join(["?"] * 39) + ")"
         
-        params = [data.sample_id] + test_data + [data.updater]
+        params = [data.sample_id] + test_data + [data.status, data.updater] 
         
-        if len(params) != 38:
-            raise ValueError(f"Parameter mismatch: Expected 38, got {len(params)}")
+        if len(params) != 39:
+            raise ValueError(f"Parameter mismatch: Expected 39, got {len(params)}")
         
         cursor.execute(sql, params)
         conn.commit()
@@ -235,8 +258,14 @@ def save_bacteria_biology(data: BacteriaBiologyData):
                 columns.extend([f"lab_request{i}_name", f"lab_request{i}_state", f"lab_request{i}_price"])
                 values.extend(['', 0, 0])
                 
-        columns.extend(["remark", "updater"])
-        values.extend([data.remark, data.updater])
+        columns.extend(["remark", "status", "updater"])
+        values.extend([data.remark, data.status, data.updater])
+        
+        # Expected: 1 (sample_id) + 63 (21*3 preparation) + 82 (41*2 drug_sensitivity) + 24 (12*2 bacteria_id) + 15 (5*3 lab_request) + 3 (remark, status, updater) = 188
+        expected_count = 188
+        if len(values) != expected_count:
+            print(f"⚠️ Bacteria parameter count mismatch: Expected {expected_count}, got {len(values)}")
+        
         placeholders = ",".join(["?"] * len(values))
         sql = f"INSERT INTO lab_bacteria_biology ({','.join(columns)}) VALUES ({placeholders})"
         

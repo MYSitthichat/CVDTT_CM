@@ -44,10 +44,10 @@ def add_customer(customer: NewCustomer):
         raise HTTPException(status_code=500, detail="Database connection failed")
     try:
         cursor = conn.cursor()
-        sql = """INSERT INTO customer (group_id, title, name, surname, tax_id, email, line_id, phone, contact_address, bill_address)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        sql = """INSERT INTO customer (group_id, title, name, surname, tax_id, email, line_id, phone, contact_address, bill_address, updater)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"""
         val = (customer.group_id, customer.title_name, customer.name, customer.surname, customer.tax_id,
-               customer.email, customer.line_ID, customer.phone, customer.address, customer.bill_address)
+               customer.email, customer.line_ID, customer.phone, customer.address, customer.bill_address, customer.updater)
         cursor.execute(sql, val)
         conn.commit()
         return {"status": "success", "customer_id": cursor.lastrowid}

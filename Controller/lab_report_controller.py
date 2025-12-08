@@ -4,7 +4,7 @@ from PySide6.QtWidgets import QTableWidgetItem, QMessageBox
 from PySide6.QtCore import QObject
 
 # Import your PDF generation modules
-from Order_detail.order_detail_pdf import create_parasite_biology, create_bacteriology, create_molecular_biology
+from Order_Lab_Pdf.order_detail_pdf import create_parasite_biology, create_bacteriology, create_molecular_biology
 
 class LabReportPageController(QObject):
     """ Controller for the Lab Report Page """

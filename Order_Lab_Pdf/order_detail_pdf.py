@@ -38,7 +38,8 @@ else:
     if os.path.exists(fonts_folder):
         # print(f"Files actually found in '{fonts_folder}':")
         for file in os.listdir(fonts_folder):
-            print(f" - {file}")
+            # print(f" - {file}")
+            pass
     else:
         print(f"❌ The folder '{fonts_folder}' does not exist.")
     
@@ -461,7 +462,6 @@ def create_bacteriology(sample_detail, data, output_file):
     pdf_file.build(elements)
 
 # ==================================================================================================================
-
 
 def create_molecular_biology(sample_detail, data, output_file):
     """This function is used to create the molecular biology test detail."""

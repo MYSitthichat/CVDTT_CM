@@ -11,12 +11,20 @@ def get_today_cases():
     if not conn: return []
     try:
         cursor = conn.cursor()
-        sql = """SELECT s.dtime, s.case_id, s.species, CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
-                s.keep_method, s.speed, lo.room_id AS room_debug
-                FROM sample_registration s
-                LEFT JOIN lab_order lo ON s.id = lo.sample_id
-                LEFT JOIN room_information r ON lo.room_id = r.id
-                WHERE DATE(s.dtime) = CURDATE() ORDER BY s.dtime DESC"""
+        sql = """SELECT 
+                s.dtime, 
+                lo.id,
+                s.species, 
+                CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
+                s.keep_method, 
+                s.speed,
+                lo.room_id AS room_debug
+            FROM sample_registration s
+            LEFT JOIN lab_order lo ON s.id = lo.sample_id
+            LEFT JOIN room_information r ON lo.room_id = r.id
+            WHERE DATE(s.dtime) = CURDATE()
+            ORDER BY s.dtime DESC
+        """
         cursor.execute(sql)
         results = [{"date": str(row[0]), "barcode": row[1], "species": row[2], 
                     "lab_name": row[3], "storage": row[4], "urgency": row[5]} for row in cursor]
@@ -63,7 +71,7 @@ def search_barcode_cases(name: str = "", surname: str = ""):
             SELECT DISTINCT
                 s.id AS sample_id,
                 s.dtime, 
-                s.case_id, 
+                lo.id, 
                 s.name AS sample_name,
                 s.species, 
                 CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,
@@ -121,7 +129,7 @@ def search_by_employee(employee_id: int):
             SELECT DISTINCT
                 s.id AS sample_id,
                 s.dtime, 
-                s.case_id, 
+                lo.id,
                 s.name AS sample_name,
                 s.species, 
                 CONCAT(IFNULL(r.code, ''), '(', IFNULL(r.nickname, ''), ')') AS lab_name,

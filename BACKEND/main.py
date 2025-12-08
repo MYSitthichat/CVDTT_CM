@@ -21,8 +21,6 @@ def index():
 
 @app.on_event("startup")
 def hash_plain_passwords():
-    # ... (Copy Logic การ Hash password ตอน startup จาก server_api.py มาใส่ที่นี่ทั้งหมด) ...
-    # โดยใช้ get_db_connection() และ pwd_context ที่ import มา
     conn = get_db_connection()
     if not conn:
         print("Cannot connect to database for password encryption")

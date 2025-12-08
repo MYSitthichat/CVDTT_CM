@@ -121,7 +121,7 @@
       </font>
      </property>
      <property name="text">
-      <string>ปริ้น บาร์โค้ด</string>
+      <string>พิมพ์ บาร์โค้ด</string>
      </property>
     </widget>
     <widget class="QPushButton" name="check_job_pushButton">
@@ -148,7 +148,7 @@
      <property name="geometry">
       <rect>
        <x>7</x>
-       <y>250</y>
+       <y>310</y>
        <width>251</width>
        <height>51</height>
       </rect>
@@ -162,26 +162,6 @@
      </property>
      <property name="text">
       <string>รับตัวอย่าง</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="specimen_pushButton">
-     <property name="geometry">
-      <rect>
-       <x>7</x>
-       <y>530</y>
-       <width>251</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>TH Niramit AS</family>
-       <pointsize>24</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>Specimen</string>
      </property>
     </widget>
     <widget class="QPushButton" name="edit_employee_pushButton">
@@ -204,11 +184,11 @@
       <string>Edit employee</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="lab_report_pushButton">
+    <widget class="QPushButton" name="print_lab_order_pushButton">
      <property name="geometry">
       <rect>
        <x>7</x>
-       <y>310</y>
+       <y>250</y>
        <width>251</width>
        <height>51</height>
       </rect>
@@ -221,7 +201,7 @@
       </font>
      </property>
      <property name="text">
-      <string>Lab Report</string>
+      <string>พิมพ์ ใบส่งแลป</string>
      </property>
     </widget>
    </widget>

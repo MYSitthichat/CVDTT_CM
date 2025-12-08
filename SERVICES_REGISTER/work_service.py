@@ -19,3 +19,6 @@ class WorkService(BaseService):
     
     def get_case_details(self, case_id):
         return self._get(f"/get_case_details/{case_id}")
+    
+    def delete_sample_registration(self, order_id):
+        return self._get(f"/delete_sample_registration/{order_id}")

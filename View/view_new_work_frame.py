@@ -16,7 +16,8 @@ class AddNewWorkWidget(QWidget):
         layout.addWidget(self.ui.centralwidget)
         self.setLayout(layout)
         self.setup_table_columns()
-        self.ui.nw_owner_same_sender_checkBox.stateChanged.connect(self.same_as_sender_checked)
+        # Signal connection moved to controller
+        # self.ui.nw_owner_same_sender_checkBox.stateChanged.connect(self.same_as_sender_checked)
 
     def setup_table_columns(self):
         if hasattr(self.ui, 'nw_work_register_treeWidget'):
@@ -39,15 +40,15 @@ class AddNewWorkWidget(QWidget):
         self.ui.nw_sure_name_owner_lineEdit.setText(surname)
         self.ui.nw_tex_id_owner_lineEdit.setText(tax_id)
 
-    def same_as_sender_checked(self, checked):
-        if checked:
-            self.ui.nw_name_owner_lineEdit.setText(self.ui.nw_name_sender_lineEdit.text())
-            self.ui.nw_sure_name_owner_lineEdit.setText(self.ui.nw_sure_name_sender_lineEdit.text())
-            self.ui.nw_tex_id_owner_lineEdit.setText(self.ui.nw_tex_id_sender_lineEdit.text())
-        else:
-            self.ui.nw_name_owner_lineEdit.clear()
-            self.ui.nw_sure_name_owner_lineEdit.clear()
-            self.ui.nw_tex_id_owner_lineEdit.clear()
+    # def same_as_sender_checked(self, checked):
+    #     if checked:
+    #         self.ui.nw_name_owner_lineEdit.setText(self.ui.nw_name_sender_lineEdit.text())
+    #         self.ui.nw_sure_name_owner_lineEdit.setText(self.ui.nw_sure_name_sender_lineEdit.text())
+    #         self.ui.nw_tex_id_owner_lineEdit.setText(self.ui.nw_tex_id_sender_lineEdit.text())
+    #     else:
+    #         self.ui.nw_name_owner_lineEdit.clear()
+    #         self.ui.nw_sure_name_owner_lineEdit.clear()
+    #         self.ui.nw_tex_id_owner_lineEdit.clear()
             
     def check_data_input(self):
         # Implement data validation logic here

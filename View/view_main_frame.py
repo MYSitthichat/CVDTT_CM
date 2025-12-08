@@ -89,10 +89,10 @@ class MainWindow(QMainWindow):
             self.ui.edit_employee_pushButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.edit_employee_widget))
 
         
-        if hasattr(self.ui, 'lab_report_pushButton'):
-            self.ui.lab_report_pushButton.clicked.connect(self.show_lab_report_page)
+        if hasattr(self.ui, 'print_lab_order_pushButton'):
+            self.ui.print_lab_order_pushButton.clicked.connect(self.show_lab_report_page)
         else:
-            print("Warning: 'lab_report_pushButton' not found")
+            print("Warning: 'print_lab_order_pushButton' not found")
 
         self.show_register_page()
 
