@@ -1,4 +1,6 @@
 from PySide6.QtWidgets import QWidget, QLineEdit, QPlainTextEdit
+from PySide6.QtCore import Qt, QDate, QTime
+from datetime import datetime, timezone, timedelta
 # Ensure this import matches your folder structure
 from View.template_from_ui.after_death import Ui_after_death_MainWindow as Ui_AfterDeathPage
 
@@ -18,103 +20,495 @@ class AfterDeathPageWidget(QWidget):
         
         # I also removed the "update_ui_state" logic.
         # Now all group boxes will remain visible, exactly like your design.
+    
+    def hideEvent(self, event):
+        """Called when widget is hidden - clear the form"""
+        super().hideEvent(event)
+        self.clear_page()
+    
+    def closeEvent(self, event):
+        """Called when widget is closed - clear the form"""
+        super().closeEvent(event)
+        self.clear_page()
 
     def get_data(self):
         """
-        Extracts data from the UI based on the selected service.
-        Returns a dictionary.
+        Extracts ONLY filled data from the UI.
+        Returns a dictionary with non-empty values only.
         """
         data = {}
         
-        # Determine which main service is selected to tag the data
+        # Determine which main service is selected
         if self.ui.rb_waste.isChecked():
             data['service_type'] = 'Infectious Waste'
+            waste_details = self._get_waste_data()
+            if waste_details:  # Only add if there's actual data
+                data['waste_details'] = waste_details
+                
         elif self.ui.rb_cremation.isChecked():
             data['service_type'] = 'Cremation'
+            cremation_details = self._get_cremation_data()
+            if cremation_details:  # Only add if there's actual data
+                data['cremation_details'] = cremation_details
+                
         elif self.ui.rb_jewelry.isChecked():
             data['service_type'] = 'Jewelry'
+            jewelry_details = self._get_jewelry_data()
+            if jewelry_details:  # Only add if there's actual data
+                data['jewelry_details'] = jewelry_details
         else:
             data['service_type'] = 'Unknown'
-
-        # Collect data from ALL sections (since they are all visible now)
-        data['waste_details'] = self._get_waste_data()
-        data['cremation_details'] = self._get_cremation_data()
-        data['jewelry_details'] = self._get_jewelry_data()
+        
+        # CRITICAL: Old system ALWAYS reads field3-8 for ALL service types (lines 313-331)
+        # This includes date/time/weight/checkboxes regardless of which service is selected
+        if 'cremation_details' not in data:
+            data['cremation_details'] = {}
+        
+        # field2: Incineration checkbox - ACTUALLY conditional in old system? But database shows always filled
+        # Let's make it conditional: IF checked THEN text ELSE ''
+        data['cremation_details']['incineration'] = self.ui.cb_incineration.text() if self.ui.cb_incineration.isChecked() else ''
+        
+        # field3: Weight - ALWAYS (old system line 314)
+        data['cremation_details']['weight'] = self.ui.le_incineration_kg.text().strip()
+        
+        # field4: Bone storage checkbox - IF checked THEN text ELSE '' (old system lines 316-319)
+        data['cremation_details']['bone_storage'] = self.ui.cb_bone_storage.text() if self.ui.cb_bone_storage.isChecked() else ''
+        
+        # field5: Ceremony checkbox - IF checked THEN text ELSE '' (old system lines 321-324)
+        data['cremation_details']['ceremony'] = self.ui.cb_ceremony.text() if self.ui.cb_ceremony.isChecked() else ''
+        
+        # field6-7: Date/time - ALWAYS (old system lines 325-326)
+        # Format: DD/MM/YYYY for date, HH:mm for time (24-hour)
+        data['cremation_details']['date'] = self.ui.dateEdit.date().toString('dd/MM/yyyy')
+        data['cremation_details']['time'] = self.ui.timeEdit.time().toString('HH:mm')
+        
+        # field8: Diamond checkbox - IF checked THEN text ELSE '' (old system lines 328-331)
+        data['cremation_details']['diamond'] = self.ui.cb_diamond_mem.text() if self.ui.cb_diamond_mem.isChecked() else ''
+        
+        # field9-11: Carcass condition checkboxes - IF checked THEN text ELSE '' (old system lines 333-346)
+        data['cremation_details']['carcass_fresh'] = self.ui.rb_fresh.text() if self.ui.rb_fresh.isChecked() else ''
+        data['cremation_details']['carcass_autolysis'] = self.ui.rb_autolysis.text() if self.ui.rb_autolysis.isChecked() else ''
+        data['cremation_details']['carcass_unknown'] = self.ui.rb_unknown.text() if self.ui.rb_unknown.isChecked() else ''
+        
+        # field12: Other carcass condition - ALWAYS (old system line 348)
+        data['cremation_details']['carcass_other'] = self.ui.le_other_cond.text().strip()
+        
+        # field13: Necropsy hall checkbox - IF checked THEN text ELSE '' (old system lines 350-353)
+        data['cremation_details']['place_necropsy'] = self.ui.cb_necropsy.text() if self.ui.cb_necropsy.isChecked() else ''
+        
+        # field14-15: Other places - ALWAYS (old system lines 355, 357)
+        # Note: Your UI might not have these widgets yet
+        # data['cremation_details']['place_other1'] = self.ui.le_place_other1.text().strip()
+        # data['cremation_details']['place_other2'] = self.ui.le_place_other2.text().strip()
+        
+        # field16: Note/remark - ALWAYS (old system line 359)
+        # Note: Your UI might not have this widget yet
+        # data['cremation_details']['note'] = self.ui.te_note.toPlainText().strip()
         
         return data
 
     def _get_waste_data(self):
-        """ Extract Infectious Waste Data """
-        info = []
-        if self.ui.rb_tissues.isChecked():
-            info.append(f"Tissues: {self.ui.le_tissues_qty.text()} qty, {self.ui.le_tissues_w.text()} kg")
-        if self.ui.rb_needle.isChecked():
-            info.append(f"Needle: {self.ui.le_needle_qty.text()} qty, {self.ui.le_needle_w.text()} kg")
-        if self.ui.rb_syringe.isChecked():
-            info.append(f"Syringe: {self.ui.le_syringe_qty.text()} qty, {self.ui.le_syringe_w.text()} kg")
-        if self.ui.rb_inf_other1.isChecked():
-            info.append(f"{self.ui.le_inf_other1_name.text()}: {self.ui.le_inf_other1_qty.text()} qty, {self.ui.le_inf_other1_w.text()} kg")
+        """Extract ONLY filled Infectious Waste Data"""
+        data = {}
+        items = []
         
-        return {
-            'items': "; ".join(info),
-            'remark': self.ui.le_inf_remark.text()
-        }
+        # Tissues - USE CHECKBOX .text() PROPERTY (matches old system)
+        if self.ui.cb_tissues.isChecked():
+            qty = self.ui.le_tissues_qty.text().strip()
+            weight = self.ui.le_tissues_w.text().strip()
+            if qty or weight:  # Only add if at least one field is filled
+                # Store checkbox text (e.g., "เนื้อเยื่อติดเชื้อ(Infectious Tissues)")
+                item_str = self.ui.cb_tissues.text() + ":"
+                if qty:
+                    item_str += f" {qty} qty"
+                if weight:
+                    item_str += f" {weight} kg"
+                items.append(item_str)
+        
+        # Needle - USE CHECKBOX .text() PROPERTY
+        if self.ui.cb_needle.isChecked():
+            qty = self.ui.le_needle_qty.text().strip()
+            weight = self.ui.le_needle_w.text().strip()
+            if qty or weight:
+                item_str = self.ui.cb_needle.text() + ":"
+                if qty:
+                    item_str += f" {qty} qty"
+                if weight:
+                    item_str += f" {weight} kg"
+                items.append(item_str)
+        
+        # Syringe - USE CHECKBOX .text() PROPERTY
+        if self.ui.cb_syringe.isChecked():
+            qty = self.ui.le_syringe_qty.text().strip()
+            weight = self.ui.le_syringe_w.text().strip()
+            if qty or weight:
+                item_str = self.ui.cb_syringe.text() + ":"
+                if qty:
+                    item_str += f" {qty} qty"
+                if weight:
+                    item_str += f" {weight} kg"
+                items.append(item_str)
+        
+        # Other 1 - USE LINE EDIT TEXT (since checkbox has no text)
+        if self.ui.cb_inf_other1.isChecked():
+            name = self.ui.le_inf_other1_name.text().strip()
+            qty = self.ui.le_inf_other1_qty.text().strip()
+            weight = self.ui.le_inf_other1_w.text().strip()
+            if name or qty or weight:
+                item_str = f"{name if name else 'Other'}:"
+                if qty:
+                    item_str += f" {qty} qty"
+                if weight:
+                    item_str += f" {weight} kg"
+                items.append(item_str)
+        
+        # Other 2 - USE LINE EDIT TEXT (since checkbox has no text)
+        if self.ui.cb_inf_other2.isChecked():
+            name = self.ui.le_inf_other2_name.text().strip()
+            qty = self.ui.le_inf_other2_qty.text().strip()
+            weight = self.ui.le_inf_other2_w.text().strip()
+            if name or qty or weight:
+                item_str = f"{name if name else 'Other2'}:"
+                if qty:
+                    item_str += f" {qty} qty"
+                if weight:
+                    item_str += f" {weight} kg"
+                items.append(item_str)
+        
+        # Only add items if there are any
+        if items:
+            data['items'] = items
+        
+        # Remark (only if not empty)
+        remark = self.ui.le_inf_remark.text().strip()
+        if remark:
+            data['remark'] = remark
+        
+        return data if data else None  # Return None if no data at all
 
     def _get_cremation_data(self):
-        """ Extract Cremation Data """
-        req_type = ""
-        if self.ui.rb_incineration.isChecked(): req_type = f"Incineration ({self.ui.le_incineration_kg.text()} kg)"
-        elif self.ui.rb_bone_storage.isChecked(): req_type = "Bone Storage"
-        elif self.ui.rb_ceremony.isChecked(): req_type = "Ceremony"
-        elif self.ui.rb_diamond_mem.isChecked(): req_type = "Diamond Memory"
-
-        condition = ""
-        if self.ui.rb_fresh.isChecked(): condition = "Fresh"
-        elif self.ui.rb_autolysis.isChecked(): condition = "Autolysis"
-        elif self.ui.rb_unknown.isChecked(): condition = "Unknown"
-        elif self.ui.rb_other_cond.isChecked(): condition = self.ui.le_other_cond.text()
-
-        place = "Necropsy Hall" if self.ui.rb_necropsy.isChecked() else self.ui.le_place_opt1.text()
-
-        return {
-            'request_type': req_type,
-            'date': self.ui.dateEdit.text(),
-            'time': self.ui.timeEdit.text(),
-            'condition': condition,
-            'place': place,
-            'remark': self.ui.le_remark_lab.text()
-        }
+        """Extract ONLY filled Cremation Data"""
+        data = {}
+        
+        # Request types (can now have multiple checked)
+        req_types = []
+        if self.ui.cb_incineration.isChecked():
+            req_type = "Incineration"
+            # Get weight if filled
+            weight = self.ui.le_incineration_kg.text().strip()
+            if weight:
+                req_type += f" ({weight} kg)"
+            req_types.append(req_type)
+        
+        if self.ui.cb_bone_storage.isChecked():
+            req_types.append("Bone Storage")
+        
+        if self.ui.cb_ceremony.isChecked():
+            req_types.append("Ceremony")
+        
+        if self.ui.cb_diamond_mem.isChecked():
+            req_types.append("Diamond Memory")
+        
+        # Join multiple request types or use first one
+        if req_types:
+            data['request_type'] = ", ".join(req_types)
+        
+        # Date and Time (only if filled and not default)
+        date = self.ui.dateEdit.text().strip()
+        time = self.ui.timeEdit.text().strip()
+        if date and date not in ["", "01/01/2000"]:  # Skip default date
+            data['date'] = date
+        if time and time not in ["", "00:00:00", "00:00"]:  # Skip default time
+            data['time'] = time
+        
+        # Carcass condition
+        condition = None
+        if self.ui.rb_fresh.isChecked():
+            condition = "Fresh"
+        elif self.ui.rb_autolysis.isChecked():
+            condition = "Autolysis"
+        elif self.ui.rb_unknown.isChecked():
+            condition = "Unknown"
+        elif self.ui.rb_other_cond.isChecked():
+            other_cond = self.ui.le_other_cond.text().strip()
+            if other_cond:
+                condition = other_cond
+            else:
+                condition = "Other"
+        
+        if condition:
+            data['condition'] = condition
+        
+        # Place (can now have multiple)
+        places = []
+        if self.ui.cb_necropsy.isChecked():
+            places.append("Necropsy Hall")
+        
+        if self.ui.cb_place_opt1.isChecked():
+            custom_place = self.ui.le_place_opt1.text().strip()
+            if custom_place:
+                places.append(custom_place)
+            else:
+                places.append("Custom Location")
+        
+        if places:
+            data['place'] = ", ".join(places)
+        
+        # Remark (only if not empty)
+        remark = self.ui.le_remark_lab.text().strip()
+        if remark:
+            data['remark'] = remark
+        
+        return data if data else None
 
     def _get_jewelry_data(self):
-        """ Extract Jewelry Data """
-        material = ""
-        if self.ui.rb_gem_carcass.isChecked(): material = "Carcass"
-        elif self.ui.rb_gem_bone.isChecked(): material = "Bone"
-        elif self.ui.rb_gem_hair.isChecked(): material = "Hair"
+        """Extract ONLY filled Jewelry Data"""
+        data = {}
         
-        size = "Unknown"
-        if self.ui.rb_size_lt1.isChecked(): size = "<1 carat"
-        elif self.ui.rb_size_1c.isChecked(): size = "1 carat"
-        elif self.ui.rb_size_2c.isChecked(): size = "2 carat"
+        # Materials (can now have multiple checked) - USE CHECKBOX .text() PROPERTY
+        materials = []
+        if self.ui.cb_gem_carcass.isChecked():
+            qty = self.ui.le_gem_carcass_qty.text().strip()
+            weight = self.ui.le_gem_carcass_w.text().strip()
+            # Use checkbox text: "ซากสัตว์(Carcass)"
+            material_str = self.ui.cb_gem_carcass.text()
+            if qty or weight:
+                material_str += f" ({qty}, {weight} kg)"
+            materials.append(material_str)
         
-        shape = "Unknown"
-        if self.ui.rb_shape_round.isChecked(): shape = "Round"
-        elif self.ui.rb_shape_oval.isChecked(): shape = "Oval"
-
-        return {
-            'material': material,
-            'size': size,
-            'shape': shape,
-            'color': self.ui.le_color.text(),
-            'price': self.ui.le_price.text(),
-            'remark': self.ui.pte_remark_gem.toPlainText()
-        }
+        if self.ui.cb_gem_bone.isChecked():
+            qty = self.ui.le_gem_bone_qty.text().strip()
+            weight = self.ui.le_gem_bone_w.text().strip()
+            # Use checkbox text: "กระดูกสัตว์(Bone)"
+            material_str = self.ui.cb_gem_bone.text()
+            if qty or weight:
+                material_str += f" ({qty}, {weight} kg)"
+            materials.append(material_str)
+        
+        if self.ui.cb_gem_hair.isChecked():
+            qty = self.ui.le_gem_hair_qty.text().strip()
+            weight = self.ui.le_gem_hair_w.text().strip()
+            # Use checkbox text: "ขนสัตว์(Hair/feather)"
+            material_str = self.ui.cb_gem_hair.text()
+            if qty or weight:
+                material_str += f" ({qty}, {weight} kg)"
+            materials.append(material_str)
+        
+        if self.ui.cb_gem_other1.isChecked():
+            name = self.ui.le_gem_other1_name.text().strip()
+            qty = self.ui.le_gem_other1_qty.text().strip()
+            weight = self.ui.le_gem_other1_w.text().strip()
+            material_str = name if name else "Other1"
+            if qty or weight:
+                material_str += f" ({qty}, {weight} kg)"
+            materials.append(material_str)
+        
+        if self.ui.cb_gem_other2.isChecked():
+            name = self.ui.le_gem_other2_name.text().strip()
+            qty = self.ui.le_gem_other2_qty.text().strip()
+            weight = self.ui.le_gem_other2_w.text().strip()
+            material_str = name if name else "Other2"
+            if qty or weight:
+                material_str += f" ({qty}, {weight} kg)"
+            materials.append(material_str)
+        
+        if materials:
+            data['material'] = ", ".join(materials)
+        
+        # Sizes (can now have multiple checked) - USE CHECKBOX .text() PROPERTY
+        sizes = []
+        if self.ui.cb_size_lt1.isChecked():
+            sizes.append(self.ui.cb_size_lt1.text())  # "<1 carat (4700)"
+        if self.ui.cb_size_1c.isChecked():
+            sizes.append(self.ui.cb_size_1c.text())  # "1 carat 6.4 mm (5800)"
+        if self.ui.cb_size_2c.isChecked():
+            sizes.append(self.ui.cb_size_2c.text())  # "2 carat 8.1 mm (6800)"
+        if self.ui.cb_size_3c.isChecked():
+            sizes.append(self.ui.cb_size_3c.text())  # "3 carat 9.3 mm (7900)"
+        if self.ui.cb_size_4c.isChecked():
+            sizes.append(self.ui.cb_size_4c.text())  # "4 carat 10.2 mm (9000)"
+        if self.ui.cb_size_5c.isChecked():
+            sizes.append(self.ui.cb_size_5c.text())  # "5 carat 11.0 mm (10100)"
+        
+        if sizes:
+            data['size'] = ", ".join(sizes)
+        
+        # Shapes (can now have multiple checked) - USE CHECKBOX .text() PROPERTY
+        shapes = []
+        if self.ui.cb_shape_round.isChecked():
+            shapes.append(self.ui.cb_shape_round.text())  # "กลม(round)"
+        if self.ui.cb_shape_oval.isChecked():
+            shapes.append(self.ui.cb_shape_oval.text())  # "รี(oval)"
+        if self.ui.cb_shape_cushion.isChecked():
+            shapes.append(self.ui.cb_shape_cushion.text())  # "ทรงหมอน(cushion)"
+        if self.ui.cb_shape_princess.isChecked():
+            shapes.append(self.ui.cb_shape_princess.text())  # "สี่เหลี่ยม(princess)"
+        if self.ui.cb_shape_radiant.isChecked():
+            shapes.append(self.ui.cb_shape_radiant.text())  # "สี่เหลี่ยมผืนผ้า(radiant)"
+        if self.ui.cb_shape_marquise.isChecked():
+            shapes.append(self.ui.cb_shape_marquise.text())  # "ทรงมาร์คีย์(marquise)"
+        if self.ui.cb_shape_other.isChecked():
+            other_shape = self.ui.le_shape_other.text().strip()
+            if other_shape:
+                shapes.append(other_shape)
+            else:
+                shapes.append(self.ui.cb_shape_other.text())  # "อื่นๆ"
+        
+        if shapes:
+            data['shape'] = ", ".join(shapes)
+        
+        # Jewelry types (can now have multiple checked) - USE CHECKBOX .text() PROPERTY
+        jewelry_types = []
+        if self.ui.cb_acc_ring.isChecked():
+            code = self.ui.le_acc_code1.text().strip()
+            # Use checkbox text: "แหวน (ring)"
+            jewelry_str = self.ui.cb_acc_ring.text()
+            if code:
+                jewelry_str += f" (Code: {code})"
+            jewelry_types.append(jewelry_str)
+        
+        if self.ui.cb_acc_necklace.isChecked():
+            code = self.ui.le_acc_code2.text().strip()
+            # Use checkbox text: "สร้อยคอ (necklace)"
+            jewelry_str = self.ui.cb_acc_necklace.text()
+            if code:
+                jewelry_str += f" (Code: {code})"
+            jewelry_types.append(jewelry_str)
+        
+        if self.ui.cb_acc_earing.isChecked():
+            code = self.ui.le_acc_code3.text().strip()
+            # Use checkbox text: "ต่างหู (earing)"
+            jewelry_str = self.ui.cb_acc_earing.text()
+            if code:
+                jewelry_str += f" (Code: {code})"
+            jewelry_types.append(jewelry_str)
+        
+        if jewelry_types:
+            data['jewelry_type'] = ", ".join(jewelry_types)
+        
+        # Color (only if not empty)
+        color = self.ui.le_color.text().strip()
+        if color:
+            data['color'] = color
+        
+        # Price (only if not empty)
+        price = self.ui.le_price.text().strip()
+        if price:
+            data['price'] = price
+        
+        # Remark (only if not empty)
+        remark = self.ui.pte_remark_gem.toPlainText().strip()
+        if remark:
+            data['remark'] = remark
+        
+        return data if data else None
 
     def clear_page(self):
         """ Reset page fields """
+        # Reset service type to default
         self.ui.rb_waste.setChecked(True)
         
-        # Clear Line Edits
+        # Set current Bangkok date/time (UTC+7)
+        bangkok_tz = timezone(timedelta(hours=7))
+        now = datetime.now(bangkok_tz)
+        
+        # Set date to current Bangkok date
+        current_date = QDate(now.year, now.month, now.day)
+        self.ui.dateEdit.setDate(current_date)
+        
+        # Set time to current Bangkok time
+        current_time = QTime(now.hour, now.minute)
+        self.ui.timeEdit.setTime(current_time)
+        
+        # Clear all line edits
         for le in self.findChildren(QLineEdit):
             le.clear()
+        
+        # Clear plain text edit
         self.ui.pte_remark_gem.clear()
+        
+        # Uncheck all checkboxes
+        if hasattr(self.ui, 'cb_tissues'):
+            self.ui.cb_tissues.setChecked(False)
+        if hasattr(self.ui, 'cb_needle'):
+            self.ui.cb_needle.setChecked(False)
+        if hasattr(self.ui, 'cb_syringe'):
+            self.ui.cb_syringe.setChecked(False)
+        if hasattr(self.ui, 'cb_inf_other1'):
+            self.ui.cb_inf_other1.setChecked(False)
+        if hasattr(self.ui, 'cb_inf_other2'):
+            self.ui.cb_inf_other2.setChecked(False)
+        
+        # Gem checkboxes
+        if hasattr(self.ui, 'cb_gem_carcass'):
+            self.ui.cb_gem_carcass.setChecked(False)
+        if hasattr(self.ui, 'cb_gem_bone'):
+            self.ui.cb_gem_bone.setChecked(False)
+        if hasattr(self.ui, 'cb_gem_hair'):
+            self.ui.cb_gem_hair.setChecked(False)
+        if hasattr(self.ui, 'cb_gem_other1'):
+            self.ui.cb_gem_other1.setChecked(False)
+        if hasattr(self.ui, 'cb_gem_other2'):
+            self.ui.cb_gem_other2.setChecked(False)
+        
+        # Lab request checkboxes
+        if hasattr(self.ui, 'cb_incineration'):
+            self.ui.cb_incineration.setChecked(False)
+        if hasattr(self.ui, 'cb_bone_storage'):
+            self.ui.cb_bone_storage.setChecked(False)
+        if hasattr(self.ui, 'cb_ceremony'):
+            self.ui.cb_ceremony.setChecked(False)
+        if hasattr(self.ui, 'cb_diamond_mem'):
+            self.ui.cb_diamond_mem.setChecked(False)
+        if hasattr(self.ui, 'cb_necropsy'):
+            self.ui.cb_necropsy.setChecked(False)
+        if hasattr(self.ui, 'cb_place_opt1'):
+            self.ui.cb_place_opt1.setChecked(False)
+        
+        # Uncheck radio buttons for condition, size, shape, accessories
+        if hasattr(self.ui, 'rb_fresh'):
+            self.ui.rb_fresh.setChecked(False)
+        if hasattr(self.ui, 'rb_autolysis'):
+            self.ui.rb_autolysis.setChecked(False)
+        if hasattr(self.ui, 'rb_unknown'):
+            self.ui.rb_unknown.setChecked(False)
+        if hasattr(self.ui, 'rb_other_cond'):
+            self.ui.rb_other_cond.setChecked(False)
+        
+        # Size checkboxes
+        if hasattr(self.ui, 'cb_size_lt1'):
+            self.ui.cb_size_lt1.setChecked(False)
+        if hasattr(self.ui, 'cb_size_1c'):
+            self.ui.cb_size_1c.setChecked(False)
+        if hasattr(self.ui, 'cb_size_2c'):
+            self.ui.cb_size_2c.setChecked(False)
+        if hasattr(self.ui, 'cb_size_3c'):
+            self.ui.cb_size_3c.setChecked(False)
+        if hasattr(self.ui, 'cb_size_4c'):
+            self.ui.cb_size_4c.setChecked(False)
+        if hasattr(self.ui, 'cb_size_5c'):
+            self.ui.cb_size_5c.setChecked(False)
+        
+        # Shape checkboxes
+        if hasattr(self.ui, 'cb_shape_round'):
+            self.ui.cb_shape_round.setChecked(False)
+        if hasattr(self.ui, 'cb_shape_oval'):
+            self.ui.cb_shape_oval.setChecked(False)
+        if hasattr(self.ui, 'cb_shape_cushion'):
+            self.ui.cb_shape_cushion.setChecked(False)
+        if hasattr(self.ui, 'cb_shape_princess'):
+            self.ui.cb_shape_princess.setChecked(False)
+        if hasattr(self.ui, 'cb_shape_radiant'):
+            self.ui.cb_shape_radiant.setChecked(False)
+        if hasattr(self.ui, 'cb_shape_marquise'):
+            self.ui.cb_shape_marquise.setChecked(False)
+        if hasattr(self.ui, 'cb_shape_other'):
+            self.ui.cb_shape_other.setChecked(False)
+        
+        # Accessories checkboxes
+        if hasattr(self.ui, 'cb_acc_ring'):
+            self.ui.cb_acc_ring.setChecked(False)
+        if hasattr(self.ui, 'cb_acc_necklace'):
+            self.ui.cb_acc_necklace.setChecked(False)
+        if hasattr(self.ui, 'cb_acc_earing'):
+            self.ui.cb_acc_earing.setChecked(False)

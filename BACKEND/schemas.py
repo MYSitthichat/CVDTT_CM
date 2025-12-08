@@ -94,3 +94,9 @@ class EmployeeData(BaseModel):
     signature_base64: Optional[str] = None
     status: Optional[int] = 1
     updater: Optional[int] = None
+
+class AfterDeathData(BaseModel):
+    sample_id: str
+    service_type: str  # 'Infectious Waste', 'Cremation', or 'Jewelry'
+    service_data: Optional[dict] = None  # Contains waste_details, cremation_details, or jewelry_details
+    updater: Optional[int] = None
