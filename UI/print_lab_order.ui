@@ -40,9 +40,9 @@
    <property name="geometry">
     <rect>
      <x>550</x>
-     <y>20</y>
-     <width>120</width>
-     <height>40</height>
+     <y>15</y>
+     <width>160</width>
+     <height>50</height>
     </rect>
    </property>
    <property name="text">
@@ -77,36 +77,54 @@
      <x>20</x>
      <y>80</y>
      <width>1050</width>
-     <height>780</height>
+     <height>791</height>
     </rect>
    </property>
    <property name="selectionBehavior">
     <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
    </property>
+   <attribute name="horizontalHeaderMinimumSectionSize">
+    <number>32</number>
+   </attribute>
    <attribute name="horizontalHeaderDefaultSectionSize">
-    <number>250</number>
+    <number>120</number>
    </attribute>
    <attribute name="horizontalHeaderStretchLastSection">
     <bool>true</bool>
    </attribute>
    <column>
     <property name="text">
-     <string>วันเดือนปีที่รับงาน</string>
+     <string>วันที่รับเคส</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>หมายเลขบาร์โค้ด</string>
+     <string>หมายเลขการตรวจ</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>ชื่อผู้ส่ง</string>
+     <string>ชนิดสัตว์</string>
     </property>
    </column>
    <column>
     <property name="text">
-     <string>ชื่อสัตว์</string>
+     <string>ห้องปฏิบัติการ</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>การเก็บรักษา</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>ระดับความด่วน</string>
+    </property>
+   </column>
+   <column>
+    <property name="text">
+     <string>ข้อมูลเพิ่มเติม</string>
     </property>
    </column>
   </widget>
@@ -121,6 +139,19 @@
    </property>
    <property name="text">
     <string>พิมพ์ใบส่งแลป</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="search_to_day_button">
+   <property name="geometry">
+    <rect>
+     <x>910</x>
+     <y>15</y>
+     <width>160</width>
+     <height>50</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ค้นหาเคสในวันนี้</string>
    </property>
   </widget>
  </widget>

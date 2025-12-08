@@ -57,10 +57,6 @@ class Ui_MainWindow(object):
         self.check_job_pushButton.setObjectName(u"check_job_pushButton")
         self.check_job_pushButton.setGeometry(QRect(7, 130, 251, 51))
         self.check_job_pushButton.setFont(font)
-        self.lab_received_pushButton = QPushButton(self.frame)
-        self.lab_received_pushButton.setObjectName(u"lab_received_pushButton")
-        self.lab_received_pushButton.setGeometry(QRect(7, 310, 251, 51))
-        self.lab_received_pushButton.setFont(font)
         self.edit_employee_pushButton = QPushButton(self.frame)
         self.edit_employee_pushButton.setObjectName(u"edit_employee_pushButton")
         self.edit_employee_pushButton.setGeometry(QRect(7, 750, 251, 51))
@@ -97,7 +93,6 @@ class Ui_MainWindow(object):
         self.logout_pushButton.setText(QCoreApplication.translate("MainWindow", u"LOGOUT", None))
         self.barcode_print_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e1e\u0e34\u0e21\u0e1e\u0e4c \u0e1a\u0e32\u0e23\u0e4c\u0e42\u0e04\u0e49\u0e14", None))
         self.check_job_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e15\u0e23\u0e27\u0e08\u0e07\u0e32\u0e19", None))
-        self.lab_received_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e23\u0e31\u0e1a\u0e15\u0e31\u0e27\u0e2d\u0e22\u0e48\u0e32\u0e07", None))
         self.edit_employee_pushButton.setText(QCoreApplication.translate("MainWindow", u"Edit employee", None))
         self.print_lab_order_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e1e\u0e34\u0e21\u0e1e\u0e4c \u0e43\u0e1a\u0e2a\u0e48\u0e07\u0e41\u0e25\u0e1b", None))
     # retranslateUi

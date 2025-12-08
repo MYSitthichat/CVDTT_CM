@@ -4,11 +4,10 @@ from Controller.new_register_controller import NewRegisterController
 from Controller.new_work_controller import NewWorkController
 from Controller.barcode_page_controller import BarcodePageController
 from Controller.check_job_progress_controller import CheckJobProgressController
-from Controller.lab_received_sample_controller import LabReceivedSampleController
 from Controller.edit_employee_controller import EditEmployeeController
 from Controller.molecular_biology_controller import MolecularBiologyController
 from Controller.after_death_controller import AfterDeathPageController
-from Controller.lab_report_controller import LabReportPageController
+from Controller.lab_order_controller import LabReportPageController
 from View.view_new_work_frame import AddNewWorkWidget
 
 class MainController(QObject):
@@ -37,7 +36,7 @@ class MainController(QObject):
         self.new_work_controller = NewWorkController(self.add_work_widget, self.main_window)
         self.barcode_controller = BarcodePageController(self.main_window.barcode_widget)
         self.check_job_controller = CheckJobProgressController(None, self.main_window.check_job_widget)
-        self.lab_received_controller = LabReceivedSampleController(None, self.main_window.lab_received_widget)
+        # self.lab_received_controller = LabReceivedSampleController(None, self.main_window.lab_received_widget)
         self.edit_employee_controller = EditEmployeeController(self.main_window.edit_employee_widget, self)
         
         # Create lab controllers that need access to main_controller

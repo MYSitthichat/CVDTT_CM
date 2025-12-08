@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget, QVBoxLayout, QTableWidgetItem, QAbstractItemView, QHeaderView
-from View.template_from_ui.lab_report import Ui_lab_report_MainWindow as Ui_LabReportPage
+from View.template_from_ui.print_lab_order import Ui_lab_report_MainWindow as Ui_LabReportPage
 
 class LabReportPageWidget(QWidget):
     """ 

@@ -4,7 +4,7 @@ from View.view_register_new_customer_frame import RegisterNewCustomerWidget
 from View.view_new_work_frame import AddNewWorkWidget
 from View.view_barcode_page import BarcodePageWidget
 from View.view_check_jop_progress import CheckJobProgressWidget
-from View.view_lab_received_sample import LabReceivedSampleWidget
+# from View.view_lab_received_sample import LabReceivedSampleWidget
 from Controller.new_work_controller import NewWorkController
 # BarcodePageController is now created in MainController
 # CheckJobProgressController is now created in MainController
@@ -20,7 +20,7 @@ from View.view_molecular_biology import MolecularBiologyPageWidget
 # MolecularBiologyController is now created in MainController
 from View.view_after_death import AfterDeathPageWidget
 # AfterDeathPageController is now created in MainController
-from View.view_lab_report import LabReportPageWidget
+from View.view_lab_order import LabReportPageWidget
 # LabReportPageController is now created in MainController
 class MainWindow(QMainWindow):
     
@@ -39,7 +39,7 @@ class MainWindow(QMainWindow):
         self.add_work_widget = add_work_widget if add_work_widget is not None else AddNewWorkWidget()
         self.barcode_widget = BarcodePageWidget()
         self.check_job_widget = CheckJobProgressWidget()
-        self.lab_received_widget = LabReceivedSampleWidget() 
+        # self.lab_received_widget = LabReceivedSampleWidget() 
         self.bacteria_widget = bacterieFrameView()
         self.parasite_widget = parasiteFrameView()
         self.specimen_widget = SpecimenWidget()
@@ -77,10 +77,10 @@ class MainWindow(QMainWindow):
         if hasattr(self.ui, 'check_job_pushButton'):
             self.ui.check_job_pushButton.clicked.connect(self.show_check_job_page)
 
-        if hasattr(self.ui, 'lab_received_pushButton'):
-            self.ui.lab_received_pushButton.clicked.connect(self.show_lab_received_page)
-        else:
-            print("Error: Could not find 'lab_received_pushButton' in Ui_MainWindow")
+        # if hasattr(self.ui, 'lab_received_pushButton'):
+        #     self.ui.lab_received_pushButton.clicked.connect(self.show_lab_received_page)
+        # else:
+        #     print("Error: Could not find 'lab_received_pushButton' in Ui_MainWindow")
 
         if hasattr(self.ui, 'specimen_pushButton'):
             self.ui.specimen_pushButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentWidget(self.specimen_widget))
@@ -106,7 +106,7 @@ class MainWindow(QMainWindow):
         self.ui.stackedWidget.addWidget(self.add_work_widget)
         self.ui.stackedWidget.addWidget(self.barcode_widget)
         self.ui.stackedWidget.addWidget(self.check_job_widget)
-        self.ui.stackedWidget.addWidget(self.lab_received_widget)
+        # self.ui.stackedWidget.addWidget(self.lab_received_widget)
         self.ui.stackedWidget.addWidget(self.bacteria_widget)
         self.ui.stackedWidget.addWidget(self.parasite_widget)
         self.ui.stackedWidget.addWidget(self.specimen_widget)
@@ -131,8 +131,8 @@ class MainWindow(QMainWindow):
     def show_check_job_page(self):
         self.ui.stackedWidget.setCurrentWidget(self.check_job_widget)
 
-    def show_lab_received_page(self):
-        self.ui.stackedWidget.setCurrentWidget(self.lab_received_widget)
+    # def show_lab_received_page(self):
+    #     self.ui.stackedWidget.setCurrentWidget(self.lab_received_widget)
 
     def show_molecular_page(self):
         self.ui.stackedWidget.setCurrentWidget(self.molecular_widget)

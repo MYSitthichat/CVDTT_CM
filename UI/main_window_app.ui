@@ -144,26 +144,6 @@
       <string>ตรวจงาน</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="lab_received_pushButton">
-     <property name="geometry">
-      <rect>
-       <x>7</x>
-       <y>310</y>
-       <width>251</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>TH Niramit AS</family>
-       <pointsize>24</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>รับตัวอย่าง</string>
-     </property>
-    </widget>
     <widget class="QPushButton" name="edit_employee_pushButton">
      <property name="geometry">
       <rect>
