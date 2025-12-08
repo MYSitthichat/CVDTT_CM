@@ -516,29 +516,26 @@ class AfterDeathPageController(QObject):
     # ==================== Navigation Methods ====================
     
     def cancel_and_go_back(self):
-        """
-        Cancel current operation and return to previous page
-        Shows confirmation if there's unsaved data
-        """
         # Check if form has data
         if self._has_unsaved_data():
             reply = QMessageBox.question(
                 self.view,
-                'ยืนยันการยกเลิก',
-                'มีข้อมูลที่ยังไม่ได้บันทึก\n'
-                'คุณต้องการยกเลิกและออกจากหน้านี้หรือไม่?\n\n',
-                QMessageBox.Yes | QMessageBox.No,
-                QMessageBox.No
+                "ยืนยันการยกเลิก",
+                "คุณต้องการยกเลิกและล้างข้อมูลหรือไม่?",
+                QMessageBox.Yes | QMessageBox.No
             )
             
+            if reply == QMessageBox.Yes:
+                QMessageBox.information(self.view, "ยกเลิก", "ยกเลิกการกรอกข้อมูลแล้ว")
+                # Clear the form
+                self.view.clear_page()
+                # Navigate back to specimen page
+                self.go_back()
+                
             if reply == QMessageBox.No:
                 return
         
-        # Clear the form
-        self.view.clear_page()
-        
-        # Navigate back to specimen page
-        self.go_back()
+
 
     def go_back(self):
         """Navigate back to specimen page"""

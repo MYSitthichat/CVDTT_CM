@@ -28,6 +28,7 @@ class MolecularBiologyController(QObject):
         if summary is None:
             return
 
+
     def save_data(self):
         summary = self.view.calculate_summary()
         if summary is None:
@@ -98,13 +99,18 @@ class MolecularBiologyController(QObject):
             if hasattr(specimen_ctrl, 'room_mapping') and 'molecular_biology' in specimen_ctrl.room_mapping:
                 room_id = specimen_ctrl.room_mapping['molecular_biology']
         
+        # Get Laboratory Request values (cPCR, qPCR, Extraction)
+        cPCR_req = 1 if self.view.ui.r_c.isChecked() else 0
+        qPCR_req = 1 if self.view.ui.r_q.isChecked() else 0
+        extraction_req = 1 if self.view.ui.r_e.isChecked() else 0
+        
         # Prepare data for API
         molecular_data = {
             "sample_id": sample_id,
             "tests": all_test_items,
-            "cPCR_req": 0,
-            "qPCR_req": 0,
-            "extraction_req": 0,
+            "cPCR_req": cPCR_req,
+            "qPCR_req": qPCR_req,
+            "extraction_req": extraction_req,
             "updater": user_id
         }
         
@@ -133,12 +139,24 @@ class MolecularBiologyController(QObject):
             selected_count = len(selected_items)
             total_count = len(all_test_items)
             
+            # Create Laboratory Request info text
+            lab_req_info = []
+            if cPCR_req:
+                lab_req_info.append("cPCR")
+            if qPCR_req:
+                lab_req_info.append("qPCR")
+            if extraction_req:
+                lab_req_info.append("Extraction")
+            
+            lab_req_text = ", ".join(lab_req_info) if lab_req_info else "ไม่ระบุ"
+            
             QMessageBox.information(
                 self.view, 
                 "Success", 
                 f"บันทึกข้อมูลเรียบร้อย (Saved Successfully)\n\n"
                 f"Sample ID: {sample_id}\n"
                 f"รายการที่เลือก: {selected_count} รายการ\n"
+                f"Laboratory Request: {lab_req_text}"
             )
             # Clear the page after successful save
             self.view.clear_page()
@@ -164,7 +182,17 @@ class MolecularBiologyController(QObject):
             print("Error: Add Work Widget not found in Main Window")
             
     def go_to_specimen(self):
+        reply = QMessageBox.question(
+            self.view,
+            "ยืนยันการยกเลิก",
+            "คุณต้องการยกเลิกและล้างข้อมูลหรือไม่?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
+        if reply == QMessageBox.Yes:
+            QMessageBox.information(self.view, "ยกเลิก", "ยกเลิกการกรอกข้อมูลแล้ว")
         if hasattr(self.main_window, 'specimen_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.specimen_widget)
         else:
             print("Error: Specimen Widget not found in Main Window")
+            

@@ -156,6 +156,25 @@ def create_molecular_biology(sample_detail, data, output_file):
     elements.append(table)
     elements.append(Spacer(1, 15))
 
+    # Extract Laboratory Request values from data
+    # When using SELECT *, the structure is:
+    # Index 0 = id, 1 = sample_id, 2 = dtime, 3-185 = test data (61 tests × 3)
+    # Index 186 = cPCR_req, 187 = qPCR_req, 188 = extraction_req, 189 = status, 190 = updater
+    lab_req_text = []
+    if data and len(data) > 0:
+        cPCR_req = data[0][186] if len(data[0]) > 186 else 0
+        qPCR_req = data[0][187] if len(data[0]) > 187 else 0
+        extraction_req = data[0][188] if len(data[0]) > 188 else 0
+        
+        if cPCR_req == 1:
+            lab_req_text.append("cPCR")
+        if qPCR_req == 1:
+            lab_req_text.append("qPCR")
+        if extraction_req == 1:
+            lab_req_text.append("Extraction")
+    
+    lab_request_display = ", ".join(lab_req_text) if lab_req_text else "-"
+    
     # Sample Detail
     elements.append(Paragraph("รายละเอียดสิ่งส่งตรวจ", set_paragraph_h1_style()))
     elements.append(Spacer(1, 12))
@@ -164,6 +183,7 @@ def create_molecular_biology(sample_detail, data, output_file):
         ['วันที่รับตัวอย่าง', date_val, 'Barcode', barcode_val],
         ['สิ่งที่ส่งมาตรวจ', info[20], 'ประวัติการให้ยา', info[19]],
         ['สถานะการตอบผล', info[17], 'การเก็บรักษาตัวอย่าง', info[16]],
+        ['Laboratory Request', lab_request_display, '', ''],
     ]
     col_widths = [95, 166.5, 95, 166.5] 
     sample_tbl = Table(detail_info, colWidths=col_widths, hAlign='LEFT')
@@ -173,6 +193,10 @@ def create_molecular_biology(sample_detail, data, output_file):
         ('GRID', (0, 0), (-1, -1), 1, colors.black),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        # Merge cells for Laboratory Request
+        ('SPAN', (1, 3), (3, 3)),
+        ('BACKGROUND', (0, 3), (0, 3), HEADER_COLOR),
+        ('FONTNAME', (0, 3), (0, 3), 'THNiramitAS-Bold'),
     ]))
     elements.append(sample_tbl)
     elements.append(Spacer(1, 20))
@@ -269,10 +293,24 @@ if __name__ == "__main__":
     mock_sample[17] = "ปกติ"
     mock_sample[16] = "แช่แข็ง (Freeze)"
 
-    mock_tests = [0] * 3
-    test_cases = [("NDV - cPCR", 2), ("PDD", 2), ("FeLV", 2), ("FIP", 2), ("CDV", 2), ("Melioidosis", 2)]
-    for name, amt in test_cases: mock_tests.extend([name, amt, 0])
-    while len(mock_tests) < 185: mock_tests.extend(["", 0, 0])
+    # Mock test data with proper structure to match database SELECT *
+    # Structure: [id, sample_id, dtime, test1_name, test1_amount, test1_price, ..., cPCR_req, qPCR_req, extraction_req, status, updater]
+    mock_tests = [1, 1540, "2025-12-08 13:25:42"]  # id, sample_id, dtime
+    
+    test_cases = [("NDV - cPCR", 2, 0), ("PDD", 2, 0), ("FeLV", 2, 0), ("FIP", 2, 0), ("CDV", 2, 0), ("Melioidosis", 2, 0)]
+    for name, amt, price in test_cases: 
+        mock_tests.extend([name, amt, price])
+    
+    # Fill remaining test slots (61 tests total, 6 used, 55 remaining)
+    while len(mock_tests) < 186:  # 3 + (61 × 3) = 186
+        mock_tests.extend(["", 0, 0])
+    
+    # Add Laboratory Request values: cPCR=1, qPCR=1, extraction=1
+    mock_tests.extend([1, 1, 1])  # cPCR_req (186), qPCR_req (187), extraction_req (188)
+    mock_tests.extend([1, 1])  # status (189), updater (190)
             
     output_filename = "test_molecular_final.pdf"
     create_molecular_biology([mock_sample], [mock_tests], output_filename)
+    print(f"PDF generated: {output_filename}")
+    print(f"Mock data length: {len(mock_tests)}")
+    print(f"cPCR={mock_tests[186]}, qPCR={mock_tests[187]}, Extraction={mock_tests[188]}")

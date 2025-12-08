@@ -383,8 +383,13 @@ class NewWorkController(QObject):
     def add_result_clicked(self):
         case_id = self.main_nw.ui.nw_id_lineEdit.text()
         if self.main_window and hasattr(self.main_window, 'specimen_widget'):
+            # Clear old data before setting new case_id
+            if hasattr(self.main_window.specimen_widget, 'clear_all_inputs'):
+                self.main_window.specimen_widget.clear_all_inputs()
+            
             if hasattr(self.main_window, 'specimen_controller'):
                 self.main_window.specimen_controller.set_case_registration_id(case_id)
+            
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.specimen_widget)
             
         else:

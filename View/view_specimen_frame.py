@@ -65,4 +65,94 @@ class SpecimenWidget(QWidget,Ui_specimen_MainWindow):
     def update_datetime_to_now(self):
         self.set_current_datetime()
 
+    def clear_all_inputs(self):
+        """ล้างข้อมูลทั้งหมดในฟอร์ม specimen"""
+        # Clear LineEdits
+        self.ui.specimen_name_lineEdit.clear()
+        self.ui.specimen_ID_lineEdit.clear()
+        self.ui.specimen_breed_lineEdit.clear()
+        self.ui.specimen_weight_lineEdit.clear()
+        self.ui.specimen_animal_other_lineEdit.clear()
+        self.ui.specimen_sample_other_lineEdit.clear()
+        
+        # Reset ComboBoxes
+        self.ui.specimen_sex_comboBox.setCurrentIndex(0)
+        self.ui.specimen_death_comboBox.setCurrentIndex(0)
+        self.ui.specimen_sample_comboBox.setCurrentIndex(0)
+        
+        # Clear TextEdits
+        self.ui.specimen_record_heal_textEdit.clear()
+        self.ui.specimen_record_antibiotics_textEdit.clear()
+        
+        # Clear age fields
+        self.ui.specimen_ageYear_lineEdit.clear()
+        self.ui.specimen_ageMonth_lineEdit.clear()
+        self.ui.specimen_ageDay_lineEdit.clear()
+        
+        # Reset CheckBox
+        self.ui.specimen_ageUnknown_checkBox.setChecked(False)
+        
+        # Reset RadioButtons - Animal Type
+        self.ui.specimen_swine_radioButton.setAutoExclusive(False)
+        self.ui.specimen_avian_radioButton.setAutoExclusive(False)
+        self.ui.specimen_bovine_radioButton.setAutoExclusive(False)
+        self.ui.specimen_equine_radioButton.setAutoExclusive(False)
+        self.ui.specimen_conine_radioButton.setAutoExclusive(False)
+        self.ui.specimen_elephant_radioButton.setAutoExclusive(False)
+        self.ui.specimen_felin_radioButton.setAutoExclusive(False)
+        self.ui.specimen_unknown_radioButton.setAutoExclusive(False)
+        self.ui.specimen_animal_other_radioButton.setAutoExclusive(False)
+        
+        self.ui.specimen_swine_radioButton.setChecked(False)
+        self.ui.specimen_avian_radioButton.setChecked(False)
+        self.ui.specimen_bovine_radioButton.setChecked(False)
+        self.ui.specimen_equine_radioButton.setChecked(False)
+        self.ui.specimen_conine_radioButton.setChecked(False)
+        self.ui.specimen_elephant_radioButton.setChecked(False)
+        self.ui.specimen_felin_radioButton.setChecked(False)
+        self.ui.specimen_unknown_radioButton.setChecked(False)
+        self.ui.specimen_animal_other_radioButton.setChecked(False)
+        
+        self.ui.specimen_swine_radioButton.setAutoExclusive(True)
+        self.ui.specimen_avian_radioButton.setAutoExclusive(True)
+        self.ui.specimen_bovine_radioButton.setAutoExclusive(True)
+        self.ui.specimen_equine_radioButton.setAutoExclusive(True)
+        self.ui.specimen_conine_radioButton.setAutoExclusive(True)
+        self.ui.specimen_elephant_radioButton.setAutoExclusive(True)
+        self.ui.specimen_felin_radioButton.setAutoExclusive(True)
+        self.ui.specimen_unknown_radioButton.setAutoExclusive(True)
+        self.ui.specimen_animal_other_radioButton.setAutoExclusive(True)
+        
+        # Reset RadioButtons - Speed
+        self.ui.specimen_normal_radioButton.setAutoExclusive(False)
+        self.ui.specimen_most_urgent_radioButton.setAutoExclusive(False)
+        
+        self.ui.specimen_normal_radioButton.setChecked(False)
+        self.ui.specimen_most_urgent_radioButton.setChecked(False)
+        
+        self.ui.specimen_normal_radioButton.setAutoExclusive(True)
+        self.ui.specimen_most_urgent_radioButton.setAutoExclusive(True)
+        
+        # Reset RadioButtons - Keeping Method
+        self.ui.specimen_chill_radioButton.setAutoExclusive(False)
+        self.ui.specimen_freeze_radioButton.setAutoExclusive(False)
+        self.ui.specimen_room_temperature_radioButton.setAutoExclusive(False)
+        self.ui.specimen_sample_other_radioButton.setAutoExclusive(False)
+        
+        self.ui.specimen_chill_radioButton.setChecked(False)
+        self.ui.specimen_freeze_radioButton.setChecked(False)
+        self.ui.specimen_room_temperature_radioButton.setChecked(False)
+        self.ui.specimen_sample_other_radioButton.setChecked(False)
+        
+        self.ui.specimen_chill_radioButton.setAutoExclusive(True)
+        self.ui.specimen_freeze_radioButton.setAutoExclusive(True)
+        self.ui.specimen_room_temperature_radioButton.setAutoExclusive(True)
+        self.ui.specimen_sample_other_radioButton.setAutoExclusive(True)
+        
+        # Reset DateTime to current
+        self.set_current_datetime()
+        
+        # Disable lab buttons
+        self.cancel_button_clicked()
+
 

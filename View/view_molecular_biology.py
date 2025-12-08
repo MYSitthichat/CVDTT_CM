@@ -477,8 +477,30 @@ class MolecularBiologyPageWidget(QWidget):
 
     def clear_page(self):
         """Unchecks all checkboxes and clears text inputs"""
+        # Clear all checkboxes
         for widget in self.findChildren(QCheckBox):
             widget.setChecked(False)  # This will also disable and clear LineEdits via signal
+        
+        # Clear all line edits
         for widget in self.findChildren(QLineEdit):
             if widget.isEnabled():
                 widget.clear()
+        
+        # Clear Laboratory Request radio buttons
+        if hasattr(self.ui, 'r_c'):
+            self.ui.r_c.setAutoExclusive(False)
+            self.ui.r_c.setChecked(False)
+            self.ui.r_c.setAutoExclusive(True)
+        
+        if hasattr(self.ui, 'r_q'):
+            self.ui.r_q.setAutoExclusive(False)
+            self.ui.r_q.setChecked(False)
+            self.ui.r_q.setAutoExclusive(True)
+        
+        if hasattr(self.ui, 'r_e'):
+            self.ui.r_e.setAutoExclusive(False)
+            self.ui.r_e.setChecked(False)
+            self.ui.r_e.setAutoExclusive(True)
+        
+        # Reset summary
+        self.set_summary(0, 0)
