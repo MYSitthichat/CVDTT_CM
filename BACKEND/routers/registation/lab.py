@@ -264,7 +264,7 @@ def save_bacteria_biology(data: BacteriaBiologyData):
         # Expected: 1 (sample_id) + 63 (21*3 preparation) + 82 (41*2 drug_sensitivity) + 24 (12*2 bacteria_id) + 15 (5*3 lab_request) + 3 (remark, status, updater) = 188
         expected_count = 188
         if len(values) != expected_count:
-            print(f"⚠️ Bacteria parameter count mismatch: Expected {expected_count}, got {len(values)}")
+            print(f"Bacteria parameter count mismatch: Expected {expected_count}, got {len(values)}")
         
         placeholders = ",".join(["?"] * len(values))
         sql = f"INSERT INTO lab_bacteria_biology ({','.join(columns)}) VALUES ({placeholders})"

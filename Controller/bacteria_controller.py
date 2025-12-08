@@ -84,50 +84,60 @@ class BacteriaController(QObject):
         self.view.ui.bacteria_skinScaping_lineEdit.setEnabled(False)
     
     def bind_sample_checkbox_events(self):
-        """Bind checkbox stateChanged signals to enable/disable corresponding line edits"""
-        # Connect each checkbox to its corresponding line edit
+        """Bind checkbox stateChanged signals to enable/disable and auto-focus corresponding line edits"""
+        # Connect each checkbox to its corresponding line edit with auto-focus
         self.view.ui.bacteria_swabLT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_swabLT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_swabLT_lineEdit))
         self.view.ui.bacteria_swabRT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_swabRT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_swabRT_lineEdit))
         self.view.ui.bacteria_wound_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_wound_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_wound_lineEdit))
         self.view.ui.bacteria_aspirateLT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_aspirateLT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_aspirateLT_lineEdit))
         self.view.ui.bacteria_aspirateRT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_aspirateRT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_aspirateRT_lineEdit))
         self.view.ui.bacteria_urine_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_urine_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_urine_lineEdit))
         self.view.ui.bacteria_midstream_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_midstream_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_midstream_lineEdit))
         self.view.ui.bacteria_catheterization_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_catheterization_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_catheterization_lineEdit))
         self.view.ui.bacteria_cystocentesis_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_cystocentesis_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_cystocentesis_lineEdit))
         self.view.ui.bacteria_tissuesLT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_tissuesLT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_tissuesLT_lineEdit))
         self.view.ui.bacteria_tissuesRT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_tissuesRT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_tissuesRT_lineEdit))
         self.view.ui.bacteria_biopsyLT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_biopsyLT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_biopsyLT_lineEdit))
         self.view.ui.bacteria_biopsyRT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_biopsyRT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_biopsyRT_lineEdit))
         self.view.ui.bacteria_bodyFluidLT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_bodyFluidLT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_bodyFluidLT_lineEdit))
         self.view.ui.bacteria_bodyFluidRT_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_bodyFluidRT_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_bodyFluidRT_lineEdit))
         self.view.ui.bacteria_csf_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_csf_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_csf_lineEdit))
         self.view.ui.bacteria_feces_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_feces_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_feces_lineEdit))
         self.view.ui.bacteria_pus_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_pus_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_pus_lineEdit))
         self.view.ui.bacteria_blood_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_blood_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_blood_lineEdit))
         self.view.ui.bacteria_bloodAgar_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_bloodAgar_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_bloodAgar_lineEdit))
         self.view.ui.bacteria_skinScaping_checkBox.stateChanged.connect(
-            lambda state: self.view.ui.bacteria_skinScaping_lineEdit.setEnabled(state == 2))
+            lambda state: self._handle_sample_checkbox(state, self.view.ui.bacteria_skinScaping_lineEdit))
+    
+    def _handle_sample_checkbox(self, state, lineEdit):
+        """Handle checkbox state change: enable/disable and auto-focus the lineEdit"""
+        if state == 2:  # Checked
+            lineEdit.setEnabled(True)
+            lineEdit.setFocus()  # Auto-focus when checked
+            lineEdit.selectAll()  # Select all text if any exists
+        else:  # Unchecked
+            lineEdit.setEnabled(False)
+            lineEdit.clear()  # Clear text when unchecked
     
     # ========== SAMPLE PREPARATION FUNCTIONS ==========
     

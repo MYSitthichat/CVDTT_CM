@@ -129,9 +129,9 @@ class SpecimenController(QObject):
                     else:
                         unmapped_buttons.append(button_name)
             else:
-                print("⚠️ Failed to load room mapping from database")
+                print("Failed to load room mapping from database")
         except Exception as e:
-            print(f"⚠️ Error loading room mapping: {e}")
+            print(f"Error loading room mapping: {e}")
 
 
 
@@ -181,7 +181,7 @@ class SpecimenController(QObject):
             
             return rooms
         else:
-            print("⚠️ ไม่สามารถดึงข้อมูลห้องปฏิบัติการได้")
+            print("ไม่สามารถดึงข้อมูลห้องปฏิบัติการได้")
             return None
 
 
@@ -321,7 +321,7 @@ class SpecimenController(QObject):
         if self.main_window and hasattr(self.main_window, 'parasite_widget'):
             self.main_window.ui.stackedWidget.setCurrentWidget(self.main_window.parasite_widget)
         else:
-            print("⚠️ Error: Cannot navigate to parasitology page")
+            print("Error: Cannot navigate to parasitology page")
     
     def goto_after_death(self):
         room_id = self.room_mapping.get('after_death')
@@ -331,7 +331,7 @@ class SpecimenController(QObject):
             if hasattr(self.main_window.after_death_widget, 'clear_page'):
                 self.main_window.after_death_widget.clear_page()
         else:
-            print("⚠️ Error: Cannot navigate to after death page")
+            print("Error: Cannot navigate to after death page")
 
 
     def set_case_registration_id(self, case_id):

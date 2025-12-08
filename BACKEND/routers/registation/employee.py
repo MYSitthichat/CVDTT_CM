@@ -236,8 +236,8 @@ def update_employee(employee_id: int, employee: EmployeeData):
         if cursor.fetchone():
             raise HTTPException(status_code=400, detail="Username already exists")
         
-        print(f"[API DEBUG] update_employee - Received updater: {employee.updater}")
-        print(f"[API DEBUG] update_employee - Will save updater: {employee.updater if employee.updater is not None else 1}")
+        # print(f"[API DEBUG] update_employee - Received updater: {employee.updater}")
+        # print(f"[API DEBUG] update_employee - Will save updater: {employee.updater if employee.updater is not None else 1}")
         
         # Step 1: Archive old record (set status=0 and update updater)
         cursor.execute(
@@ -251,9 +251,10 @@ def update_employee(employee_id: int, employee: EmployeeData):
         if employee.password:
             # Hash the new password
             password_to_save = pwd_context.hash(employee.password)
-            print(f"[API DEBUG] New password provided, hashing it")
+            # print(f"[API DEBUG] New password provided, hashing it")
         else:
-            print(f"[API DEBUG] No new password, keeping old password")
+            # print(f"[API DEBUG] No new password, keeping old password")
+            pass
         
         sql = """INSERT INTO employee 
                  (title, name, surname, email, username, password, group_id, status, updater)
