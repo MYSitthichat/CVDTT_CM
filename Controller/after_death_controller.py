@@ -1,6 +1,6 @@
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QMessageBox
-from API.client_app import APIApp
+from SERVICES_REGISTER.after_death_service import AfterDeathService
 
 
 class AfterDeathPageController(QObject):
@@ -23,7 +23,7 @@ class AfterDeathPageController(QObject):
         self.model = model
         self.view = view
         self.main_controller = main_controller
-        self.api_client = APIApp()
+        self.after_death_service = AfterDeathService()
         
         # State tracking
         self.current_sample_id = None
@@ -442,8 +442,8 @@ class AfterDeathPageController(QObject):
             # print(f"User ID: {user_id}")
             # print(f"Full Data: {data}")
             
-            # Save to database via API
-            success = self.api_client.save_after_death(
+            # Save to database via service
+            success = self.after_death_service.save_after_death(
                 sample_id=sample_id,
                 service_type=service_type,
                 service_data=data,
