@@ -8,17 +8,19 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, Image, Spacer, HRFlowable
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.fonts import addMapping
+
+# [FIX] Import Barcode Factory
+from reportlab.graphics.barcode import createBarcodeDrawing
 
 # --- Config & Font Setup ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 project_root = os.path.abspath(os.path.join(current_dir, '..', '..')) 
 fonts_folder = os.path.join(project_root, 'fonts')
 
-# ตรวจสอบว่ามีโฟลเดอร์จริงไหม
 if not os.path.exists(fonts_folder):
     fonts_folder = os.path.join(current_dir, 'fonts')
 
-# ชื่อไฟล์ฟอนต์
 font_files = {
     'normal': 'TH Niramit AS.ttf',
     'bold': 'TH Niramit AS Bold.ttf',
@@ -30,31 +32,24 @@ font_path_normal = os.path.join(fonts_folder, font_files['normal'])
 
 if os.path.exists(font_path_normal):
     try:
-        # ลงทะเบียนฟอนต์ทั้ง 4 แบบ
         pdfmetrics.registerFont(TTFont('THNiramitAS', os.path.join(fonts_folder, font_files['normal'])))
         pdfmetrics.registerFont(TTFont('THNiramitAS-Bold', os.path.join(fonts_folder, font_files['bold'])))
         pdfmetrics.registerFont(TTFont('THNiramitAS-Italic', os.path.join(fonts_folder, font_files['italic'])))
         pdfmetrics.registerFont(TTFont('THNiramitAS-BoldItalic', os.path.join(fonts_folder, font_files['bold_italic'])))
         
-        # จับกลุ่มรวมเป็น Family
-        from reportlab.lib.fonts import addMapping
         addMapping('THNiramitAS', 0, 0, 'THNiramitAS')
         addMapping('THNiramitAS', 1, 0, 'THNiramitAS-Bold')
         addMapping('THNiramitAS', 0, 1, 'THNiramitAS-Italic')
         addMapping('THNiramitAS', 1, 1, 'THNiramitAS-BoldItalic')
-        
-        print(f"✅ Registered Font Family: THNiramitAS (Parasite)")
     except Exception as e:
-        print(f"❌ Error registering font: {e}")
+        print(f"Error registering font: {e}")
 else:
-    print(f"⚠️ Font file not found at: {font_path_normal}")
+    print(f"Font file not found at: {font_path_normal}")
 
-# --- Helper Functions ---
 def set_paragraph_h1_style():
     styles = getSampleStyleSheet()
     style = styles['BodyText']
-    try:
-        style.fontName = 'THNiramitAS'
+    try: style.fontName = 'THNiramitAS-Bold'
     except: pass
     style.fontSize = 16
     return style
@@ -62,11 +57,24 @@ def set_paragraph_h1_style():
 def set_paragraph_style():
     styles = getSampleStyleSheet()
     style = styles['BodyText']
-    try:
-        style.fontName = 'THNiramitAS'
+    try: style.fontName = 'THNiramitAS'
     except: pass
     style.fontSize = 12
     return style
+
+HEADER_COLOR = colors.HexColor('#E8F4F8')
+
+# [FIX] Helper Function: No Human Readable, Adjusted Height
+def get_barcode_drawing(value, height=10*mm):
+    try:
+        val_str = str(value).strip()
+        if not val_str or val_str.lower() == 'none': return Spacer(1, height)
+        # humanReadable=False
+        d = createBarcodeDrawing('Code128', value=val_str, barHeight=height, barWidth=1.2, humanReadable=False)
+        return d
+    except Exception as e:
+        print(f"Barcode Gen Error: {e}")
+        return Paragraph("", set_paragraph_style())
 
 # --- Main Logic ---
 def create_parasite_biology(sample_detail, data, output_file):
@@ -81,91 +89,105 @@ def create_parasite_biology(sample_detail, data, output_file):
 
     elements = []
     
-    # ใช้ logo ที่อยู่ในโฟลเดอร์เดียวกัน: Order_Lab_Pdf/from/logo/logo.jpg
-    current_dir = os.path.dirname(__file__)
-    logo_folder = os.path.join(current_dir, "logo")
-    cvdtt_logo = os.path.join(logo_folder, "logo.jpg")
-    
-    # ตรวจสอบว่าไฟล์มีอยู่จริง
-    if os.path.exists(cvdtt_logo):
-        logo_img = Image(cvdtt_logo, width=1.5*inch, height=1*inch)
-        print(f"✅ Logo loaded from: {cvdtt_logo}")
-    else:
-        print(f"⚠️ Logo not found at {cvdtt_logo}")
-        print(f"   Please ensure logo.jpg exists in: {logo_folder}")
-        logo_img = ""
+    info = sample_detail[0] if sample_detail else [""]*30
+    date_val = str(info[0]).replace('T', ' ') if info[0] else ""
+    raw_barcode = info[25]
+    if raw_barcode is None: raw_barcode = ""
+    barcode_val = str(raw_barcode).zfill(12)
+
+    # Logo
+    logo_candidates = [
+        os.path.join(os.path.dirname(__file__), "logo", "logo.jpg"),
+        os.path.join(os.path.dirname(__file__), "cvdtt_logo.png"),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "Pic", "cvdtt_logo.png")
+    ]
+    logo_img = ""
+    for logo_path in logo_candidates:
+        if os.path.exists(logo_path):
+            logo_img = Image(logo_path, width=1.5*inch, height=1*inch)
+            break
+
+    barcode_drawing = get_barcode_drawing(barcode_val)
 
     title_data = [
-        [logo_img, 'ใบคำขอรับบริการทดสอบปรสิตวิทยา', ''],
+        [logo_img, 'ใบคำขอรับบริการทดสอบปรสิตวิทยา', barcode_drawing],
         ['', Paragraph("ศูนย์ชันสูตรโรคสัตว์และถ่ายทอดเทคโนโลยี คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่ <br/> (Center of Veterinary Diagnosis and Technology Transfer) <br/> Tel. 053-948041 Mobile 094-6362641 <br/> E-mail vet_diag@cmu.ac.th", set_paragraph_style()), ''],
     ]
-    col_widths = [120, 320, 100]
-    table = Table(title_data, colWidths=col_widths)
-    style = TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS' if 'THNiramitAS' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'),
+    col_widths = [110, 263, 150]
+    table = Table(title_data, colWidths=col_widths, hAlign='LEFT')
+    table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS'),
         ('FONTSIZE', (1, 0), (1, 1), 20),
         ('FONTSIZE', (1, 1), (-1, -1), 10),
-        ('BACKGROUND', (0, 0), (-1, -1), '#FFFFFF'),
-        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('VALIGN', (0, 0), (-1, -1), 'TOP'),
         ('SPAN', (0, 0), (0, 1)),
+        ('SPAN', (2, 0), (2, 1)),
+        ('ALIGN', (2, 0), (2, 1), 'CENTER'),
+        
+        # [FIX] ขยับบาร์โค้ดลงมา ไม่ให้ทับตัวหนังสือ
+        ('VALIGN', (2, 0), (2, 1), 'BOTTOM'),
+        ('BOTTOMPADDING', (2, 0), (2, 1), 5),
+        ('TOPPADDING', (2, 0), (2, 1), 15),
+        
         ('PADDING', (0, 0), (-1, -1), 0),
-    ])
-    table.setStyle(style)
+    ]))
     elements.append(table)
-    
     elements.append(Spacer(1, 15))
+    
+    # Sample Detail
     elements.append(Paragraph("รายละเอียดสิ่งส่งตรวจ", set_paragraph_h1_style()))
     elements.append(Spacer(1, 12))
     
-    # Sample Detail
-    info = sample_detail[0]
     detail_info = [
-        ['วันที่รับตัวอย่าง', info[0], 'Barcode', str(str(info[25]).zfill(10))],
+        ['วันที่รับตัวอย่าง', date_val, 'Barcode', barcode_val],
         ['สิ่งที่ส่งมาตรวจ', info[20], 'ประวัติการให้ยา', info[19]],
         ['สถานะการตอบผล', info[17], 'การเก็บรักษาตัวอย่าง', info[16]],
     ]
-    col_widths = [95, 155, 95, 155]
-    sample_detail_table = Table(detail_info, colWidths=col_widths)
-    sample_detail_style = TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS' if 'THNiramitAS' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'),
+    col_widths = [95, 166.5, 95, 166.5]
+    sample_detail_table = Table(detail_info, colWidths=col_widths, hAlign='LEFT')
+    sample_detail_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS'),
         ('FONTSIZE', (0, 0), (-1, -1), 12),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ])
-    sample_detail_table.setStyle(sample_detail_style)
+    ]))
     elements.append(sample_detail_table)
+    elements.append(Spacer(1, 20))
+
+    # Test Details
+    elements.append(Paragraph("รายละเอียดการทดสอบ", set_paragraph_h1_style()))
     elements.append(Spacer(1, 10))
 
-    elements.append(Paragraph("รายละเอียดการทดสอบ", set_paragraph_h1_style()))
-    elements.append(Spacer(1, 12))
-
-    # Test Data logic (Slice 3:39)
-    raw_test_data = data[0][3:39]
-    test_detail = [raw_test_data[i:i+3] for i in range(0, len(raw_test_data), 3)]
-    
     test_list = []
-    idx = 1
-    for test in test_detail:
-        if len(test) > 0 and test[1] != 0: # test[1] is amount/state
-            test_list.append([str(idx), test[0], test[1]])
-            idx += 1
+    if data and len(data) > 0:
+        raw_test_data = data[0][3:39]
+        test_detail = [raw_test_data[i:i+3] for i in range(0, len(raw_test_data), 3)]
+        idx = 1
+        for test in test_detail:
+            if len(test) > 0 and test[1] != 0: 
+                test_list.append([str(idx), test[0], test[1]])
+                idx += 1
 
     test_list.insert(0, ['ลำดับ', 'ชื่อการทดสอบ', 'จำนวนตัวอย่างที่ตรวจ'])
-    col_widths = [40, 230, 230]
-    test_detail_table = Table(test_list, colWidths=col_widths)
-    test_detail_style = TableStyle([
-        ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS' if 'THNiramitAS' in pdfmetrics.getRegisteredFontNames() else 'Helvetica'),
+    
+    test_detail_table = Table(test_list, colWidths=[40, 333, 150], hAlign='LEFT')
+    test_detail_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS'),
         ('FONTSIZE', (0, 0), (-1, -1), 12),
-        ('ALIGN', (0, 1), (-1, -1), 'CENTER'),
-        ('ALIGN', (1, 0), (-1, -1), 'LEFT'),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black)
-    ])
-    test_detail_table.setStyle(test_detail_style)
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+        ('ALIGN', (2, 0), (2, -1), 'CENTER'),
+        ('BACKGROUND', (0, 0), (-1, 0), HEADER_COLOR),
+        ('FONTNAME', (0, 0), (-1, 0), 'THNiramitAS-Bold'),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('PADDING', (0, 0), (-1, -1), 6),
+    ]))
     elements.append(test_detail_table)
 
+    # Footer
     elements.append(Spacer(1, 25))
     line = HRFlowable(width="100%", thickness=1, color="black", spaceBefore=10, spaceAfter=10)
     elements.append(line)
@@ -176,36 +198,22 @@ def create_parasite_biology(sample_detail, data, output_file):
     elements.append(line)
 
     pdf_file.build(elements)
-    print(f"✅ PDF Generated: {output_file}")
 
-# --- Mock Data & Runner ---
 if __name__ == "__main__":
-    # จำลองข้อมูล Sample Detail (Array ขนาดใหญ่อ้างอิงตาม index ที่ใช้ใน code)
+    # Mock Data
     mock_sample = ["" for _ in range(30)]
-    mock_sample[0] = "2023-10-25"    # Date
-    mock_sample[25] = "99001"        # Barcode
-    mock_sample[20] = "อุจจาระ"      # Type
-    mock_sample[19] = "-"            # Drug History
-    mock_sample[17] = "ปกติ"         # Status
-    mock_sample[16] = "แช่เย็น"      # Storage
+    mock_sample[0] = "2025-12-08 13:24:04"
+    mock_sample[25] = "0000001539"
+    mock_sample[20] = "น้ำไขสันหลัง"
+    mock_sample[19] = "-"
+    mock_sample[17] = "ปกติ"
+    mock_sample[16] = "แช่แข็ง (Freeze)"
     
-    sample_data_list = [mock_sample]
-
-    # จำลองข้อมูล Test Data (ต้องมีขนาดพอดีกับ Slice 3:39 -> 36 elements)
-    # Format: [Name, Amount, Price] เรียงต่อกัน
-    mock_tests = [0] * 3 # Padding 3 ตัวแรก (0-2)
-    
-    # สร้างรายการทดสอบจำลอง 12 รายการ (12 * 3 = 36)
+    mock_tests = [0] * 3 
     tests_content = []
-    for i in range(12):
-        if i < 3: # สมมติว่าเลือกตรวจแค่ 3 รายการแรก
-            tests_content.extend([f"การทดสอบปรสิต {i+1}", 1, 100])
-        else:
-            tests_content.extend(["", 0, 0])
-            
+    tests_content.extend(["Parasite in meat (300)", 1, 0])
+    while len(tests_content) < 36: tests_content.extend(["", 0, 0])
     mock_tests.extend(tests_content)
     
-    test_data_list = [mock_tests]
-
-    output_filename = "test_parasite_report.pdf"
-    create_parasite_biology(sample_data_list, test_data_list, output_filename)
+    output_filename = "test_parasite_final.pdf"
+    create_parasite_biology([mock_sample], [mock_tests], output_filename)

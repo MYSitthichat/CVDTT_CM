@@ -1,10 +1,11 @@
 import os
+import sys
 import tempfile
 from PySide6.QtWidgets import QTableWidgetItem, QMessageBox
 from PySide6.QtCore import QObject
-
-# Import your PDF generation modules
-from Order_Lab_Pdf.order_detail_pdf import create_parasite_biology, create_bacteriology, create_molecular_biology
+from Order_Lab_Pdf.pdf_from  import parasite_order_from
+from Order_Lab_Pdf.pdf_from import bacteria_order_from
+from Order_Lab_Pdf.pdf_from import molecular_order_from
 
 class LabReportPageController(QObject):
     """ Controller for the Lab Report Page """
@@ -92,6 +93,12 @@ class LabReportPageController(QObject):
     def generate_pdf(self, case_id, case_lab):
         """ Logic extracted from your old main_controller """
         try:
+            # Add Order_Lab_Pdf/from to path for dynamic import
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            pdf_from_path = os.path.join(project_root, "Order_Lab_Pdf", "from")
+            if pdf_from_path not in sys.path:
+                sys.path.insert(0, pdf_from_path)
+            
             # 1. Get Info
             sample_info = self.model.get_sample_information_by_id(case_id)
             
@@ -106,17 +113,17 @@ class LabReportPageController(QObject):
             # 3. Generate based on Lab Type
             if 'Parasite' in case_lab_str:
                 test_info = self.model.get_parasite_test_information_by_id(case_id)
-                create_parasite_biology(sample_info, test_info, temp_pdf_file)
+                parasite_order_from.create_parasite_biology(sample_info, test_info, temp_pdf_file)
                 os.system(f"start {temp_pdf_file}")
 
             elif 'Fungal' in case_lab_str or 'Bacteria' in case_lab_str:
                 test_info = self.model.get_bacteriology_test_information_by_id(case_id)
-                create_bacteriology(sample_info, test_info, temp_pdf_file)
+                bacteria_order_from.create_bacteriology(sample_info, test_info, temp_pdf_file)
                 os.system(f"start {temp_pdf_file}")
 
             elif 'PCR' in case_lab_str or 'Molecular' in case_lab_str:
                 test_info = self.model.get_molecular_test_information_by_id(case_id)
-                create_molecular_biology(sample_info, test_info, temp_pdf_file)
+                molecular_order_from.create_molecular_biology(sample_info, test_info, temp_pdf_file)
                 os.system(f"start {temp_pdf_file}")
                 
             else:

@@ -23,7 +23,7 @@ def index():
 def hash_plain_passwords():
     conn = get_db_connection()
     if not conn:
-        print("Cannot connect to database for password encryption")
+        # print("Cannot connect to database for password encryption")
         return
     cursor = conn.cursor()
     try:
@@ -38,14 +38,14 @@ def hash_plain_passwords():
                 hashed = pwd_context.hash(password_to_hash)
                 cursor.execute("UPDATE employee SET password = ? WHERE id = ?", (hashed, user_id))
                 updated_count += 1
-                print(f"Encrypted password for user: {username}")
+                # print(f"Encrypted password for user: {username}")
             except Exception as e:
                 print(f"Error encrypting password for user {username}: {e}")
                 continue
         
         if updated_count > 0:
             conn.commit()
-            print(f"Total {updated_count} passwords encrypted on startup")
+            # print(f"Total {updated_count} passwords encrypted on startup")
         else:
             print("All passwords are already encrypted")
 

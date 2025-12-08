@@ -4,6 +4,16 @@ from View.view_new_work_frame import AddNewWorkWidget
 from SERVICES_REGISTER.work_service import WorkService
 from SERVICES_REGISTER.customer_service import CustomerService
 from barcode_utils.barcode_generator import BarcodeGenerator
+from Order_Lab_Pdf.pdf_from  import parasite_order_from
+from Order_Lab_Pdf.pdf_from import bacteria_order_from
+from Order_Lab_Pdf.pdf_from import molecular_order_from
+import os
+from datetime import datetime
+import sys
+import subprocess
+import platform
+
+
 
 
 class NewWorkController(QObject):
@@ -82,17 +92,86 @@ class NewWorkController(QObject):
     
     
     def send_report_clicked(self):
-        print("Send report button clicked")
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        """Generate and print lab order form PDF based on room type"""
+        tree = self.main_nw.ui.nw_work_register_treeWidget
+        selected_items = tree.selectedItems()
+        
+        if not selected_items:
+            QMessageBox.warning(self.main_nw, "แจ้งเตือน", "กรุณาเลือกรายการที่ต้องการพิมพ์ใบส่งแลป")
+            return
+        
+        try:
+            order_id_str = selected_items[0].text(1).strip()
+            order_id = int(order_id_str) if order_id_str else 0
+            
+            if order_id == 0:
+                QMessageBox.warning(self.main_nw, "ข้อผิดพลาด", "ไม่พบหมายเลขการตรวจ")
+                return
+            
+            lab_room = selected_items[0].text(3).strip()
+            
+            room_code = lab_room.split()[0] if lab_room else ""
+            
+            result = self.API_new_work.get_lab_order_pdf_data(order_id)
+            
+            if not result or result.get('status') != 'success':
+                QMessageBox.critical(self.main_nw, "ข้อผิดพลาด", f"ไม่สามารถดึงข้อมูลได้\n{result}")
+                return
+            
+            lab_type = result.get('lab_type')
+            sample_detail = result.get('sample_detail')
+            test_data = result.get('test_data')
+            
+            if not sample_detail:
+                QMessageBox.warning(self.main_nw, "แจ้งเตือน", 
+                    f"ไม่พบข้อมูล sample สำหรับสร้าง PDF")
+                return
+            if not test_data:
+                print("WARNING: test_data is empty, will create PDF with empty test data")
+                test_data = []  # Ensure it's an empty list, not None
+            
+            project_root = os.path.dirname(os.path.dirname(__file__))
+            pdf_from_path = os.path.join(project_root, "Order_Lab_Pdf", "pdf_from")
+            if pdf_from_path not in sys.path:
+                sys.path.insert(0, pdf_from_path)
+            
+            output_dir = os.path.join(project_root, "Order_Lab_Pdf", "pdf_from", "output")
+            os.makedirs(output_dir, exist_ok=True)
+            os.makedirs(output_dir, exist_ok=True)
+            
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_file = os.path.join(output_dir, f"{lab_type}_order_{order_id}_{timestamp}.pdf")
+            
+            if lab_type == "parasite":
+                parasite_order_from.create_parasite_biology(sample_detail, test_data, output_file)
+                
+            elif lab_type == "bacteria":
+                bacteria_order_from.create_bacteriology(sample_detail, test_data, output_file)
+                
+            elif lab_type == "molecular":
+                molecular_order_from.create_molecular_biology(sample_detail, test_data, output_file)
+            else:
+                QMessageBox.warning(self.main_nw, "แจ้งเตือน", f"ไม่รองรับประเภทห้องปฏิบัติการ: {lab_type}")
+                return
+            
+            if os.path.exists(output_file):
+                if platform.system() == 'Windows':
+                    os.startfile(output_file)
+                elif platform.system() == 'Darwin':  # macOS
+                    subprocess.call(['open', output_file])
+                else:  # Linux
+                    subprocess.call(['xdg-open', output_file])
+                
+                QMessageBox.information(self.main_nw, "สำเร็จ", f"สร้างใบส่งแลป  {lab_type}  สำเร็จ")
+            else:
+                QMessageBox.warning(self.main_nw, "ข้อผิดพลาด", "ไม่สามารถสร้างไฟล์ PDF ได้")
+                
+        except ValueError as e:
+            QMessageBox.critical(self.main_nw, "ข้อผิดพลาด", f"รูปแบบข้อมูลไม่ถูกต้อง: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self.main_nw, "ข้อผิดพลาด", f"เกิดข้อผิดพลาด: {str(e)}")
+            print(f"Error in send_report_clicked: {e}")
+            
     
     def delete_result_clicked(self):
         """Delete selected item from tree widget and database"""
@@ -276,7 +355,7 @@ class NewWorkController(QObject):
         reply = QMessageBox.question(self.main_nw, "CONFIRMATION", "คุณแน่ใจหรือไม่ว่ายกเลิกการบันทึกข้อมูล?", QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if reply == QMessageBox.No:
             return
-        # self.cancel_clicked() #comment for debug 
+        self.cancel_clicked() #comment for debug 
 
 
     def cancel_clicked(self):
@@ -298,7 +377,7 @@ class NewWorkController(QObject):
         self.main_nw.unlock_all_input()
 
     def setup_ui(self):
-        # self.cancel_clicked() #comment for debug 
+        self.cancel_clicked() #comment for debug 
         pass
 
     def add_result_clicked(self):
@@ -522,5 +601,5 @@ class NewWorkController(QObject):
                 self.main_nw.ui.nw_work_register_treeWidget.addTopLevelItem(item)
                 
             except Exception as e:
-                print(f"⚠️ Error adding row to treewidget: {e}")
+                print(f"Error adding row to treewidget: {e}")
                 print(f"   Row data: {row}")

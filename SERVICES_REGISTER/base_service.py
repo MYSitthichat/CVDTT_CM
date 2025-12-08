@@ -20,7 +20,7 @@ class BaseService:
                     # กรณี Server ตอบ 200 แต่ไม่ใช่ JSON (เช่น return True/False string)
                     return response.text
             else:
-                print(f"Server Error ({endpoint}): {response.status_code} - {response.text}")
+                # print(f"Server Error ({endpoint}): {response.status_code} - {response.text}")
                 return None
         except requests.RequestException as e:
             print(f"Network Error ({endpoint}): {e}")
@@ -34,7 +34,7 @@ class BaseService:
             if response.status_code == 200:
                 return response.json()
             else:
-                print(f"Server Error ({endpoint}): {response.status_code}")
+                # print(f"Server Error ({endpoint}): {response.status_code}")
                 return [] if "search" in endpoint else None
         except requests.RequestException as e:
             print(f"Network Error ({endpoint}): {e}")
@@ -48,7 +48,7 @@ class BaseService:
             if response.status_code == 200:
                 return response.json()
             else:
-                print(f"Server Error ({endpoint}): {response.status_code}")
+                # print(f"Server Error ({endpoint}): {response.status_code}")
                 return {"status": "error", "detail": response.text}
         except requests.RequestException as e:
             return {"status": "error", "detail": str(e)}

@@ -22,3 +22,7 @@ class WorkService(BaseService):
     
     def delete_sample_registration(self, order_id):
         return self._get(f"/delete_sample_registration/{order_id}")
+    
+    def get_lab_order_pdf_data(self, order_id):
+        """Get lab order data for PDF generation"""
+        return self._get(f"/get_lab_order_pdf_data/{order_id}")
