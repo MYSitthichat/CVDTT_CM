@@ -4,6 +4,7 @@ from Controller.forgot_password_controller import ForgotPasswordController
 from PySide6.QtCore import QObject, QTimer
 import sys
 from SERVICES_REGISTER.auth_service import AuthService
+from SERVICES_REGISTER.employee_service import EmployeeService
 from PySide6.QtWidgets import QMessageBox
 
 DEBUG = False
@@ -15,6 +16,7 @@ class Login_Controller(QObject):
         self.login_window = LoginWindow()
         self.main_window = MainController(login_controller=self)
         self.login_api_app = AuthService()
+        self.employee_service = EmployeeService()
         self.forgot_password_widget = ForgotPasswordController()
         self.main_window.hide_main_page()
         
@@ -35,7 +37,7 @@ class Login_Controller(QObject):
         password = self.login_window.password_lineEdit.text()
         if DEBUG == True:
             self.logged_in_user_id = 222
-            self.main_window.set_logged_in_user(self.logged_in_user_id)
+            self.load_and_set_user_info(self.logged_in_user_id, username)
             self.switch_to_main()
         else:
             if username == "" and password == "":
@@ -43,7 +45,7 @@ class Login_Controller(QObject):
             user_info = self.login_api_app.login(username, password)
             if user_info:
                 self.logged_in_user_id = user_info.get('id') or user_info.get('user_id')
-                self.main_window.set_logged_in_user(self.logged_in_user_id)
+                self.load_and_set_user_info(self.logged_in_user_id, username)
                 self.switch_to_main()
                 return True
             
@@ -54,6 +56,34 @@ class Login_Controller(QObject):
                     "Invalid username or password"
                 )
                 return False
+    
+    def load_and_set_user_info(self, user_id, username):
+        """ดึงข้อมูลผู้ใช้จาก database และส่งไปยัง main controller"""
+        try:
+            # ดึงข้อมูลผู้ใช้จาก employee table (title, name, surname, email, group_id, position)
+            employee_data = self.employee_service.get_employee_by_id(user_id)
+            
+            if employee_data:
+                # สร้าง user_info dict โดยไม่รวม username, password เพื่อความปลอดภัย
+                user_info = {
+                    'id': employee_data.get('id'),
+                    'title': employee_data.get('title', ''),
+                    'name': employee_data.get('name', ''),
+                    'surname': employee_data.get('surname', ''),
+                    'email': employee_data.get('email', ''),
+                    'group_id': employee_data.get('group_id'),
+                    'position': employee_data.get('position', 'Staff')  # ชื่อตำแหน่งจาก employee_group
+                }
+                
+                # ส่งข้อมูลไปยัง main controller
+                self.main_window.set_user_info(user_id, username, user_info)
+            else:
+                # ถ้าดึงข้อมูลไม่ได้ ใช้ข้อมูลพื้นฐาน
+                self.main_window.set_logged_in_user(user_id)
+        except Exception as e:
+            print(f"Error loading user info: {e}")
+            # ถ้า error ใช้ข้อมูลพื้นฐาน
+            self.main_window.set_logged_in_user(user_id)
 
     def cancel_login(self):
         sys.exit()

@@ -37,13 +37,17 @@ class BarcodePageWidget(QWidget):
         # Prevent user from editing cells directly
         table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         
-        # Make the last column stretch to fill empty space
-        if table.columnCount() > 0:
-            header = table.horizontalHeader()
-            header.setStretchLastSection(True)
-        
         # Add alternating colors for better readability
         table.setAlternatingRowColors(True)
+        
+        # Configure column resizing behavior
+        if table.columnCount() > 0:
+            header = table.horizontalHeader()
+            # Set resize modes for each column
+            for i in range(table.columnCount() - 1):
+                header.setSectionResizeMode(i, QHeaderView.Fixed)
+            # Make the last column stretch to fill remaining space
+            header.setSectionResizeMode(table.columnCount() - 1, QHeaderView.Stretch)
 
     def clear_inputs(self):
         """ Helper to clear text inputs """

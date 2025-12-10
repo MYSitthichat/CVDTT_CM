@@ -26,3 +26,11 @@ class WorkService(BaseService):
     def get_lab_order_pdf_data(self, order_id):
         """Get lab order data for PDF generation"""
         return self._get(f"/get_lab_order_pdf_data/{order_id}")
+    
+    def change_state_work(self, work_id, new_state):
+        """Change work state (1=printed sticker, 2=printed lab form)"""
+        params = {
+            "work_id": work_id,
+            "new_state": str(new_state)
+        }
+        return self._post("/change_state_work", params=params)

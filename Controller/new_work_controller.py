@@ -155,6 +155,15 @@ class NewWorkController(QObject):
                 return
             
             if os.path.exists(output_file):
+                try:
+                    state_result = self.API_new_work.change_state_work(order_id, 2)
+                    if state_result and state_result.get('status') == 'success':
+                        pass
+                    else:
+                       QMessageBox.critical(self.main_nw, "Error", f"เกิดข้อผิดพลาดไม่สามารถอัพเดทสถานะงานได้: {state_result}")
+                except Exception as e:
+                    QMessageBox.critical(self.main_nw, "Error", f"เกิดข้อผิดพลาดไม่สามารถอัพเดทสถานะงานได้: {str(e)}")
+
                 if platform.system() == 'Windows':
                     os.startfile(output_file)
                 elif platform.system() == 'Darwin':  # macOS
@@ -220,7 +229,13 @@ class NewWorkController(QObject):
             if not selected_items:
                 QMessageBox.critical(self.main_nw, "Error", "กรุณาเลือกรายการในตารางเพื่อพิมพ์สติกเกอร์")
                 return
+            
             item = selected_items[0]
+            
+            # Get order_id (barcode) from column 1
+            order_id_str = item.text(1).strip()
+            order_id = int(order_id_str) if order_id_str else 0
+            
             row_data = []
             for col in range(6): 
                 text = item.text(col)
@@ -231,6 +246,18 @@ class NewWorkController(QObject):
                 barcode_obj = BarcodeGenerator()
                 barcode_obj.generate(data_to_print)
                 barcode_obj.print_barcode()
+                
+                if order_id > 0:
+                    try:
+                        result = self.API_new_work.change_state_work(order_id, 1)
+                        if result and result.get('status') == 'success':
+                            pass
+                        else:
+                            QMessageBox.critical(self.main_nw, "Error", f"เกิดข้อผิดพลาดไม่สามารถอัพเดทสถานะงานได้: {result}")
+                    except Exception as e:
+                        print(f"Error updating state: {e}")
+                        QMessageBox.critical(self.main_nw, "Error", f"เกิดข้อผิดพลาดไม่สามารถอัพเดทสถานะงานได้: {result}")
+                        
             except Exception as e:
                 QMessageBox.critical(self.main_nw, "Error", f"เกิดข้อผิดพลาดในการพิมพ์: {str(e)}")
                 

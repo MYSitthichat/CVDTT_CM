@@ -42,6 +42,69 @@ def add_work(sender_id: Optional[int] = None, owner_id: Optional[int] = None,
     finally:
         conn.close()
 
+
+@router.post("/change_state_work")
+def change_state_work(work_id: int, new_state: str):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        
+        # Validate new_state value
+        if new_state not in ["1", "2"]:
+            raise HTTPException(status_code=400, detail="Invalid new_state value. Must be '1' or '2'")
+        
+        # Get current state from database
+        sql = """SELECT state FROM lab_order WHERE id = ?"""
+        cursor.execute(sql, (work_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail=f"Lab order with ID {work_id} not found")
+        
+        current_state = result[0]
+        new_state_int = int(new_state)
+        current_state_int = int(current_state) if current_state else 0
+        
+        if current_state_int > new_state_int:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Cannot change state backwards. Current state is {current_state_int}, cannot change to {new_state_int}"
+            )
+        if current_state_int == new_state_int:
+            return {
+                "status": "success", 
+                "work_id": work_id, 
+                "message": f"State is already {new_state_int}, no update needed"
+            }
+            
+        sql = """UPDATE lab_order SET state = ? WHERE id = ?"""
+        cursor.execute(sql, (new_state, work_id))
+        if new_state == "1":
+            tracking_state = "ปริ้นสติกเกอร์"
+        elif new_state == "2":
+            tracking_state = "ปริ้นใบส่งส่งตรวจแลป"
+        
+        sql = """UPDATE tracking_lab_order SET tracking_info = ? WHERE lab_order_id = ?"""
+        cursor.execute(sql, (tracking_state, work_id))
+
+        conn.commit()
+        return {
+            "status": "success", 
+            "work_id": work_id,
+            "previous_state": current_state_int,
+            "new_state": new_state_int,
+            "tracking_info": tracking_state
+        }
+    except mariadb.Error as e:
+        if conn:
+            conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to change work state: {str(e)}")
+    finally:
+        conn.close()
+
+
 @router.post("/add_new_specimen")
 def add_new_specimen(data: SpecimenData):
     conn = get_db_connection()

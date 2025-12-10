@@ -55,8 +55,16 @@ class MainController(QObject):
         
         self.login_controller = login_controller
         
-        # Connect buttons
-        self.main_window.ui.logout_pushButton.clicked.connect(self.logout_pushButton_clicked)
+        # Connect User Profile Widget buttons (แทนที่ปุ่ม logout เดิม)
+        self._setup_user_profile_connections()
+
+    def _setup_user_profile_connections(self):
+        user_widget = self.main_window.get_user_profile_widget()
+        if user_widget and user_widget.popup:
+            user_widget.popup.btn_logout.clicked.connect(self.logout_pushButton_clicked)
+        if hasattr(self.main_window.ui, 'logout_pushButton'):
+            self.main_window.ui.logout_pushButton.clicked.connect(self.logout_pushButton_clicked)
+        
         self.main_window.ui.register_new_customer_pushButton.clicked.connect(self.show_register_page)
         
         if hasattr(self.main_window.ui, 'new_work_pushButton'):
@@ -69,9 +77,11 @@ class MainController(QObject):
         self.main_window.hide()
     
     def logout_pushButton_clicked(self):
-        self.main_window.hide()  # Hide the main window
+        if hasattr(self.main_window, 'user_profile_widget') and self.main_window.user_profile_widget:
+            self.main_window.user_profile_widget.hide_popup_immediately()
+        
+        self.main_window.hide()
         if self.login_controller:
-            # Delay 500ms before showing login page
             self.set_logged_in_user(user_id=None)
             QTimer.singleShot(100, self.show_login_after_logout)
     
@@ -90,17 +100,44 @@ class MainController(QObject):
     
     def set_logged_in_user(self, user_id):
         self.logged_in_user_id = user_id
-        
-        # Set user ID in edit employee controller for permission checking
-        # Only set if user_id is valid (not None)
         if hasattr(self, 'edit_employee_controller') and self.edit_employee_controller and user_id is not None:
             self.edit_employee_controller.set_current_user(user_id)
     
+    def set_user_info(self, user_id, username, user_info):
+        self.logged_in_user_id = user_id
+        self.logged_in_username = username
+        self.logged_in_user_info = user_info
+        
+        if user_info:
+            title = user_info.get('title', '')
+            name = user_info.get('name', '')
+            surname = user_info.get('surname', '')
+            full_name = f"{title}{name} {surname}".strip()
+            if not full_name:
+                full_name = username or 'User'
+            role = user_info.get('position', 'Staff')
+            employee_id = str(user_id) if user_id else ''
+            email = user_info.get('email', '')
+            group_id = user_info.get('group_id')
+            self._update_edit_employee_button_visibility(group_id)
+            if hasattr(self.main_window, 'user_profile_widget') and self.main_window.user_profile_widget:
+                self.main_window.user_profile_widget.update_user_info(full_name, role, employee_id)
+                if self.main_window.user_profile_widget.popup:
+                    self.main_window.user_profile_widget.popup.set_user_data(
+                        full_name, role, employee_id, email
+                    )
+        if hasattr(self, 'edit_employee_controller') and self.edit_employee_controller and user_id is not None:
+            self.edit_employee_controller.set_current_user(user_id)
+    
+    def _update_edit_employee_button_visibility(self, group_id):
+        if hasattr(self.main_window.ui, 'edit_employee_pushButton'):
+            if group_id is not None and group_id <= 2:
+                self.main_window.ui.edit_employee_pushButton.show()
+            else:
+                self.main_window.ui.edit_employee_pushButton.hide()
+    
     def get_user_login_id(self):
-        """Get the logged-in user ID"""
         return self.logged_in_user_id
     
     def get_logged_in_user_id(self):
-        """Get the logged-in user ID"""
         return self.logged_in_user_id
-    

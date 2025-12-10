@@ -5,6 +5,7 @@ from barcode_utils.barcode_generator import BarcodeGenerator
 from SERVICES_REGISTER.barcode_service import BarcodeService
 from SERVICES_REGISTER.customer_service import CustomerService
 from SERVICES_REGISTER.employee_service import EmployeeService
+from SERVICES_REGISTER.work_service import WorkService
 
 class BarcodePageController(QObject):
     """ Controller for the Barcode/Sticker Page """
@@ -15,12 +16,23 @@ class BarcodePageController(QObject):
         self.api = BarcodeService() 
         self.customer_api = CustomerService()
         self.employee_api = EmployeeService()
+        self.work_api = WorkService()  # Add WorkService for state changes
 
         # Initialize autocomplete variables
         self.customer_records_map = {}
         self.is_selecting = False
         self.last_search_text = ""
         self.is_printing = False  # Flag to prevent double print
+        
+        # Pagination state
+        self.current_offset = 0
+        self.limit = 100
+        self.has_more = True
+        self.is_loading = False
+        self.total_count = 0
+        self.barcode_data = []  # Store all loaded barcode data
+        self.current_search_type = None  # 'today', 'customer', 'employee'
+        self.current_search_params = {}  # Store search parameters for pagination
         
         # Setup autocomplete
         self._setup_autocomplete()
@@ -74,7 +86,8 @@ class BarcodePageController(QObject):
             return
             
         try:
-            results = self.customer_api.fetch_search_results(text)
+            # Use search_customer instead of fetch_search_results
+            results = self.customer_api.search_customer(text)
             if not results:
                 self.completer_model.setStringList([])
                 return
@@ -96,6 +109,8 @@ class BarcodePageController(QObject):
 
             # Update model and show popup
             self.completer_model.setStringList(display_names)
+            if display_names:
+                self.completer.complete()
             
         except Exception as e:
             print(f"Search Error: {e}")
@@ -208,6 +223,8 @@ class BarcodePageController(QObject):
 
             # Update model and show popup
             self.employee_completer_model.setStringList(display_names)
+            if display_names:
+                self.employee_completer.complete()
             
         except Exception as e:
             print(f"Employee Search Error: {e}")
@@ -255,28 +272,46 @@ class BarcodePageController(QObject):
         self.ui.btn_search_customer.clicked.connect(self.search_by_customer)
         self.ui.btn_search_employee.clicked.connect(self.search_by_employee)
         self.ui.btn_print.clicked.connect(self.print_barcode)
+        
+        # Bind scroll event for pagination
+        self.ui.tableWidget.verticalScrollBar().valueChanged.connect(self.on_scroll)
 
     def search_today_cases(self):
+        """ค้นหารายการในวันนี้ พร้อม Pagination"""
         self.view.clear_inputs()
         self.selected_employee_id = None  # Reset employee selection
         
-        # Call API
-        response_data = self.api.get_today_cases()
-        self.populate_table(response_data)
+        # Reset pagination state
+        self.current_offset = 0
+        self.barcode_data = []
+        self.has_more = True
+        self.current_search_type = 'today'
+        self.current_search_params = {}
+        
+        self.ui.tableWidget.setRowCount(0)
+        self.load_more_data()
 
     def search_by_customer(self):
-        name = self.ui.lineEdit_firstname.text()
-        surname = self.ui.lineEdit_lastname.text()
+        """ค้นหารายการด้วยชื่อลูกค้า พร้อม Pagination"""
+        name = self.ui.lineEdit_firstname.text().strip()
+        surname = self.ui.lineEdit_lastname.text().strip()
 
         if name == "" and surname == "":
             QMessageBox.warning(self.view, "Warning", "กรุณากรอกชื่อหรือนามสกุลเพื่อค้นหา")
             return
 
-        response_data = self.api.search_barcode_cases(name, surname)
-        self.populate_table(response_data)
+        # Reset pagination state
+        self.current_offset = 0
+        self.barcode_data = []
+        self.has_more = True
+        self.current_search_type = 'customer'
+        self.current_search_params = {'name': name, 'surname': surname}
+        
+        self.ui.tableWidget.setRowCount(0)
+        self.load_more_data()
 
     def search_by_employee(self):
-        """ Search cases by employee (ชื่อผู้นำส่ง) """
+        """ Search cases by employee (ชื่อผู้นำส่ง) พร้อม Pagination """
         sender_name = self.ui.lineEdit_sender.text().strip()
         
         if sender_name == "":
@@ -285,106 +320,179 @@ class BarcodePageController(QObject):
         
         # If we have a selected employee ID from autocomplete, use it directly
         if self.selected_employee_id is not None:
-            # print(f"[DEBUG] Using selected employee ID: {self.selected_employee_id}")
-            response_data = self.api.search_barcode_by_employee(self.selected_employee_id)
-            if response_data and len(response_data) > 0:
-                self.populate_table(response_data)
-            else:
-                QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+            # Reset pagination state
+            self.current_offset = 0
+            self.barcode_data = []
+            self.has_more = True
+            self.current_search_type = 'employee'
+            self.current_search_params = {'employee_id': self.selected_employee_id}
+            
+            self.ui.tableWidget.setRowCount(0)
+            self.load_more_data()
             return
         
         # Split full name and search with first part (name) to improve matching
         search_term = sender_name.split()[0] if ' ' in sender_name else sender_name
-        # print(f"[DEBUG] Searching for employee: {search_term} (original: {sender_name})")
         results = self.employee_api.search_employee(search_term)
-        # print(f"[DEBUG] Employee search results: {results}")
         
         if results and len(results) > 0:
-            # Try each matching employee until we find one with data
-            found_data = False
+            # Find matching employee
             for emp in results:
                 employee_id = emp.get('id')
                 emp_name = str(emp.get('name', '') or '').strip()
                 emp_surname = str(emp.get('surname', '') or '').strip()
                 full_name = f"{emp_name} {emp_surname}".strip()
                 
-                # print(f"[DEBUG] Trying employee ID: {employee_id} ({full_name})")
-                
                 # Only try employees that match the search name
                 if sender_name in full_name or full_name in sender_name or emp_name in sender_name:
-                    response_data = self.api.search_barcode_by_employee(employee_id)
-                    # print(f"[DEBUG] Barcode search response for ID {employee_id}: {len(response_data) if response_data else 0} results")
+                    # Reset pagination state
+                    self.current_offset = 0
+                    self.barcode_data = []
+                    self.has_more = True
+                    self.current_search_type = 'employee'
+                    self.current_search_params = {'employee_id': employee_id}
                     
-                    if response_data and len(response_data) > 0:
-                        self.populate_table(response_data)
-                        found_data = True
-                        break
+                    self.ui.tableWidget.setRowCount(0)
+                    self.load_more_data()
+                    return
             
-            if not found_data:
-                QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+            QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
         else:
             QMessageBox.warning(self.view, "Warning", "ไม่พบพนักงานที่ค้นหา")
-
-    def populate_table(self, api_response):
-        """ Populates the QTableWidget with API data """
-        table = self.ui.tableWidget
-        table.setRowCount(0) 
-
-        # --- FIX: Handle different API response formats ---
-        data_list = []
-        
-        # Case A: API returns {"status": "success", "data": [...]}
-        if isinstance(api_response, dict):
-            if "data" in api_response and isinstance(api_response["data"], list):
-                data_list = api_response["data"]
-            else:
-                # API returned a dict but not the expected format, or error message
-                # print(f"API returned dictionary: {api_response}")
-                return
-
-        # Case B: API returns direct list [...]
-        elif isinstance(api_response, list):
-            data_list = api_response
-            
-        # Check if empty
-        if not data_list:
-            QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+    
+    def load_more_data(self):
+        """โหลดข้อมูลเพิ่มเติมตามประเภทการค้นหา"""
+        if self.is_loading or not self.has_more:
             return
-
-        # --- Populate ---
-        for row_idx, item in enumerate(data_list):
-            table.insertRow(row_idx)
+        
+        self.is_loading = True
+        
+        try:
+            response_data = None
             
-            # Validates that item is actually a dictionary
+            if self.current_search_type == 'today':
+                response_data = self.api.get_today_cases(
+                    offset=self.current_offset,
+                    limit=self.limit
+                )
+            elif self.current_search_type == 'customer':
+                response_data = self.api.search_barcode_cases(
+                    name=self.current_search_params.get('name', ''),
+                    surname=self.current_search_params.get('surname', ''),
+                    offset=self.current_offset,
+                    limit=self.limit
+                )
+            elif self.current_search_type == 'employee':
+                response_data = self.api.search_barcode_by_employee(
+                    employee_id=self.current_search_params.get('employee_id'),
+                    offset=self.current_offset,
+                    limit=self.limit
+                )
+            
+            if not response_data:
+                if self.current_offset == 0:
+                    QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+                self.has_more = False
+                return
+            
+            # Handle different response formats
+            new_data = []
+            if isinstance(response_data, dict):
+                new_data = response_data.get('data', [])
+                self.total_count = response_data.get('total', 0)
+                self.has_more = response_data.get('has_more', False)
+            elif isinstance(response_data, list):
+                new_data = response_data
+                # If server doesn't support pagination yet, assume no more data
+                self.has_more = len(new_data) >= self.limit
+            
+            if len(new_data) == 0:
+                if self.current_offset == 0:
+                    QMessageBox.information(self.view, "Info", "ไม่พบข้อมูล (No data found)")
+                self.has_more = False
+                return
+            
+            # Add new data to existing data
+            self.barcode_data.extend(new_data)
+            self.update_table()
+            self.current_offset += len(new_data)
+            
+        except Exception as e:
+            print(f"[ERROR] Exception in load_more_data: {e}")
+            import traceback
+            traceback.print_exc()
+            if self.current_offset == 0:
+                QMessageBox.critical(self.view, "ข้อผิดพลาด", f"เกิดข้อผิดพลาด: {str(e)}")
+            self.has_more = False
+        finally:
+            self.is_loading = False
+    
+    def on_scroll(self, value):
+        """ตรวจจับการเลื่อน scroll bar"""
+        scrollbar = self.ui.tableWidget.verticalScrollBar()
+        # When scroll reaches 90% of maximum, load more data
+        if value >= scrollbar.maximum() * 0.9:
+            if self.has_more and not self.is_loading and len(self.barcode_data) > 0:
+                self.load_more_data()
+    
+    def update_table(self):
+        """อัพเดตตารางด้วยข้อมูลทั้งหมด"""
+        table = self.ui.tableWidget
+        table.setRowCount(len(self.barcode_data))
+        
+        for row_idx, item in enumerate(self.barcode_data):
             if not isinstance(item, dict):
                 continue
 
             # 0. Date
             date_val = str(item.get('date', '-'))
             if 'T' in date_val:
-                 date_val = date_val.replace('T', ' ')
-            table.setItem(row_idx, 0, QTableWidgetItem(date_val))
+                date_val = date_val.replace('T', ' ')
+            date_item = QTableWidgetItem(date_val)
+            date_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            table.setItem(row_idx, 0, date_item)
             
             # 1. Barcode ID
             barcode_val = str(item.get('barcode', '')).zfill(10)
-            table.setItem(row_idx, 1, QTableWidgetItem(barcode_val))
+            barcode_item = QTableWidgetItem(barcode_val)
+            barcode_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            table.setItem(row_idx, 1, barcode_item)
             
             # 2. Species (ชนิดสัตว์)
             species_val = item.get('species') or '-'
-            table.setItem(row_idx, 2, QTableWidgetItem(str(species_val)))
+            species_item = QTableWidgetItem(str(species_val))
+            species_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            table.setItem(row_idx, 2, species_item)
             
             # 3. Lab Name
-            table.setItem(row_idx, 3, QTableWidgetItem(str(item.get('lab_name', '-'))))
+            lab_name_item = QTableWidgetItem(str(item.get('lab_name', '-')))
+            lab_name_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            table.setItem(row_idx, 3, lab_name_item)
             
             # 4. Storage
-            table.setItem(row_idx, 4, QTableWidgetItem(str(item.get('storage', '-'))))
+            storage_item = QTableWidgetItem(str(item.get('storage', '-')))
+            storage_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            table.setItem(row_idx, 4, storage_item)
             
             # 5. Urgency
-            table.setItem(row_idx, 5, QTableWidgetItem(str(item.get('urgency', '-'))))
+            urgency_item = QTableWidgetItem(str(item.get('urgency', '-')))
+            urgency_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            table.setItem(row_idx, 5, urgency_item)
             
             # 6. Info (Sample Name)
             sample_name = item.get('sample_name') or ''
-            table.setItem(row_idx, 6, QTableWidgetItem(str(sample_name)))
+            sample_name_item = QTableWidgetItem(str(sample_name))
+            sample_name_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
+            table.setItem(row_idx, 6, sample_name_item)
+        
+        # Set column widths for better display
+        table.setColumnWidth(0, 180)  # Date/Time
+        table.setColumnWidth(1, 120)  # Barcode ID
+        table.setColumnWidth(2, 150)  # Species
+        table.setColumnWidth(3, 200)  # Lab Name
+        table.setColumnWidth(4, 120)  # Storage
+        table.setColumnWidth(5, 100)  # Urgency
+        # Column 6 (Sample Name) will stretch to fill remaining space
 
     def print_barcode(self):
         # Prevent double execution
@@ -402,6 +510,11 @@ class BarcodePageController(QObject):
 
             selected_row = selected_ranges[0].topRow()
             
+            # Get order_id (barcode) from column 1
+            barcode_item = table.item(selected_row, 1)
+            order_id_str = barcode_item.text() if barcode_item else ""
+            order_id = int(order_id_str.lstrip('0')) if order_id_str else 0
+            
             row_data = []
             for col in range(6): 
                 item = table.item(selected_row, col)
@@ -414,6 +527,18 @@ class BarcodePageController(QObject):
                 barcode_obj = BarcodeGenerator()
                 barcode_obj.generate(data_to_print)
                 barcode_obj.print_barcode()
+                
+                # Update state to "1" (printed sticker) if order_id is valid
+                if order_id > 0:
+                    try:
+                        result = self.work_api.change_state_work(order_id, 1)
+                        if result and result.get('status') == 'success':
+                            print(f"State updated to '1' (printed sticker) for order_id: {order_id}")
+                        else:
+                            print(f"Failed to update state for order_id {order_id}: {result}")
+                    except Exception as e:
+                        print(f"Error updating state: {e}")
+                        
             except Exception as e:
                 QMessageBox.critical(self.view, "Error", f"เกิดข้อผิดพลาดในการพิมพ์: {str(e)}")
         finally:

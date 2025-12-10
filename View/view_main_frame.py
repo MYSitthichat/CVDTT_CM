@@ -22,6 +22,7 @@ from View.view_after_death import AfterDeathPageWidget
 # AfterDeathPageController is now created in MainController
 from View.view_lab_order import LabReportPageWidget
 # LabReportPageController is now created in MainController
+from View.user_profile_widget import UserProfileWidget
 class MainWindow(QMainWindow):
     
     def __init__(self, parent=None, model=None, add_work_widget=None):
@@ -64,6 +65,10 @@ class MainWindow(QMainWindow):
         self.molecular_controller = None
         self.after_death_controller = None
         self.lab_report_controller = None
+        
+        # --- User Profile Widget (แทนที่ปุ่ม Logout) ---
+        self.user_profile_widget = None
+        self._setup_user_profile_widget()
 
         self.setup_stacked_widget()
         
@@ -78,7 +83,7 @@ class MainWindow(QMainWindow):
             self.ui.check_job_pushButton.clicked.connect(self.show_check_job_page)
 
         # if hasattr(self.ui, 'lab_received_pushButton'):
-        #     self.ui.lab_received_pushButton.clicked.connect(self.show_lab_received_page)
+        #     self.ui.lab_receivedPushButton.clicked.connect(self.show_lab_received_page)
         # else:
         #     print("Error: Could not find 'lab_received_pushButton' in Ui_MainWindow")
 
@@ -161,3 +166,32 @@ class MainWindow(QMainWindow):
     def get_user_login_id(self):
         """Alias for get_logged_in_user_id for backward compatibility"""
         return self.get_logged_in_user_id()
+    
+    def _setup_user_profile_widget(self):
+        """สร้างและแทนที่ปุ่ม Logout ด้วย User Profile Widget"""
+        # ซ่อนปุ่ม Logout เดิม
+        if hasattr(self.ui, 'logout_pushButton'):
+            self.ui.logout_pushButton.hide()
+            
+            # สร้าง User Profile Widget
+            self.user_profile_widget = UserProfileWidget(
+                parent=self.ui.frame,
+                name="User",
+                role="Staff",
+                employee_id=""
+            )
+            
+            # ตั้งตำแหน่งให้ห่างจากปุ่ม EDIT EMPLOYEE 5px
+            # EDIT EMPLOYEE: y=750, height=51 → สิ้นสุดที่ 801
+            # Profile Card: 801 + 5 = 806
+            self.user_profile_widget.setGeometry(7, 823, 251, 60)
+            self.user_profile_widget.show()
+    
+    def update_user_profile(self, name, role, employee_id):
+        """อัพเดทข้อมูลผู้ใช้ใน Profile Widget"""
+        if self.user_profile_widget:
+            self.user_profile_widget.update_user_info(name, role, employee_id)
+    
+    def get_user_profile_widget(self):
+        """ดึง User Profile Widget เพื่อเชื่อมต่อ signals"""
+        return self.user_profile_widget
