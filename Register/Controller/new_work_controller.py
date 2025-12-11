@@ -4,7 +4,7 @@ from View.view_new_work_frame import AddNewWorkWidget
 from SERVICES_REGISTER.work_service import WorkService
 from SERVICES_REGISTER.customer_service import CustomerService
 from barcode_utils.barcode_generator import BarcodeGenerator
-from Order_Lab_Pdf.pdf_from  import parasite_order_from
+from Order_Lab_Pdf.pdf_from import parasite_order_from
 from Order_Lab_Pdf.pdf_from import bacteria_order_from
 from Order_Lab_Pdf.pdf_from import molecular_order_from
 import os

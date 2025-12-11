@@ -15,11 +15,23 @@ from reportlab.graphics.barcode import createBarcodeDrawing
 
 # --- Config & Font Setup ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.abspath(os.path.join(current_dir, '..', '..')) 
-fonts_folder = os.path.join(project_root, 'fonts')
+# Try multiple paths to find fonts folder
+fonts_folder_candidates = [
+    os.path.join(current_dir, '..', '..', '..', 'fonts'),  # d:\CVDTT_CM\fonts (จาก Register)
+    os.path.join(current_dir, '..', '..', 'fonts'),  # d:\CVDTT_CM\Register\fonts
+    os.path.join(current_dir, 'fonts'),  # Fallback to current dir
+]
 
-if not os.path.exists(fonts_folder):
-    fonts_folder = os.path.join(current_dir, 'fonts')
+fonts_folder = None
+for candidate in fonts_folder_candidates:
+    candidate = os.path.abspath(candidate)
+    test_font = os.path.join(candidate, 'TH Niramit AS.ttf')
+    if os.path.exists(candidate) and os.path.exists(test_font):
+        fonts_folder = candidate
+        break
+
+if fonts_folder is None:
+    fonts_folder = os.path.join(current_dir, 'fonts')  # Final fallback
 
 font_files = {
     'normal': 'TH Niramit AS.ttf',
@@ -95,25 +107,43 @@ def create_bacteriology(sample_detail, data, output_file):
     if raw_barcode is None: raw_barcode = ""
     barcode_val = str(raw_barcode).zfill(12)
 
-    # Logo
-    logo_candidates = [
-        os.path.join(os.path.dirname(__file__), "logo", "logo.jpg"),
-        os.path.join(os.path.dirname(__file__), "cvdtt_logo.png"),
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "Pic", "cvdtt_logo.png")
-    ]
-    logo_img = ""
-    for logo_path in logo_candidates:
-        if os.path.exists(logo_path):
-            logo_img = Image(logo_path, width=1.5*inch, height=1*inch)
-            break
+    # Logo - ใช้ 2 logo วางข้างๆ กัน
+    logo_dir = os.path.join(os.path.dirname(__file__), "logo")
+    logo1_path = os.path.join(logo_dir, "logo.jpg")
+    logo2_path = os.path.join(logo_dir, "group.png")
+    
+    # สร้าง logo images ขนาดเท่ากัน
+    logo1_img = ""
+    logo2_img = ""
+    logo_height = 1.0 * inch  # กำหนดความสูงเท่ากัน
+    
+    if os.path.exists(logo1_path):
+        # logo.jpg เป็นสี่เหลี่ยมจัตุรัส
+        logo1_img = Image(logo1_path, width=logo_height, height=logo_height)
+    
+    if os.path.exists(logo2_path):
+        # group.png ปรับให้มีความสูงเท่ากันและให้ aspect ratio คงที่
+        logo2_img = Image(logo2_path, width=logo_height, height=logo_height)
+    
+    # สร้างตารางสำหรับวาง logo 2 อัน
+    logo_data = [[logo1_img, logo2_img]]
+    logo_table = Table(logo_data, colWidths=[1.05*inch, 1.05*inch])
+    logo_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 2),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+        ('TOPPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 0),
+    ]))
 
     barcode_obj = get_barcode_drawing(barcode_val)
 
     title_data = [
-        [logo_img, 'ใบคำขอรับบริการทดสอบแบคทีเรียวิทยาและราวิทยา', barcode_obj],
+        [logo_table, 'ใบคำขอรับบริการทดสอบแบคทีเรียวิทยาและราวิทยา', barcode_obj],
         ['', Paragraph("ศูนย์ชันสูตรโรคสัตว์และถ่ายทอดเทคโนโลยี คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่ <br/> (Center of Veterinary Diagnosis and Technology Transfer) <br/> Tel. 053-948041 Mobile 094-6362641 <br/> E-mail vet_diag@cmu.ac.th", set_paragraph_style()), ''],
     ]
-    col_widths = [110, 263, 150]
+    col_widths = [130, 243, 150]  # ปรับเพิ่มขนาดคอลัมน์ logo เป็น 130
     table = Table(title_data, colWidths=col_widths, hAlign='LEFT')
     table.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS'),
@@ -123,6 +153,7 @@ def create_bacteriology(sample_detail, data, output_file):
         ('SPAN', (0, 0), (0, 1)),
         ('SPAN', (2, 0), (2, 1)), 
         ('ALIGN', (2, 0), (2, 1), 'CENTER'),
+        ('ALIGN', (0, 0), (0, 1), 'CENTER'),
         
         # [FIX] ขยับบาร์โค้ดลงมา ไม่ให้ทับตัวหนังสือ
         ('VALIGN', (2, 0), (2, 1), 'BOTTOM'), 

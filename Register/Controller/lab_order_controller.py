@@ -4,7 +4,7 @@ import tempfile
 from datetime import datetime
 from PySide6.QtWidgets import QTableWidgetItem, QMessageBox
 from PySide6.QtCore import QObject, Qt
-from Order_Lab_Pdf.pdf_from  import parasite_order_from
+from Order_Lab_Pdf.pdf_from import parasite_order_from
 from Order_Lab_Pdf.pdf_from import bacteria_order_from
 from Order_Lab_Pdf.pdf_from import molecular_order_from
 from SERVICES_REGISTER.lab_order_service import LabOrderService
@@ -146,7 +146,8 @@ class LabReportPageController(QObject):
                 try:
                     state_result = self.work_api.change_state_work(order_id, 2)
                     if state_result and state_result.get('status') == 'success':
-                        print(f"State updated to '2' (printed lab form) for order_id: {order_id}")
+                        # print(f"State updated to '2' (printed lab form) for order_id: {order_id}")
+                        pass
                     else:
                         print(f"Failed to update state for order_id {order_id}: {state_result}")
                 except Exception as e:
