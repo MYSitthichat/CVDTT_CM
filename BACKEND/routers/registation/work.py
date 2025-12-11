@@ -190,8 +190,21 @@ def delete_sample_registration(order_id: int):
                 elif room_code and room_code.startswith('E410'):  # Molecular Biology
                     update_molecular = """UPDATE lab_molecular_biology SET status = 0 WHERE sample_id = %s"""
                     cursor.execute(update_molecular, (sample_id,))
+                    
                 else:
-                    print(f"Unknown room_code: {room_code}, skipping result table update")
+                    # Check if it's After Death service (ไม่จำแนกประเภท or other codes)
+                    # Also check by room_id from room_mapping for 'after_death'
+                    update_after_death = """UPDATE lab_after_death SET status = 0 WHERE sample_id = %s"""
+                    cursor.execute(update_after_death, (sample_id,))
+                    print(f"Updated lab_after_death for room_code: {room_code}")
+        else:
+            # If no room_id, still try to update after_death table in case
+            # (some old data might not have room_id but have after_death data)
+            try:
+                update_after_death = """UPDATE lab_after_death SET status = 0 WHERE sample_id = %s"""
+                cursor.execute(update_after_death, (sample_id,))
+            except Exception as e:
+                print(f"Error updating after_death for sample without room: {e}")
                     
         update_tracking_status = """UPDATE tracking_lab_order SET status = 0 WHERE lab_order_id = %s"""
         cursor.execute(update_tracking_status, (order_id,))

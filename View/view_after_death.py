@@ -35,27 +35,37 @@ class AfterDeathPageWidget(QWidget):
         """
         Extracts ONLY filled data from the UI.
         Returns a dictionary with non-empty values only.
+        NOW SUPPORTS MULTIPLE SERVICE TYPES (CheckBoxes instead of RadioButtons)
         """
         data = {}
         
-        # Determine which main service is selected
+        # Collect all checked service types
+        service_types = []
+        
+        # Check Infectious Waste
         if self.ui.rb_waste.isChecked():
-            data['service_type'] = 'Infectious Waste'
+            service_types.append('Infectious Waste')
             waste_details = self._get_waste_data()
             if waste_details:  # Only add if there's actual data
                 data['waste_details'] = waste_details
-                
-        elif self.ui.rb_cremation.isChecked():
-            data['service_type'] = 'Cremation'
+        
+        # Check Cremation
+        if self.ui.rb_cremation.isChecked():
+            service_types.append('Cremation')
             cremation_details = self._get_cremation_data()
             if cremation_details:  # Only add if there's actual data
                 data['cremation_details'] = cremation_details
-                
-        elif self.ui.rb_jewelry.isChecked():
-            data['service_type'] = 'Jewelry'
+        
+        # Check Jewelry (note: rb_jewelrya is the actual widget name from UI)
+        if self.ui.rb_jewelrya.isChecked():
+            service_types.append('Jewelry')
             jewelry_details = self._get_jewelry_data()
             if jewelry_details:  # Only add if there's actual data
                 data['jewelry_details'] = jewelry_details
+        
+        # Set service_type as comma-separated list of selected services
+        if service_types:
+            data['service_type'] = ', '.join(service_types)
         else:
             data['service_type'] = 'Unknown'
         
@@ -96,14 +106,11 @@ class AfterDeathPageWidget(QWidget):
         # field13: Necropsy hall checkbox - IF checked THEN text ELSE '' (old system lines 350-353)
         data['cremation_details']['place_necropsy'] = self.ui.cb_necropsy.text() if self.ui.cb_necropsy.isChecked() else ''
         
-        # field14-15: Other places - ALWAYS (old system lines 355, 357)
-        # Note: Your UI might not have these widgets yet
-        # data['cremation_details']['place_other1'] = self.ui.le_place_other1.text().strip()
-        # data['cremation_details']['place_other2'] = self.ui.le_place_other2.text().strip()
+        # field14: le_place_opt1 - Extract from the line edit widget (it exists in UI)
+        data['cremation_details']['place_other1'] = self.ui.le_place_opt1.text().strip()
         
-        # field16: Note/remark - ALWAYS (old system line 359)
-        # Note: Your UI might not have this widget yet
-        # data['cremation_details']['note'] = self.ui.te_note.toPlainText().strip()
+        # field15: le_remark_lab - ALWAYS extract (for all service types)
+        data['cremation_details']['remark'] = self.ui.le_remark_lab.text().strip()
         
         return data
 
@@ -265,55 +272,51 @@ class AfterDeathPageWidget(QWidget):
         """Extract ONLY filled Jewelry Data"""
         data = {}
         
-        # Materials (can now have multiple checked) - USE CHECKBOX .text() PROPERTY
-        materials = []
+        # Store materials with separate checkbox text and qty/weight
+        materials = {}
+        
+        # Carcass
         if self.ui.cb_gem_carcass.isChecked():
-            qty = self.ui.le_gem_carcass_qty.text().strip()
-            weight = self.ui.le_gem_carcass_w.text().strip()
-            # Use checkbox text: "ซากสัตว์(Carcass)"
-            material_str = self.ui.cb_gem_carcass.text()
-            if qty or weight:
-                material_str += f" ({qty}, {weight} kg)"
-            materials.append(material_str)
+            materials['carcass'] = {
+                'text': self.ui.cb_gem_carcass.text(),
+                'qty': self.ui.le_gem_carcass_qty.text().strip(),
+                'weight': self.ui.le_gem_carcass_w.text().strip()
+            }
         
+        # Bone
         if self.ui.cb_gem_bone.isChecked():
-            qty = self.ui.le_gem_bone_qty.text().strip()
-            weight = self.ui.le_gem_bone_w.text().strip()
-            # Use checkbox text: "กระดูกสัตว์(Bone)"
-            material_str = self.ui.cb_gem_bone.text()
-            if qty or weight:
-                material_str += f" ({qty}, {weight} kg)"
-            materials.append(material_str)
+            materials['bone'] = {
+                'text': self.ui.cb_gem_bone.text(),
+                'qty': self.ui.le_gem_bone_qty.text().strip(),
+                'weight': self.ui.le_gem_bone_w.text().strip()
+            }
         
+        # Hair
         if self.ui.cb_gem_hair.isChecked():
-            qty = self.ui.le_gem_hair_qty.text().strip()
-            weight = self.ui.le_gem_hair_w.text().strip()
-            # Use checkbox text: "ขนสัตว์(Hair/feather)"
-            material_str = self.ui.cb_gem_hair.text()
-            if qty or weight:
-                material_str += f" ({qty}, {weight} kg)"
-            materials.append(material_str)
+            materials['hair'] = {
+                'text': self.ui.cb_gem_hair.text(),
+                'qty': self.ui.le_gem_hair_qty.text().strip(),
+                'weight': self.ui.le_gem_hair_w.text().strip()
+            }
         
+        # Other1
         if self.ui.cb_gem_other1.isChecked():
-            name = self.ui.le_gem_other1_name.text().strip()
-            qty = self.ui.le_gem_other1_qty.text().strip()
-            weight = self.ui.le_gem_other1_w.text().strip()
-            material_str = name if name else "Other1"
-            if qty or weight:
-                material_str += f" ({qty}, {weight} kg)"
-            materials.append(material_str)
+            materials['other1'] = {
+                'text': self.ui.le_gem_other1_name.text().strip() or 'Other1',
+                'qty': self.ui.le_gem_other1_qty.text().strip(),
+                'weight': self.ui.le_gem_other1_w.text().strip()
+            }
         
+        # Other2
         if self.ui.cb_gem_other2.isChecked():
-            name = self.ui.le_gem_other2_name.text().strip()
-            qty = self.ui.le_gem_other2_qty.text().strip()
-            weight = self.ui.le_gem_other2_w.text().strip()
-            material_str = name if name else "Other2"
-            if qty or weight:
-                material_str += f" ({qty}, {weight} kg)"
-            materials.append(material_str)
+            materials['other2'] = {
+                'text': self.ui.le_gem_other2_name.text().strip() or 'Other2',
+                'qty': self.ui.le_gem_other2_qty.text().strip(),
+                'weight': self.ui.le_gem_other2_w.text().strip()
+            }
         
         if materials:
-            data['material'] = ", ".join(materials)
+            data['materials'] = materials
         
         # Sizes (can now have multiple checked) - USE CHECKBOX .text() PROPERTY
         sizes = []
@@ -405,8 +408,10 @@ class AfterDeathPageWidget(QWidget):
 
     def clear_page(self):
         """ Reset page fields """
-        # Reset service type to default
-        self.ui.rb_waste.setChecked(True)
+        # Reset service type checkboxes - uncheck all (no default)
+        self.ui.rb_waste.setChecked(False)
+        self.ui.rb_cremation.setChecked(False)
+        self.ui.rb_jewelrya.setChecked(False)
         
         # Set current Bangkok date/time (UTC+7)
         bangkok_tz = timezone(timedelta(hours=7))

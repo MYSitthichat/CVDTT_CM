@@ -1,6 +1,7 @@
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QMessageBox
 from SERVICES_REGISTER.after_death_service import AfterDeathService
+from SERVICES_REGISTER.lab_service import LabService
 
 
 class AfterDeathPageController(QObject):
@@ -24,6 +25,7 @@ class AfterDeathPageController(QObject):
         self.view = view
         self.main_controller = main_controller
         self.after_death_service = AfterDeathService()
+        self.api_client = LabService()  # For lab_order and tracking
         
         # State tracking
         self.current_sample_id = None
@@ -38,17 +40,17 @@ class AfterDeathPageController(QObject):
         self.view.ui.btn_save.clicked.connect(self.save_data)
         self.view.ui.btn_cancel.clicked.connect(self.cancel_and_go_back)
         
-        # Radio button events for dynamic UI updates
+        # Checkbox events for dynamic UI updates (changed from radio buttons)
         self.view.ui.rb_waste.toggled.connect(self._on_service_type_changed)
         self.view.ui.rb_cremation.toggled.connect(self._on_service_type_changed)
-        self.view.ui.rb_jewelry.toggled.connect(self._on_service_type_changed)
+        self.view.ui.rb_jewelrya.toggled.connect(self._on_service_type_changed)
 
     def _setup_ui_state(self):
         """Setup initial UI state"""
-        # Set default selection
-        self.view.ui.rb_waste.setChecked(True)
+        # Don't set default checked - user can select multiple services
+        # All checkboxes start unchecked
         
-        # Disable save button until data is entered
+        # Enable save button (user can save any combination)
         self.view.ui.btn_save.setEnabled(True)
 
     def _on_service_type_changed(self, checked):
@@ -67,72 +69,64 @@ class AfterDeathPageController(QObject):
     
     def _get_sample_id(self):
         """
-        Extract Sample ID from specimen page
-        NOTE: For compatibility with old system, actual sample_id is NOT used in database
-        (Database always uses '10' - see server_api.py)
-        This is kept for display/reference purposes only
+        Extract Sample ID from specimen_controller (เหมือน parasite_controller)
+        Note: main_controller here is actually main_window
         
         Returns:
-            str: Sample ID or '10' as fallback (matches old system)
+            str: Sample ID or None if not found
         """
         try:
-            # Try to get from specimen widget
-            if hasattr(self.main_controller, 'specimen_widget'):
-                specimen_widget = self.main_controller.specimen_widget
-                
-                # Try to get sample ID from the label
-                if hasattr(specimen_widget.ui, 'specimen_ID_label'):
-                    sample_id_text = specimen_widget.ui.specimen_ID_label.text()
-                    
-                    # Parse "Sample ID: XXXXX" format or just "XXXXX"
-                    if sample_id_text:
-                        # If it contains ":", split and get the part after it
-                        if ":" in sample_id_text:
-                            sample_id = sample_id_text.split(":")[1].strip()
-                        else:
-                            sample_id = sample_id_text.strip()
-                        
-                        # Accept any non-empty value (no validation needed - not used in DB)
-                        if sample_id:
-                            self.current_sample_id = sample_id
-                            # print(f"[Controller] Found sample_id from specimen: {sample_id} (for reference only)")
-                            return sample_id
+            # Get sample_id from specimen_controller (แบบเดียวกับ parasite)
+            # Note: self.main_controller is actually main_window
+            sample_id = None
             
-            # Fallback: Return '10' to match old system behavior
-            # print("[Controller] No sample_id found, using '10' (matches old system)")
-            self.current_sample_id = "10"
-            return "10"
+            # Try getting from main_window.specimen_controller
+            if hasattr(self.main_controller, 'specimen_controller'):
+                specimen_ctrl = self.main_controller.specimen_controller
+                if hasattr(specimen_ctrl, 'specimen_id') and specimen_ctrl.specimen_id:
+                    sample_id = str(specimen_ctrl.specimen_id)
+                    # print(f"[After Death] Found specimen_id: {sample_id}")
+            
+            if sample_id:
+                self.current_sample_id = sample_id
+                return sample_id
+            
+            print("[After Death] specimen_id not found in specimen_controller")
+            return None
             
         except Exception as e:
-            print(f"[Controller] Error getting sample_id: {e}, using '10' as fallback")
-            self.current_sample_id = "10"
-            return "10"
+            print(f"[After Death Controller] Error getting sample_id: {e}")
+            return None
 
     def _get_user_id(self):
         """
-        Get current logged-in user ID
+        Get current logged-in user ID from main_controller (เหมือน parasite_controller)
+        Note: main_controller here is actually main_window
         
         Returns:
             int: User ID or None if not logged in
         """
         try:
-            if (hasattr(self.main_controller, 'user_login_info') and 
-                self.main_controller.user_login_info):
-                
-                # user_login_info structure: [(user_info_tuple)]
-                # user_info_tuple[1] is user_id
-                user_id = self.main_controller.user_login_info[0][1]
+            # Get user_id from main controller (แบบเดียวกับ parasite)
+            # Note: self.main_controller is actually main_window
+            user_id = None
+            
+            # Try getting from main_window.main_controller
+            if hasattr(self.main_controller, 'main_controller'):
+                main_ctrl = self.main_controller.main_controller
+                if hasattr(main_ctrl, 'logged_in_user_id') and main_ctrl.logged_in_user_id:
+                    user_id = main_ctrl.logged_in_user_id
+                    # print(f"[After Death] Found user_id: {user_id}")
+            
+            if user_id:
                 return user_id
-            
-            # Fallback: Check for test mode
-            # print("Warning: No user login info found")
-            
-            # For testing, return a default user ID (1 = admin/system user)
-            return 1  # Changed from None to 1 for testing
+                
+            print("[After Death] user_id not found in main_controller")
+            return None
             
         except (IndexError, TypeError, AttributeError) as e:
-            print(f"Error getting user ID: {e}")
-            return 1  # Return default user ID instead of None
+            print(f"[After Death Controller] Error getting user ID: {e}")
+            return None
 
     def _get_user_name(self):
         """
@@ -181,8 +175,8 @@ class AfterDeathPageController(QObject):
             )
             return False
 
-        # Validate based on service type
-        if service_type == 'Infectious Waste':
+        # Validate based on service type (can be multiple)
+        if 'Infectious Waste' in service_type:
             waste_details = data.get('waste_details')
             if not waste_details:  # No data filled
                 QMessageBox.warning(
@@ -191,9 +185,10 @@ class AfterDeathPageController(QObject):
                     "กรุณากรอกข้อมูลขยะติดเชื้อ"
                 )
                 return False
-            return self._validate_waste_data(waste_details)
+            if not self._validate_waste_data(waste_details):
+                return False
             
-        elif service_type == 'Cremation':
+        if 'Cremation' in service_type:
             cremation_details = data.get('cremation_details')
             if not cremation_details:  # No data filled
                 QMessageBox.warning(
@@ -202,9 +197,10 @@ class AfterDeathPageController(QObject):
                     "กรุณากรอกข้อมูลการฌาปนกิจ"
                 )
                 return False
-            return self._validate_cremation_data(cremation_details)
+            if not self._validate_cremation_data(cremation_details):
+                return False
             
-        elif service_type == 'Jewelry':
+        if 'Jewelry' in service_type:
             jewelry_details = data.get('jewelry_details')
             if not jewelry_details:  # No data filled
                 QMessageBox.warning(
@@ -213,7 +209,8 @@ class AfterDeathPageController(QObject):
                     "กรุณากรอกข้อมูลเครื่องประดับ"
                 )
                 return False
-            return self._validate_jewelry_data(jewelry_details)
+            if not self._validate_jewelry_data(jewelry_details):
+                return False
 
         return True
 
@@ -281,9 +278,9 @@ class AfterDeathPageController(QObject):
 
     def _validate_jewelry_data(self, jewelry_data):
         """Validate jewelry service data - now supports multiple selections"""
-        material = jewelry_data.get('material', '')
+        materials = jewelry_data.get('materials', {})
         
-        if not material:
+        if not materials:
             QMessageBox.warning(
                 self.view, 
                 "Validation Error", 
@@ -326,29 +323,28 @@ class AfterDeathPageController(QObject):
         Main method to save after death service data
         Orchestrates the entire save process
         """
-        # print("=" * 60)
-        # print("ACTION: Save After Death Data")
-        # print("=" * 60)
-        
-        # Step 1: Get Sample ID
+        # Step 1: Get Sample ID (แบบเดียวกับ parasite)
         sample_id = self._get_sample_id()
         if not sample_id:
-            return  # Error message already shown
+            QMessageBox.warning(
+                self.view,
+                "ไม่พบหมายเลข Sample ID",
+                "กรุณาบันทึกข้อมูล Specimen ในหน้าก่อนหน้านี้ก่อน\n"
+                "แล้วจึงกลับมาเลือกบริการหลังความตาย"
+            )
+            return
         
-        # print(f"Sample ID: {sample_id}")
-        
-        # Step 2: Get User ID
+        # Step 2: Get User ID (แบบเดียวกับ parasite)
         user_id = self._get_user_id()
         if not user_id:
             QMessageBox.warning(
                 self.view, 
-                "Warning", 
-                "ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่\n"
+                "ไม่พบข้อมูลผู้ใช้", 
+                "กรุณา Login ใหม่อีกครั้ง"
             )
             return
         
         user_name = self._get_user_name()
-        # print(f"User: {user_name} (ID: {user_id})")
         
         # Step 3: Get Data from View
         data = self.view.get_data()
@@ -406,8 +402,8 @@ class AfterDeathPageController(QObject):
         
         message = (
             f"ยืนยันการบันทึกข้อมูล\n"
-            f"Sample ID: {self.current_sample_id}\n"
-            f"Service: {service_type}\n\n"
+            # f"Sample ID: {self.current_sample_id}\n"
+            # f"Service: {service_type}\n\n"
             f"ต้องการบันทึกข้อมูลหรือไม่?"
         )
         
@@ -423,7 +419,7 @@ class AfterDeathPageController(QObject):
 
     def _save_to_database(self, sample_id, data, user_id):
         """
-        Save data to database and track status
+        Save data to database and track status (แบบเดียวกับ parasite_controller)
         
         Args:
             sample_id (str): Sample identifier
@@ -434,75 +430,69 @@ class AfterDeathPageController(QObject):
             bool: True if successful, False otherwise
         """
         try:
-            # print("Saving to database...")
-            
             service_type = data.get('service_type', 'Unknown')
-            # print(f"Sample ID: {sample_id}")
-            # print(f"Service Type: {service_type}")
-            # print(f"User ID: {user_id}")
-            # print(f"Full Data: {data}")
             
-            # Save to database via service
-            success = self.after_death_service.save_after_death(
-                sample_id=sample_id,
-                service_type=service_type,
-                service_data=data,
-                user_id=user_id
+            # Get room_id for after death service (แบบเดียวกับ parasite)
+            room_id = "10"  # Default room_id for After Death Service
+            if hasattr(self.main_controller, 'specimen_controller'):
+                specimen_ctrl = self.main_controller.specimen_controller
+                if hasattr(specimen_ctrl, 'room_mapping') and 'after_death' in specimen_ctrl.room_mapping:
+                    room_id = specimen_ctrl.room_mapping['after_death']
+            
+            # Prepare data for after_death API (แบบเดียวกับ parasite)
+            after_death_data = {
+                "sample_id": sample_id,
+                "service_type": service_type,
+                "service_data": data,
+                "updater": user_id
+            }
+            
+            # Prepare data for lab order API (แบบเดียวกับ parasite)
+            lab_order_data = {
+                "sample_id": sample_id,
+                "room_id": str(room_id),
+                "comments": "",
+                "state": "0",
+                "status": "1",
+                "updater": user_id
+            }
+            
+            # Prepare first tracking entry (แบบเดียวกับ parasite)
+            first_update_tracking_lab_order_data = {
+                "sample_id": sample_id,
+                "tracking_info": "รับงานเข้าระบบ",
+                "receiver": str(user_id),
+                "updater": str(user_id)
+            }
+            
+            # Call APIs (แบบเดียวกับ parasite)
+            save_after_death_result = self.after_death_service.save_after_death(
+                sample_id=after_death_data["sample_id"],
+                service_type=after_death_data["service_type"],
+                service_data=after_death_data["service_data"],
+                user_id=after_death_data["updater"]
             )
+            insert_lab_order = self.api_client.add_new_lab_order(lab_order_data)
+            first_update_tracking = self.api_client.update_tracking_lab_order(first_update_tracking_lab_order_data)
             
-            if not success:
+            # Check results (แบบเดียวกับ parasite)
+            if (save_after_death_result and 
+                insert_lab_order and 
+                first_update_tracking and 
+                first_update_tracking.get("status") == "success"):
+                
+                return True
+            else:
+                error_msg = "Unknown error"
+                if save_after_death_result and isinstance(save_after_death_result, dict):
+                    error_msg = save_after_death_result.get('detail', error_msg)
+                
                 QMessageBox.critical(
-                    self.view, 
-                    "Database Error", 
-                    "ไม่สามารถบันทึกข้อมูลได้\n"
+                    self.view,
+                    "ข้อผิดพลาด",
+                    f"บันทึกข้อมูลไม่สำเร็จ\n\n{error_msg}"
                 )
                 return False
-            
-            # print("Main data saved successfully to database")
-            
-            # Save tracking information
-            service_desc = f"After Death Service: {service_type}"
-            
-            # Add more details based on service type (now with multiple selections)
-            if service_type == 'Infectious Waste':
-                items = data.get('waste_details', {}).get('items', [])
-                if items:
-                    service_desc += f" - {len(items)} items"
-                    # Add item names (first 3 only if many)
-                    item_names = [item.split(':')[0] for item in items]
-                    if len(item_names) <= 3:
-                        service_desc += f" ({', '.join(item_names)})"
-                    else:
-                        service_desc += f" ({', '.join(item_names[:3])}, ...)"
-            elif service_type == 'Cremation':
-                req_type = data.get('cremation_details', {}).get('request_type', '')
-                if req_type:
-                    # Handle multiple request types
-                    service_desc += f" - {req_type}"
-            elif service_type == 'Jewelry':
-                material = data.get('jewelry_details', {}).get('material', '')
-                size = data.get('jewelry_details', {}).get('size', '')
-                jewelry_type = data.get('jewelry_details', {}).get('jewelry_type', '')
-                
-                if material:
-                    # Count materials (comma-separated)
-                    material_count = len(material.split(','))
-                    service_desc += f" - {material_count} material(s)"
-                if size:
-                    service_desc += f", {size}"
-                if jewelry_type:
-                    # Count jewelry types
-                    jewelry_count = len(jewelry_type.split(','))
-                    service_desc += f" ({jewelry_count} piece(s))"
-            
-            # print(f"Tracking: {service_desc}")
-            
-            # TODO: Add tracking save if needed
-            # self.api_client.save_tracking(sample_id, user_id, user_id, service_desc)
-            
-            # print("Tracking information saved successfully")
-            
-            return True
             
         except Exception as e:
             print(f"Error in _save_to_database: {e}")
@@ -662,18 +652,19 @@ class AfterDeathPageController(QObject):
 
     def get_current_service_type(self):
         """
-        Get currently selected service type
+        Get currently selected service types (can be multiple)
         
         Returns:
-            str: Service type name
+            str: Comma-separated service type names
         """
+        types = []
         if self.view.ui.rb_waste.isChecked():
-            return 'Infectious Waste'
-        elif self.view.ui.rb_cremation.isChecked():
-            return 'Cremation'
-        elif self.view.ui.rb_jewelry.isChecked():
-            return 'Jewelry'
-        return 'Unknown'
+            types.append('Infectious Waste')
+        if self.view.ui.rb_cremation.isChecked():
+            types.append('Cremation')
+        if self.view.ui.rb_jewelrya.isChecked():
+            types.append('Jewelry')
+        return ', '.join(types) if types else 'Unknown'
 
     def print_debug_info(self):
         # """Print debug information for troubleshooting"""
