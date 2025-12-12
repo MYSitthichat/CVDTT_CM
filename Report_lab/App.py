@@ -1,19 +1,16 @@
 import sys
 import os
 
-# เพิ่ม parent directory (CVDTT_CM) เข้า Python path เพื่อให้สามารถ import SERVICES_REGISTER และ BACKEND ได้
 current_dir = os.path.dirname(os.path.abspath(__file__))
-parent_dir = os.path.dirname(current_dir)  # CVDTT_CM folder
+parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# เพิ่ม Register/Order_Lab_Pdf เข้า Python path เพื่อใช้ PDF generators จาก Register folder
-local_order_lab_pdf = os.path.join(current_dir, 'Order_Lab_Pdf')
-if local_order_lab_pdf not in sys.path:
-    sys.path.insert(0, local_order_lab_pdf)
+register_dir = os.path.join(parent_dir, 'Report_lab')
+if register_dir not in sys.path:
+    sys.path.insert(0, register_dir)
 
 from PySide6.QtWidgets import QApplication
-from Controller.main_controller import MainController
 from Controller.login_controller import Login_Controller 
 
 try:
@@ -31,7 +28,6 @@ if __name__ == '__main__':
     login_app = Login_Controller()
     login_app.Show_login_page()
     app.exec()
-
 
 # Available themes
 # Light Themes:

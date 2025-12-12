@@ -44,7 +44,14 @@ def add_work(sender_id: Optional[int] = None, owner_id: Optional[int] = None,
 
 
 @router.post("/change_state_work")
-def change_state_work(work_id: int, new_state: str):
+def change_state_work(work_id: int = None, new_state: str = None):
+    """
+    Change work state (1=printed sticker, 2=printed lab form)
+    Accepts both query parameters and JSON body
+    """
+    if work_id is None or new_state is None:
+        raise HTTPException(status_code=400, detail="work_id and new_state are required")
+    
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")

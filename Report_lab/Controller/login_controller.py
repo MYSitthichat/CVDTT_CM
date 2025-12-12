@@ -3,8 +3,8 @@ from Controller.main_controller import MainController
 from Controller.forgot_password_controller import ForgotPasswordController
 from PySide6.QtCore import QObject, QTimer
 import sys
-from SERVICES_REGISTER.auth_service import AuthService
-from SERVICES_REGISTER.employee_service import EmployeeService
+from SERVICES_REPORT_LAB.auth_service import AuthService
+from SERVICES_REPORT_LAB.employee_service import EmployeeService
 from PySide6.QtWidgets import QMessageBox
 
 DEBUG = False
@@ -58,13 +58,10 @@ class Login_Controller(QObject):
                 return False
     
     def load_and_set_user_info(self, user_id, username):
-        """ดึงข้อมูลผู้ใช้จาก database และส่งไปยัง main controller"""
         try:
-            # ดึงข้อมูลผู้ใช้จาก employee table (title, name, surname, email, group_id, position)
             employee_data = self.employee_service.get_employee_by_id(user_id)
             
             if employee_data:
-                # สร้าง user_info dict โดยไม่รวม username, password เพื่อความปลอดภัย
                 user_info = {
                     'id': employee_data.get('id'),
                     'title': employee_data.get('title', ''),
@@ -72,17 +69,13 @@ class Login_Controller(QObject):
                     'surname': employee_data.get('surname', ''),
                     'email': employee_data.get('email', ''),
                     'group_id': employee_data.get('group_id'),
-                    'position': employee_data.get('position', 'Staff')  # ชื่อตำแหน่งจาก employee_group
+                    'position': employee_data.get('position', 'Staff')
                 }
-                
-                # ส่งข้อมูลไปยัง main controller
                 self.main_window.set_user_info(user_id, username, user_info)
             else:
-                # ถ้าดึงข้อมูลไม่ได้ ใช้ข้อมูลพื้นฐาน
                 self.main_window.set_logged_in_user(user_id)
         except Exception as e:
             print(f"Error loading user info: {e}")
-            # ถ้า error ใช้ข้อมูลพื้นฐาน
             self.main_window.set_logged_in_user(user_id)
 
     def cancel_login(self):
@@ -94,7 +87,6 @@ class Login_Controller(QObject):
 
     def show_main_after_login_page(self):
         self.main_window.Show_main_page()
-        self.main_window.show_add_work_page()
 
     def show_forgot_password(self):
         self.login_window.hide()

@@ -14,24 +14,51 @@ from reportlab.lib.fonts import addMapping
 from reportlab.graphics.barcode import createBarcodeDrawing
 
 # --- Config & Font Setup ---
-current_dir = os.path.dirname(os.path.abspath(__file__))
+# Support both development and compiled executable (Nuitka, PyInstaller)
+def get_base_path():
+    """Get base path for resources - works with Nuitka and PyInstaller"""
+    # For Nuitka
+    if '__compiled__' in globals():
+        # Nuitka compiled - use executable directory
+        return os.path.dirname(os.path.abspath(sys.argv[0]))
+    # For PyInstaller
+    elif getattr(sys, 'frozen', False):
+        # PyInstaller - use _MEIPASS
+        return getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(sys.argv[0])))
+    # For normal Python
+    else:
+        # Development mode
+        return os.path.dirname(os.path.abspath(__file__))
+
+base_path = get_base_path()
+
 # Try multiple paths to find fonts folder
 fonts_folder_candidates = [
-    os.path.join(current_dir, '..', '..', '..', 'fonts'),  # d:\CVDTT_CM\fonts (จาก Register)
-    os.path.join(current_dir, '..', '..', 'fonts'),  # d:\CVDTT_CM\Register\fonts
-    os.path.join(current_dir, 'fonts'),  # Fallback to current dir
+    # For Nuitka/PyInstaller - fonts in same dir as exe
+    os.path.join(base_path, 'fonts'),
+    # For Nuitka/PyInstaller - fonts in parent dir
+    os.path.join(os.path.dirname(base_path), 'fonts'),
+    # For development - Register/fonts
+    os.path.join(base_path, '..', '..', 'fonts'),
+    # For development - CVDTT_CM/fonts (legacy)
+    os.path.join(base_path, '..', '..', '..', 'fonts'),
+    # Fallback to script directory
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'fonts'),
 ]
 
 fonts_folder = None
 for candidate in fonts_folder_candidates:
     candidate = os.path.abspath(candidate)
     test_font = os.path.join(candidate, 'TH Niramit AS.ttf')
-    if os.path.exists(candidate) and os.path.exists(test_font):
+    if os.path.exists(test_font):
         fonts_folder = candidate
+        # print(f"✓ Fonts found at: {fonts_folder}")
         break
 
 if fonts_folder is None:
-    fonts_folder = os.path.join(current_dir, 'fonts')  # Final fallback
+    # Final fallback
+    fonts_folder = os.path.join(base_path, 'fonts')
+    print(f"⚠ Font folder not found, using fallback: {fonts_folder}")
 
 font_files = {
     'normal': 'TH Niramit AS.ttf',

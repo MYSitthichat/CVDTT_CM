@@ -44,7 +44,7 @@
     <property name="lineWidth">
      <number>2</number>
     </property>
-    <widget class="QPushButton" name="recive_work_pushButton">
+    <widget class="QPushButton" name="register_new_customer_pushButton">
      <property name="geometry">
       <rect>
        <x>7</x>
@@ -61,7 +61,27 @@
       </font>
      </property>
      <property name="text">
-      <string>รับงานเข้าแลป</string>
+      <string>รับใบส่งแลป</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="new_work_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>7</x>
+       <y>70</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>สร้าง REPORT</string>
      </property>
     </widget>
     <widget class="QPushButton" name="logout_pushButton">
@@ -84,26 +104,6 @@
       <string>LOGOUT</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="send_work_pushButton">
-     <property name="geometry">
-      <rect>
-       <x>7</x>
-       <y>70</y>
-       <width>251</width>
-       <height>51</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <family>TH Niramit AS</family>
-       <pointsize>24</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="text">
-      <string>ส่งงาน</string>
-     </property>
-    </widget>
    </widget>
    <widget class="QStackedWidget" name="stackedWidget">
     <property name="geometry">
@@ -121,7 +121,7 @@
      <number>2</number>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="register_new_customer_page"/>
     <widget class="QWidget" name="new_work_page"/>

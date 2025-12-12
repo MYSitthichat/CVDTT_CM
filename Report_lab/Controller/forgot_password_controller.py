@@ -1,6 +1,6 @@
 from View.view_forgot_password_frame import ForgotPasswordWidget
 from PySide6.QtCore import QObject
-from SERVICES_REGISTER.auth_service import AuthService
+from SERVICES_REPORT_LAB.auth_service import AuthService
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QMessageBox
 

@@ -513,7 +513,17 @@ class BarcodePageController(QObject):
             # Get order_id (barcode) from column 1
             barcode_item = table.item(selected_row, 1)
             order_id_str = barcode_item.text() if barcode_item else ""
-            order_id = int(order_id_str.lstrip('0')) if order_id_str else 0
+            
+            # Debug: แสดงข้อมูลที่ได้จาก table
+            # print(f"[DEBUG] Barcode string from table: '{order_id_str}'")
+            
+            # Parse order_id: ลบศูนย์นำหน้าแล้วแปลงเป็น int
+            try:
+                order_id = int(order_id_str.lstrip('0')) if order_id_str and order_id_str.strip() else 0
+                # print(f"[DEBUG] Parsed order_id: {order_id}")
+            except ValueError:
+                # print(f"[DEBUG] Failed to parse order_id from: '{order_id_str}'")
+                order_id = 0
             
             row_data = []
             for col in range(6): 
@@ -532,12 +542,39 @@ class BarcodePageController(QObject):
                 if order_id > 0:
                     try:
                         result = self.work_api.change_state_work(order_id, 1)
-                        if result and result.get('status') == 'success':
-                            print(f"State updated to '1' (printed sticker) for order_id: {order_id}")
+                        if result and isinstance(result, dict):
+                            if result.get('status') == 'success':
+                                msg = result.get('message', '')
+                                if 'already' in msg:
+                                    # print(f"ℹ Order {order_id}: State is already 1 or higher")
+                                    pass
+                                else:
+                                    # print(f"✓ State updated to '1' (printed sticker) for order_id: {order_id}")
+                                    pass
+                            elif result.get('status') == 'error':
+                                error_detail = result.get('detail', 'Unknown error')
+                                # ถ้า error เป็นเรื่องของ state backwards ให้ skip โดยไม่แจ้งเตือน
+                                if 'backwards' in error_detail or 'Current state is' in error_detail:
+                                    # print(f"ℹ Skipping state update for order_id {order_id}: {error_detail}")
+                                    pass
+                                else:
+                                    # print(f"✗ Failed to update state for order_id {order_id}: {error_detail}")
+                                    # แจ้งเตือนเฉพาะ error ที่ไม่ใช่เรื่อง state backwards
+                                    # QMessageBox.warning(
+                                    #     self.view, 
+                                    #     "Warning", 
+                                    #     f"บาร์โค้ดพิมพ์สำเร็จ แต่ไม่สามารถอัพเดทสถานะได้\nรายละเอียด: {error_detail}"
+                                    # )
+                                    pass
                         else:
-                            print(f"Failed to update state for order_id {order_id}: {result}")
+                            print(f"Unexpected response for order_id {order_id}: {result}")
                     except Exception as e:
-                        print(f"Error updating state: {e}")
+                        print(f"Error updating state for order_id {order_id}: {e}")
+                        import traceback
+                        traceback.print_exc()
+                else:
+                    # print(f"Skipping state update - Invalid order_id: {order_id_str}")
+                    pass
                         
             except Exception as e:
                 QMessageBox.critical(self.view, "Error", f"เกิดข้อผิดพลาดในการพิมพ์: {str(e)}")

@@ -13,7 +13,7 @@ class MainController(QObject):
         self.logged_in_username = None
         self.logged_in_user_info = None
         
-        # Create main window
+        # db_model = login_controller.model if login_controller else None
         self.main_window = MainWindow()
         
         # Set reference to this controller in main_window
@@ -21,27 +21,25 @@ class MainController(QObject):
         
         self.login_controller = login_controller
         
-        # Connect User Profile Widget buttons (แทนที่ปุ่ม logout เดิม)
+        
+        self.main_window.ui.new_work_pushButton.clicked.connect(self.show_receive_work_page)
+        self.main_window.ui.register_new_customer_pushButton.clicked.connect(self.show_report_work_page)
+        
         self._setup_user_profile_connections()
+        
+    def show_receive_work_page(self):
+        print("MainController: show_receive_work_page called")
+
+    def show_report_work_page(self):
+        print("MainController: show_report_work_page called")
 
     def _setup_user_profile_connections(self):
-        # Connect user profile widget if available
-        if hasattr(self.main_window, 'get_user_profile_widget'):
-            user_widget = self.main_window.get_user_profile_widget()
-            if user_widget and hasattr(user_widget, 'popup') and user_widget.popup:
-                user_widget.popup.btn_logout.clicked.connect(self.logout_pushButton_clicked)
-        
-        # Connect logout button if available
-        if hasattr(self.main_window, 'ui') and hasattr(self.main_window.ui, 'logout_pushButton'):
+        user_widget = self.main_window.get_user_profile_widget()
+        if user_widget and user_widget.popup:
+            user_widget.popup.btn_logout.clicked.connect(self.logout_pushButton_clicked)
+        if hasattr(self.main_window.ui, 'logout_pushButton'):
             self.main_window.ui.logout_pushButton.clicked.connect(self.logout_pushButton_clicked)
         
-        # Connect register button if available
-        if hasattr(self.main_window, 'ui') and hasattr(self.main_window.ui, 'register_new_customer_pushButton'):
-            self.main_window.ui.register_new_customer_pushButton.clicked.connect(self.show_register_page)
-        
-        # Connect new work button if available
-        if hasattr(self.main_window, 'ui') and hasattr(self.main_window.ui, 'new_work_pushButton'):
-            self.main_window.ui.new_work_pushButton.clicked.connect(self.show_add_work_page)
 
     def Show_main_page(self):
         self.main_window.Show_main_page()
@@ -63,19 +61,8 @@ class MainController(QObject):
             self.login_controller.clear_login_form()
             self.login_controller.Show_login_page()
     
-    def show_register_page(self):
-        if hasattr(self.main_window, 'show_register_page'):
-            self.main_window.show_register_page()
-    
-    def show_add_work_page(self):
-        if hasattr(self.main_window, 'show_add_work_page'):
-            self.main_window.show_add_work_page()
-            self.show_add_work_page_signal.emit()
-    
     def set_logged_in_user(self, user_id):
         self.logged_in_user_id = user_id
-        if hasattr(self, 'edit_employee_controller') and self.edit_employee_controller and user_id is not None:
-            self.edit_employee_controller.set_current_user(user_id)
     
     def set_user_info(self, user_id, username, user_info):
         self.logged_in_user_id = user_id
@@ -92,23 +79,13 @@ class MainController(QObject):
             role = user_info.get('position', 'Staff')
             employee_id = str(user_id) if user_id else ''
             email = user_info.get('email', '')
-            group_id = user_info.get('group_id')
-            self._update_edit_employee_button_visibility(group_id)
             if hasattr(self.main_window, 'user_profile_widget') and self.main_window.user_profile_widget:
                 self.main_window.user_profile_widget.update_user_info(full_name, role, employee_id)
                 if self.main_window.user_profile_widget.popup:
                     self.main_window.user_profile_widget.popup.set_user_data(
                         full_name, role, employee_id, email
                     )
-        if hasattr(self, 'edit_employee_controller') and self.edit_employee_controller and user_id is not None:
-            self.edit_employee_controller.set_current_user(user_id)
     
-    def _update_edit_employee_button_visibility(self, group_id):
-        if hasattr(self.main_window, 'ui') and hasattr(self.main_window.ui, 'edit_employee_pushButton'):
-            if group_id is not None and group_id <= 2:
-                self.main_window.ui.edit_employee_pushButton.show()
-            else:
-                self.main_window.ui.edit_employee_pushButton.hide()
     
     def get_user_login_id(self):
         return self.logged_in_user_id
