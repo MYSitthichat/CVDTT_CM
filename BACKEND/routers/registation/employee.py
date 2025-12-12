@@ -182,9 +182,23 @@ def create_employee(employee: EmployeeData):
         
         employee_id = cursor.lastrowid
         
-        # Save signature image if provided
+        # Save signature image if provided and update signature_path
         if employee.signature_base64:
-            save_signature_to_file(employee.username, employee.signature_base64)
+            signature_path = save_signature_to_file(
+                username=employee.username, 
+                base64_data=employee.signature_base64,
+                employee_id=employee_id,
+                title=employee.title,
+                name=employee.name,
+                surname=employee.surname
+            )
+            
+            # Update signature_path in database
+            if signature_path:
+                cursor.execute(
+                    "UPDATE employee SET signature_path = ? WHERE id = ?",
+                    (signature_path, employee_id)
+                )
         
         conn.commit()
         return {"status": "success", "employee_id": employee_id}
@@ -274,9 +288,23 @@ def update_employee(employee_id: int, employee: EmployeeData):
         
         new_employee_id = cursor.lastrowid
         
-        # Save signature image if provided
+        # Save signature image if provided and update signature_path
         if employee.signature_base64:
-            save_signature_to_file(employee.username, employee.signature_base64)
+            signature_path = save_signature_to_file(
+                username=employee.username, 
+                base64_data=employee.signature_base64,
+                employee_id=new_employee_id,
+                title=employee.title,
+                name=employee.name,
+                surname=employee.surname
+            )
+            
+            # Update signature_path in database
+            if signature_path:
+                cursor.execute(
+                    "UPDATE employee SET signature_path = ? WHERE id = ?",
+                    (signature_path, new_employee_id)
+                )
         
         conn.commit()
         
@@ -346,18 +374,23 @@ def delete_employee(employee_id: int, updater: Optional[int] = None):
 
 @router.get("/get_signature/{username}")
 def get_signature(username: str):
-    """Get the latest signature image for a username as base64"""
+    """Get the latest signature image for a username as base64
+    Searches in both new folder structure (ID_xx/Name/) and old structure (signatures/)
+    """
     try:
-        signatures_dir = "signatures"
-        if not os.path.exists(signatures_dir):
+        base_signatures_dir = "signatures"
+        if not os.path.exists(base_signatures_dir):
             return {"signature_base64": None}
         
-        # Find all signature files for this username
+        # Find all signature files for this username in all subdirectories
         matching_files = []
-        for filename in os.listdir(signatures_dir):
-            if f"signature_{username}_" in filename and filename.endswith('.png'):
-                filepath = os.path.join(signatures_dir, filename)
-                matching_files.append((filepath, os.path.getmtime(filepath)))
+        
+        # Walk through all directories recursively to find signature files
+        for root, dirs, files in os.walk(base_signatures_dir):
+            for filename in files:
+                if f"signature_{username}_" in filename and filename.endswith('.png'):
+                    filepath = os.path.join(root, filename)
+                    matching_files.append((filepath, os.path.getmtime(filepath)))
         
         if not matching_files:
             return {"signature_base64": None}
@@ -377,12 +410,73 @@ def get_signature(username: str):
         return {"signature_base64": None}
 
 # Helper functions for signature management
-def save_signature_to_file(username: str, base64_data: str):
-    """Save base64 encoded signature to file"""
+def get_original_employee_id(username: str):
+    """Get the active employee ID (status = 1) for a given username"""
+    conn = get_db_connection()
+    if not conn:
+        return None
+    
     try:
-        signatures_dir = "signatures"
-        if not os.path.exists(signatures_dir):
-            os.makedirs(signatures_dir)
+        cursor = conn.cursor()
+        # Get the ID where status = 1 (active record)
+        cursor.execute("""
+            SELECT id 
+            FROM employee 
+            WHERE username = ? AND status = 1
+            LIMIT 1
+        """, (username,))
+        result = cursor.fetchone()
+        return result[0] if result and result[0] else None
+    except Exception as e:
+        print(f"Error getting active employee ID: {e}")
+        return None
+    finally:
+        conn.close()
+
+def save_signature_to_file(username: str, base64_data: str, employee_id: int = None, title: str = "", name: str = "", surname: str = ""):
+    """Save base64 encoded signature to file in organized folder structure
+    
+    Args:
+        username: Username of the employee
+        base64_data: Base64 encoded signature image
+        employee_id: Employee ID (current ID, will be converted to active ID)
+        title: Employee title (นาย, นาง, etc.)
+        name: Employee first name
+        surname: Employee last name
+    
+    Folder structure: signatures/ID_{active_employee_id}/{title} {name} {surname}/signature_{username}_{timestamp}.png
+    Note: Uses the ACTIVE (status = 1) employee ID to use the correct current ID folder
+    """
+    try:
+        # Base signatures directory
+        base_signatures_dir = "signatures"
+        
+        # Create folder structure: ID_{active_employee_id}/{title} {name} {surname}/
+        if employee_id is not None and name and surname:
+            # Get the ACTIVE employee ID (where status = 1)
+            active_id = get_original_employee_id(username)
+            if active_id is None:
+                # If can't find active ID, use current ID as fallback
+                active_id = employee_id
+            
+            # Create ID folder using ACTIVE ID
+            id_folder = f"ID_{active_id}"
+            id_folder_path = os.path.join(base_signatures_dir, id_folder)
+            
+            # Create name folder (title + name + surname)
+            full_name = f"{title} {name} {surname}".strip()
+            name_folder_path = os.path.join(id_folder_path, full_name)
+            
+            # Create all directories if they don't exist
+            if not os.path.exists(name_folder_path):
+                os.makedirs(name_folder_path)
+            
+            target_dir = name_folder_path
+        else:
+            # Fallback to old structure if employee info not provided
+            target_dir = base_signatures_dir
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir)
         
         # Decode base64 to bytes
         image_data = base64.b64decode(base64_data)
@@ -391,7 +485,7 @@ def save_signature_to_file(username: str, base64_data: str):
         from datetime import datetime
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"signature_{username}_{timestamp}.png"
-        filepath = os.path.join(signatures_dir, filename)
+        filepath = os.path.join(target_dir, filename)
         
         # Save to file
         with open(filepath, 'wb') as f:
@@ -404,17 +498,21 @@ def save_signature_to_file(username: str, base64_data: str):
         return None
 
 def delete_signature_files(username: str):
-    """Delete all signature files for a username"""
+    """Delete all signature files for a username
+    Searches in both new folder structure (ID_xx/Name/) and old structure (signatures/)
+    """
     try:
-        signatures_dir = "signatures"
-        if not os.path.exists(signatures_dir):
+        base_signatures_dir = "signatures"
+        if not os.path.exists(base_signatures_dir):
             return
         
-        for filename in os.listdir(signatures_dir):
-            if f"signature_{username}_" in filename and filename.endswith('.png'):
-                filepath = os.path.join(signatures_dir, filename)
-                os.remove(filepath)
-                print(f"Deleted signature: {filepath}")
+        # Walk through all directories recursively to find and delete signature files
+        for root, dirs, files in os.walk(base_signatures_dir):
+            for filename in files:
+                if f"signature_{username}_" in filename and filename.endswith('.png'):
+                    filepath = os.path.join(root, filename)
+                    os.remove(filepath)
+                    print(f"Deleted signature: {filepath}")
     except Exception as e:
         print(f"Error deleting signatures: {e}")
 
