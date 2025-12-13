@@ -5,8 +5,6 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout,
 
 
 class UserDetailPopup(QWidget):
-    """การ์ดข้อมูลผู้ใช้ที่เด้งขึ้นมาเมื่อ hover"""
-    
     def __init__(self, parent_widget):
         super().__init__(None)
         self.setWindowFlags(Qt.ToolTip | Qt.FramelessWindowHint)
@@ -48,9 +46,10 @@ class UserDetailPopup(QWidget):
         self.lbl_role = QLabel("ตำแหน่ง: -")
         self.lbl_employee_id = QLabel("รหัสพนักงาน: -")
         self.lbl_email = QLabel("อีเมล: -")
+        self.lbl_room = QLabel("ห้อง: -")
         
         label_style = "color: #333; font-size: 12px; border: none; padding: 2px;"
-        for lbl in [self.lbl_name, self.lbl_role, self.lbl_employee_id, self.lbl_email]:
+        for lbl in [self.lbl_name, self.lbl_role, self.lbl_employee_id, self.lbl_email, self.lbl_room]:
             lbl.setStyleSheet(label_style)
             content_layout.addWidget(lbl)
         
@@ -81,17 +80,17 @@ class UserDetailPopup(QWidget):
         content_layout.addWidget(self.btn_logout)
         layout.addWidget(self.container)
         
-        self.setFixedSize(300, 220)
+        self.setFixedSize(310, 250)
         
         self.btn_logout.clicked.connect(self.hide_immediately)
 
-    def set_user_data(self, name, role, employee_id, email=""):
-        """อัพเดทข้อมูลผู้ใช้ (ไม่รวม username, password เพื่อความปลอดภัย)"""
+    def set_user_data(self, name, role, employee_id, email="", room=""):
         self.lbl_name.setText(f"ชื่อ: {name}")
         self.lbl_role.setText(f"ตำแหน่ง: {role}")
         self.lbl_employee_id.setText(f"รหัสพนักงาน: {employee_id}")
         self.lbl_email.setText(f"อีเมล: {email if email else '-'}")
-    
+        self.lbl_room.setText(f"ห้อง: {room if room else '-'}")
+
     def enterEvent(self, event):
         """เมื่อเมาส์เข้า popup"""
         self.mouse_inside = True

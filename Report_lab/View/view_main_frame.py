@@ -2,6 +2,9 @@ from PySide6.QtWidgets import QMainWindow
 from View.template_from_ui.main_frame import Ui_MainWindow
 from View.user_profile_widget import UserProfileWidget
 from View.view_report_from_frame import ReportFormView
+from View.view_receive_lab_frame import ReceiveLabFormView
+from View.view_error_page import ErrorPageView
+
 class MainWindow(QMainWindow):
     
     def __init__(self, parent=None):
@@ -11,8 +14,8 @@ class MainWindow(QMainWindow):
 
         # Create instances of the report form view
         self.report_form_view = ReportFormView()
-
-
+        self.receive_lab_form_view = ReceiveLabFormView()
+        self.error_page_view = ErrorPageView()
         # Store reference to main controller (will be set by MainController)
         self.main_controller = None
         
@@ -27,11 +30,34 @@ class MainWindow(QMainWindow):
             old_widget = self.ui.stackedWidget.widget(0)
             self.ui.stackedWidget.removeWidget(old_widget)
         self.ui.stackedWidget.addWidget(self.report_form_view)
-        # self.ui.stackedWidget.setCurrentWidget(self.report_form_view)
+        self.ui.stackedWidget.addWidget(self.receive_lab_form_view)
+        self.ui.stackedWidget.addWidget(self.error_page_view)
+        # Set default page to receive_lab_form_view to prevent flashing
+        self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
+
+    def show_receive_work_page(self):
+        self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
+
+    def show_report_work_page(self):
+        self.ui.stackedWidget.setCurrentWidget(self.report_form_view)
+
+    def show_error_page(self):
+        self.show()
+        self.ui.stackedWidget.setCurrentWidget(self.error_page_view)
+        self.ui.receive_lab_order_pushButton.setEnabled(False)
+        self.ui.send_lab_report_pushButton.setEnabled(False)
 
     def Show_main_page(self):
+        self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
+        self.ui.receive_lab_order_pushButton.setEnabled(True)
+        self.ui.send_lab_report_pushButton.setEnabled(True)
         self.show()
-        self.ui.stackedWidget.setCurrentWidget(self.report_form_view)
+
+    def reset_to_default_page(self):
+        """Reset window to default state - call before hiding"""
+        self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
+        self.ui.receive_lab_order_pushButton.setEnabled(True)
+        self.ui.send_lab_report_pushButton.setEnabled(True)
 
     def hide(self):
         super().hide()

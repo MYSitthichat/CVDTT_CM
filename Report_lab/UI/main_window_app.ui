@@ -44,7 +44,7 @@
     <property name="lineWidth">
      <number>2</number>
     </property>
-    <widget class="QPushButton" name="register_new_customer_pushButton">
+    <widget class="QPushButton" name="receive_lab_order_pushButton">
      <property name="geometry">
       <rect>
        <x>7</x>
@@ -64,7 +64,7 @@
       <string>รับใบส่งแลป</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="new_work_pushButton">
+    <widget class="QPushButton" name="send_lab_report_pushButton">
      <property name="geometry">
       <rect>
        <x>7</x>

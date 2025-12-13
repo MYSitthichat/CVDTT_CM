@@ -1,5 +1,10 @@
 from View.view_main_frame import MainWindow
 from PySide6.QtCore import QObject, Signal, QTimer
+from Controller.send_lab_controller import SendLabController
+from Controller.receive_lab_controller import ReceiveLabController
+from View.view_receive_lab_frame import ReceiveLabFormView
+from View.view_report_from_frame import ReportFormView
+from SERVICES_REPORT_LAB.search_room import SearchRoomService
 
 class MainController(QObject):
     # Define signals
@@ -14,24 +19,32 @@ class MainController(QObject):
         self.logged_in_user_info = None
         
         # db_model = login_controller.model if login_controller else None
-        self.main_window = MainWindow()
+        self.main_window: MainWindow = MainWindow()
         
+        # Use the widgets that MainWindow already created
+        self.report_widget: ReportFormView = self.main_window.report_form_view
+        self.receive_widget: ReceiveLabFormView = self.main_window.receive_lab_form_view
+
+        self.send_lab_controller: SendLabController = SendLabController(self.report_widget)
+        self.receive_lab_controller: ReceiveLabController = ReceiveLabController(self.receive_widget)
+
         # Set reference to this controller in main_window
         self.main_window.main_controller = self
-        
         self.login_controller = login_controller
+
+        self.search_room_service = SearchRoomService()
         
         
-        self.main_window.ui.new_work_pushButton.clicked.connect(self.show_receive_work_page)
-        self.main_window.ui.register_new_customer_pushButton.clicked.connect(self.show_report_work_page)
+        self.main_window.ui.receive_lab_order_pushButton.clicked.connect(self.show_receive_work_page)
+        self.main_window.ui.send_lab_report_pushButton.clicked.connect(self.show_report_work_page)
         
         self._setup_user_profile_connections()
         
     def show_receive_work_page(self):
-        print("MainController: show_receive_work_page called")
+        self.main_window.show_receive_work_page()
 
     def show_report_work_page(self):
-        print("MainController: show_report_work_page called")
+        self.main_window.show_report_work_page()
 
     def _setup_user_profile_connections(self):
         user_widget = self.main_window.get_user_profile_widget()
@@ -41,8 +54,11 @@ class MainController(QObject):
             self.main_window.ui.logout_pushButton.clicked.connect(self.logout_pushButton_clicked)
         
 
-    def Show_main_page(self):
-        self.main_window.Show_main_page()
+    def Show_main_page(self,group_id):
+        if group_id and group_id >=18:
+            self.main_window.show_error_page()
+        else:
+            self.main_window.Show_main_page()
 
     def hide_main_page(self):
         self.main_window.hide()
@@ -50,11 +66,12 @@ class MainController(QObject):
     def logout_pushButton_clicked(self):
         if hasattr(self.main_window, 'user_profile_widget') and self.main_window.user_profile_widget:
             self.main_window.user_profile_widget.hide_popup_immediately()
-        
+        self.main_window.reset_to_default_page()
         self.main_window.hide()
+        
         if self.login_controller:
             self.set_logged_in_user(user_id=None)
-            QTimer.singleShot(100, self.show_login_after_logout)
+            QTimer.singleShot(300, self.show_login_after_logout)
     
     def show_login_after_logout(self):
         if self.login_controller:
@@ -69,6 +86,13 @@ class MainController(QObject):
         self.logged_in_username = username
         self.logged_in_user_info = user_info
         
+        # Initialize default values
+        room = "ห้องปฏิบัติการส่วนกลาง"
+        full_name = username or 'User'
+        role = 'Staff'
+        employee_id = str(user_id) if user_id else ''
+        email = ''
+        
         if user_info:
             title = user_info.get('title', '')
             name = user_info.get('name', '')
@@ -77,16 +101,54 @@ class MainController(QObject):
             if not full_name:
                 full_name = username or 'User'
             role = user_info.get('position', 'Staff')
-            employee_id = str(user_id) if user_id else ''
             email = user_info.get('email', '')
-            if hasattr(self.main_window, 'user_profile_widget') and self.main_window.user_profile_widget:
-                self.main_window.user_profile_widget.update_user_info(full_name, role, employee_id)
-                if self.main_window.user_profile_widget.popup:
-                    self.main_window.user_profile_widget.popup.set_user_data(
-                        full_name, role, employee_id, email
-                    )
-    
-    
+
+            if "ศาสตร์" in role:
+                room = role.split("ศาสตร์")[-1].strip()
+            else:
+                room = "ห้องปฏิบัติการส่วนกลาง"
+        
+        # Call get_room_id_from_user with the room value
+        self.get_room_id_from_user(room)
+        
+        if hasattr(self.main_window, 'user_profile_widget') and self.main_window.user_profile_widget:
+            self.main_window.user_profile_widget.update_user_info(full_name, role, employee_id)
+            if self.main_window.user_profile_widget.popup:
+                self.main_window.user_profile_widget.popup.set_user_data(
+                    full_name, role, employee_id, email, room
+                )
+
+    def get_room_id_from_user(self, room):
+        stop_words = [
+                "นักวิทยาศาสตร์", 
+                "เจ้าหน้าที่",
+                "ปฏิบัติการ", 
+                "วิเคราะห์", 
+                "ตรวจสอบ",
+                "ตรวจ", 
+                "ห้อง", 
+                "ทาง", 
+                "และ",
+                "ประจำศูนย์",
+                "ชันสูตรโรคสัตว์",
+                "น้ำ" ]
+        cleaned_name = room
+        room_id = None
+        if cleaned_name != "ห้องปฏิบัติการส่วนกลาง":
+            for word in stop_words:
+                cleaned_name = cleaned_name.replace(word, "").strip()
+            room = cleaned_name
+            room_id = self.search_room_service.search_room(cleaned_name)
+            # print(f"Search Room: {cleaned_name}, Found ID: {room_id}")
+            self.set_room_id_from_user(cleaned_name, room_id)
+        else:
+            room_id = 999
+            self.set_room_id_from_user(cleaned_name, room_id)
+
+
+    def set_room_id_from_user(self, room, room_id):
+        self.receive_lab_controller._set_room_for_user(room, room_id)
+
     def get_user_login_id(self):
         return self.logged_in_user_id
     

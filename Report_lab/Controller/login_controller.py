@@ -71,6 +71,7 @@ class Login_Controller(QObject):
                     'group_id': employee_data.get('group_id'),
                     'position': employee_data.get('position', 'Staff')
                 }
+                self.get_user_group_id = employee_data.get('group_id', 0)
                 self.main_window.set_user_info(user_id, username, user_info)
             else:
                 self.main_window.set_logged_in_user(user_id)
@@ -86,7 +87,8 @@ class Login_Controller(QObject):
         QTimer.singleShot(300, self.show_main_after_login_page)
 
     def show_main_after_login_page(self):
-        self.main_window.Show_main_page()
+        group_id = getattr(self, 'get_user_group_id', 0)
+        self.main_window.Show_main_page(group_id=group_id)
 
     def show_forgot_password(self):
         self.login_window.hide()
