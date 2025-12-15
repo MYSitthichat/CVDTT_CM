@@ -115,7 +115,7 @@
     <rect>
      <x>5</x>
      <y>320</y>
-     <width>551</width>
+     <width>871</width>
      <height>561</height>
     </rect>
    </property>
@@ -158,13 +158,126 @@
      <string>รายละเอียดการตรวจ</string>
     </property>
    </widget>
+   <widget class="QPushButton" name="receive_pushButton">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>500</y>
+      <width>151</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>TH Niramit AS</family>
+      <pointsize>20</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>รับแลป</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="reject_pushButton">
+    <property name="geometry">
+     <rect>
+      <x>710</x>
+      <y>500</y>
+      <width>151</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>TH Niramit AS</family>
+      <pointsize>20</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>ปฏิเศษแลป</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="sample_status_label">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>50</y>
+      <width>201</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>TH Niramit AS</family>
+      <pointsize>20</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>สภาพสิ่งส่งตรวจ</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="sample_status_good_radioButton">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>80</y>
+      <width>81</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>TH Niramit AS</family>
+      <pointsize>20</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>ปกติ</string>
+    </property>
+   </widget>
+   <widget class="QRadioButton" name="sample_status_bad_radioButton">
+    <property name="geometry">
+     <rect>
+      <x>640</x>
+      <y>80</y>
+      <width>161</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="font">
+     <font>
+      <family>TH Niramit AS</family>
+      <pointsize>20</pointsize>
+      <bold>true</bold>
+     </font>
+    </property>
+    <property name="text">
+     <string>เสียหาย/ไม่ปกติ</string>
+    </property>
+   </widget>
+   <widget class="QTextEdit" name="comment_status_textEdit">
+    <property name="geometry">
+     <rect>
+      <x>550</x>
+      <y>120</y>
+      <width>311</width>
+      <height>371</height>
+     </rect>
+    </property>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
+    </property>
+   </widget>
   </widget>
   <widget class="QFrame" name="from_lab_order_frame">
    <property name="geometry">
     <rect>
-     <x>565</x>
+     <x>880</x>
      <y>320</y>
-     <width>701</width>
+     <width>381</width>
      <height>561</height>
     </rect>
    </property>
@@ -179,7 +292,7 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>681</width>
+      <width>361</width>
       <height>201</height>
      </rect>
     </property>
@@ -210,7 +323,7 @@
    <widget class="QPushButton" name="export_pushButton">
     <property name="geometry">
      <rect>
-      <x>530</x>
+      <x>210</x>
       <y>260</y>
       <width>161</width>
       <height>51</height>
@@ -246,6 +359,86 @@
    </property>
    <property name="text">
     <string>ค้นหา</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="bacteria_radioButton">
+   <property name="geometry">
+    <rect>
+     <x>570</x>
+     <y>20</y>
+     <width>71</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>TH Niramit AS</family>
+     <pointsize>20</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Bac</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="molecular_radioButton">
+   <property name="geometry">
+    <rect>
+     <x>650</x>
+     <y>20</y>
+     <width>71</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>TH Niramit AS</family>
+     <pointsize>20</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Mole</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="parasite_radioButton">
+   <property name="geometry">
+    <rect>
+     <x>740</x>
+     <y>20</y>
+     <width>71</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>TH Niramit AS</family>
+     <pointsize>20</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>Para</string>
+   </property>
+  </widget>
+  <widget class="QRadioButton" name="after_radioButton">
+   <property name="geometry">
+    <rect>
+     <x>830</x>
+     <y>20</y>
+     <width>71</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <family>TH Niramit AS</family>
+     <pointsize>20</pointsize>
+     <bold>true</bold>
+    </font>
+   </property>
+   <property name="text">
+    <string>After</string>
    </property>
   </widget>
  </widget>

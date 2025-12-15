@@ -42,6 +42,7 @@ class MainController(QObject):
         
     def show_receive_work_page(self):
         self.main_window.show_receive_work_page()
+        self.main_window.receive_lab_form_view.clear_all_table()
 
     def show_report_work_page(self):
         self.main_window.show_report_work_page()
@@ -71,6 +72,7 @@ class MainController(QObject):
         
         if self.login_controller:
             self.set_logged_in_user(user_id=None)
+            self.receive_widget.clear_all_table()
             QTimer.singleShot(300, self.show_login_after_logout)
     
     def show_login_after_logout(self):
@@ -131,7 +133,8 @@ class MainController(QObject):
                 "และ",
                 "ประจำศูนย์",
                 "ชันสูตรโรคสัตว์",
-                "น้ำ" ]
+                "น้ำ",
+                "วิทยา"]
         cleaned_name = room
         room_id = None
         if cleaned_name != "ห้องปฏิบัติการส่วนกลาง":
