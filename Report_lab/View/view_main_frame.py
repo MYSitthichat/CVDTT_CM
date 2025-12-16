@@ -4,6 +4,9 @@ from View.user_profile_widget import UserProfileWidget
 from View.view_report_from_frame import ReportFormView
 from View.view_receive_lab_frame import ReceiveLabFormView
 from View.view_error_page import ErrorPageView
+from View.view_lab_edite_form_frame import LabEditFormView
+
+
 
 class MainWindow(QMainWindow):
     
@@ -16,6 +19,7 @@ class MainWindow(QMainWindow):
         self.report_form_view = ReportFormView()
         self.receive_lab_form_view = ReceiveLabFormView()
         self.error_page_view = ErrorPageView()
+        self.lab_edit_form_view = LabEditFormView()
         # Store reference to main controller (will be set by MainController)
         self.main_controller = None
         
@@ -32,14 +36,18 @@ class MainWindow(QMainWindow):
         self.ui.stackedWidget.addWidget(self.report_form_view)
         self.ui.stackedWidget.addWidget(self.receive_lab_form_view)
         self.ui.stackedWidget.addWidget(self.error_page_view)
-        # Set default page to receive_lab_form_view to prevent flashing
+        self.ui.stackedWidget.addWidget(self.lab_edit_form_view)
         self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
+
 
     def show_receive_work_page(self):
         self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
 
     def show_report_work_page(self):
         self.ui.stackedWidget.setCurrentWidget(self.report_form_view)
+        
+    def show_lab_edit_form(self):
+        self.ui.stackedWidget.setCurrentWidget(self.lab_edit_form_view)
 
     def show_error_page(self):
         self.show()

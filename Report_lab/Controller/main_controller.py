@@ -2,8 +2,10 @@ from View.view_main_frame import MainWindow
 from PySide6.QtCore import QObject, Signal, QTimer
 from Controller.send_lab_controller import SendLabController
 from Controller.receive_lab_controller import ReceiveLabController
+from Controller.lab_edit_from_controller import LabEditFormController
 from View.view_receive_lab_frame import ReceiveLabFormView
 from View.view_report_from_frame import ReportFormView
+from View.view_lab_edite_form_frame import LabEditFormView
 from SERVICES_REPORT_LAB.search_room import SearchRoomService
 
 class MainController(QObject):
@@ -24,9 +26,12 @@ class MainController(QObject):
         # Use the widgets that MainWindow already created
         self.report_widget: ReportFormView = self.main_window.report_form_view
         self.receive_widget: ReceiveLabFormView = self.main_window.receive_lab_form_view
+        self.edite_lab_widget: LabEditFormView = self.main_window.lab_edit_form_view
 
+        # Create controllers
         self.send_lab_controller: SendLabController = SendLabController(self.report_widget)
         self.receive_lab_controller: ReceiveLabController = ReceiveLabController(self.receive_widget)
+        self.lab_edit_form_controller: LabEditFormController = LabEditFormController(self.edite_lab_widget)
 
         # Set reference to this controller in main_window
         self.main_window.main_controller = self
@@ -37,6 +42,7 @@ class MainController(QObject):
         
         self.main_window.ui.receive_lab_order_pushButton.clicked.connect(self.show_receive_work_page)
         self.main_window.ui.send_lab_report_pushButton.clicked.connect(self.show_report_work_page)
+        self.main_window.ui.Edit_Form_pushButton.clicked.connect(self.show_lab_edit_form)
         
         self._setup_user_profile_connections()
         
@@ -46,6 +52,9 @@ class MainController(QObject):
 
     def show_report_work_page(self):
         self.main_window.show_report_work_page()
+
+    def show_lab_edit_form(self):
+        self.main_window.show_lab_edit_form()
 
     def _setup_user_profile_connections(self):
         user_widget = self.main_window.get_user_profile_widget()
@@ -87,14 +96,11 @@ class MainController(QObject):
         self.logged_in_user_id = user_id
         self.logged_in_username = username
         self.logged_in_user_info = user_info
-        
-        # Initialize default values
         room = "ห้องปฏิบัติการส่วนกลาง"
         full_name = username or 'User'
         role = 'Staff'
         employee_id = str(user_id) if user_id else ''
         email = ''
-        
         if user_info:
             title = user_info.get('title', '')
             name = user_info.get('name', '')
@@ -109,9 +115,8 @@ class MainController(QObject):
                 room = role.split("ศาสตร์")[-1].strip()
             else:
                 room = "ห้องปฏิบัติการส่วนกลาง"
-        
-        # Call get_room_id_from_user with the room value
         self.get_room_id_from_user(room)
+        
         
         if hasattr(self.main_window, 'user_profile_widget') and self.main_window.user_profile_widget:
             self.main_window.user_profile_widget.update_user_info(full_name, role, employee_id)
@@ -119,6 +124,7 @@ class MainController(QObject):
                 self.main_window.user_profile_widget.popup.set_user_data(
                     full_name, role, employee_id, email, room
                 )
+
 
     def get_room_id_from_user(self, room):
         stop_words = [
@@ -142,12 +148,16 @@ class MainController(QObject):
                 cleaned_name = cleaned_name.replace(word, "").strip()
             room = cleaned_name
             room_id = self.search_room_service.search_room(cleaned_name)
-            # print(f"Search Room: {cleaned_name}, Found ID: {room_id}")
             self.set_room_id_from_user(cleaned_name, room_id)
+            self.status_lab_edit_button(False)
         else:
             room_id = 999
             self.set_room_id_from_user(cleaned_name, room_id)
+            self.status_lab_edit_button(True)
 
+
+    def status_lab_edit_button(self, show: bool):
+        self.main_window.ui.Edit_Form_pushButton.setVisible(show)
 
     def set_room_id_from_user(self, room, room_id):
         self.receive_lab_controller._set_room_for_user(room, room_id)
