@@ -1,8 +1,27 @@
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 import mariadb
+import re
 from database import get_db_connection
 
 router = APIRouter(tags=["Receive_lab_order"])
+
+
+# Pydantic models สำหรับรับข้อมูล
+class ReceiveLabRequest(BaseModel):
+    lab_order_id: int
+    receive_from_room: int
+    comment_for_sample: str = ""
+    sample_status: str = "ปกติ"
+    updater_id: int  # employee_id ของคนที่ login
+
+
+class RejectLabRequest(BaseModel):
+    lab_order_id: int
+    receive_from_room: int
+    comment_for_sample: str = ""
+    sample_status: str = "เสียหาย/ไม่ปกติ"
+    updater_id: int  # employee_id ของคนที่ login
 
 
 @router.get("/get_lab_order/detail")
@@ -176,6 +195,7 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     
+    cursor = None
     try:
         cursor = conn.cursor()
         
@@ -188,6 +208,278 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                 "message": "Lab Order ID ไม่ถูกต้อง"
             }
         
+        # ดึงข้อมูล Lab Order และ Sample Registration
+        sql_order = """
+            SELECT 
+                lo.dtime, 
+                lo.id, 
+                sr.species, 
+                ri.code, 
+                ri.nickname, 
+                sr.keep_method, 
+                sr.speed,
+                sr.name,
+                sr.opd_number,
+                sr.sex,
+                sr.age_year,
+                sr.age_month,
+                sr.age_day,
+                sr.breed,
+                sr.sample_type,
+                cr.project_name,
+                sr.id AS sample_id,
+                lo.room_id,
+                sr.sample_inspection
+            FROM lab_order lo
+            LEFT JOIN sample_registration sr ON lo.sample_id = sr.id 
+            LEFT JOIN room_information ri ON lo.room_id = ri.id 
+            LEFT JOIN case_registration cr ON sr.case_id = cr.id
+            WHERE lo.id = %s AND lo.status = 1
+        """
+        
+        if room_id:
+            sql_order += " AND lo.room_id = %s"
+            cursor.execute(sql_order, (order_id, room_id))
+        else:
+            cursor.execute(sql_order, (order_id,))
+        
+        order_result = cursor.fetchone()
+        
+        if not order_result:
+            return {
+                "success": False,
+                "message": "ไม่พบข้อมูล Lab Order นี้"
+            }
+        
+        # แปลง tuple เป็น dict
+        order_data = {
+            "dtime": order_result[0],
+            "lab_order_id": order_result[1],
+            "species": order_result[2],
+            "room_code": order_result[3],
+            "room_nickname": order_result[4],
+            "keep_method": order_result[5],
+            "speed": order_result[6],
+            "name": order_result[7],
+            "opd_number": order_result[8],
+            "sex": order_result[9],
+            "age_year": order_result[10],
+            "age_month": order_result[11],
+            "age_day": order_result[12],
+            "breed": order_result[13],
+            "sample_type": order_result[14],
+            "project_name": order_result[15],
+            "sample_id": order_result[16],
+            "room_id": order_result[17],
+            "sample_inspection": order_result[18]
+        }
+        
+        # ดึงรายการตรวจตาม room_id
+        test_items = []
+        sample_id = order_data["sample_id"]
+        room_id_val = order_data["room_id"]
+        room_code = order_data["room_code"] if order_data["room_code"] else ""
+        
+        # ใช้ room_id แทน room_code เพื่อระบุห้องแลป
+        # room_id: 2=Bacteria, 5=Parasite, 8=Molecular
+        if room_id_val == 5:  # Parasite
+            sql_test = """SELECT * FROM lab_parasite_biology WHERE sample_id = %s"""
+            cursor.execute(sql_test, (sample_id,))
+            test_data = cursor.fetchone()
+            if test_data:
+                # Parse parasite test data (columns 3 onwards, every 3 columns = preparation_name, state, amount)
+                # Structure: preparation_p1_name, preparation_p1_state, preparation_p1_amount, ...
+                raw_test_data = test_data[3:]  # Get all columns after id, sample_id, dtime
+                for i in range(0, len(raw_test_data), 3):
+                    test_name = raw_test_data[i] if i < len(raw_test_data) else ""
+                    test_state = raw_test_data[i+1] if i+1 < len(raw_test_data) else 0
+                    test_amount = raw_test_data[i+2] if i+2 < len(raw_test_data) else 0
+                    # เฉพาะรายการที่ state = 1 เท่านั้น
+                    if test_state == 1 and test_name:
+                        # ลบตัวเลขในวงเล็บออก เช่น "PCV (50)" -> "PCV"
+                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                        test_items.append({
+                            "test_name": clean_name,
+                            "test_amount": 1
+                        })
+        
+        elif room_id_val == 2:  # Bacteria
+            sql_test = """SELECT * FROM lab_bacteria_biology WHERE sample_id = %s"""
+            cursor.execute(sql_test, (sample_id,))
+            test_data = cursor.fetchone()
+            if test_data:
+                # Parse bacteria test data (columns 3 onwards, every 3 columns = preparation_name, state, amount)
+                raw_test_data = test_data[3:]
+                for i in range(0, len(raw_test_data), 3):
+                    test_name = raw_test_data[i] if i < len(raw_test_data) else ""
+                    test_state = raw_test_data[i+1] if i+1 < len(raw_test_data) else 0
+                    test_amount = raw_test_data[i+2] if i+2 < len(raw_test_data) else 0
+                    # เฉพาะรายการที่ state = 1 เท่านั้น
+                    if test_state == 1 and test_name:
+                        # ลบตัวเลขในวงเล็บออก เช่น "Swab [LT] (50)" -> "Swab [LT]"
+                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                        test_items.append({
+                            "test_name": clean_name,
+                            "test_amount": 1
+                        })
+        
+        elif room_id_val == 8:  # Molecular Biology
+            sql_test = """SELECT * FROM lab_molecular_biology WHERE sample_id = %s"""
+            cursor.execute(sql_test, (sample_id,))
+            test_data = cursor.fetchone()
+            if test_data:
+                # Parse molecular test data (columns 3 onwards, every 3 columns = preparation_name, state, amount)
+                raw_test_data = test_data[3:]
+                for i in range(0, len(raw_test_data), 3):
+                    test_name = raw_test_data[i] if i < len(raw_test_data) else ""
+                    test_state = raw_test_data[i+1] if i+1 < len(raw_test_data) else 0
+                    test_amount = raw_test_data[i+2] if i+2 < len(raw_test_data) else 0
+                    # เฉพาะรายการที่ state = 1 เท่านั้น
+                    if test_state == 1 and test_name:
+                        # ลบตัวเลขในวงเล็บออก
+                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                        test_items.append({
+                            "test_name": clean_name,
+                            "test_amount": 1
+                        })
+        
+        return {
+            "success": True,
+            "order_data": order_data,
+            "test_items": test_items
+        }
+        
     except mariadb.Error as e:
         print(f"Query Error: {e}")
         raise HTTPException(status_code=500, detail="Failed to retrieve lab order details")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@router.post("/receive_lab_order")
+def receive_lab_order(request: ReceiveLabRequest):
+    """
+    บันทึกข้อมูลการรับแลป
+    - room_action_status = 1 (รับแลป)
+    - sample_status: "ปกติ" หรือ "เสียหาย/ไม่ปกติ"
+    - ดึง case_id จาก lab_order โดยอัตโนมัติ
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        
+        # ดึงข้อมูล lab_order และ case_id
+        sql_check = """
+            SELECT lo.id, sr.case_id 
+            FROM lab_order lo
+            LEFT JOIN sample_registration sr ON lo.sample_id = sr.id
+            WHERE lo.id = %s AND lo.status = 1
+        """
+        cursor.execute(sql_check, (request.lab_order_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            return {
+                "success": False,
+                "message": "ไม่พบ Lab Order นี้"
+            }
+        
+        case_id = result[1]  # ดึง case_id จาก sample_registration
+        
+        # บันทึกข้อมูลการรับแลป
+        sql = """
+            INSERT INTO lab_receive_datail 
+            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, from_report_name, updater) 
+            VALUES (%s, %s, %s, %s, 1, %s, %s)
+        """
+        
+        cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.sample_status, request.updater_id))
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": "บันทึกการรับแลปสำเร็จ",
+            "lab_order_id": request.lab_order_id
+        }
+        
+    except mariadb.Error as e:
+        if conn:
+            conn.rollback()
+        print(f"Database Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save receive lab data: {str(e)}")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@router.post("/reject_lab_order")
+def reject_lab_order(request: RejectLabRequest):
+    """
+    ปฏิเสธการรับแลป
+    - room_action_status = 0 (ปฏิเสธ)
+    - ดึง case_id จาก lab_order โดยอัตโนมัติ
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        
+        # ดึงข้อมูล lab_order และ case_id
+        sql_check = """
+            SELECT lo.id, sr.case_id 
+            FROM lab_order lo
+            LEFT JOIN sample_registration sr ON lo.sample_id = sr.id
+            WHERE lo.id = %s AND lo.status = 1
+        """
+        cursor.execute(sql_check, (request.lab_order_id,))
+        result = cursor.fetchone()
+        
+        if not result:
+            return {
+                "success": False,
+                "message": "ไม่พบ Lab Order นี้"
+            }
+        
+        case_id = result[1]  # ดึง case_id จาก sample_registration
+        
+        # บันทึกข้อมูลการปฏิเสธแลป
+        sql = """
+            INSERT INTO lab_receive_datail 
+            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, from_report_name, updater) 
+            VALUES (%s, %s, %s, %s, 0, %s, %s)
+        """
+        
+        cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.sample_status, request.updater_id))
+        conn.commit()
+        
+        return {
+            "success": True,
+            "message": "บันทึกการปฏิเสธแลปสำเร็จ",
+            "lab_order_id": request.lab_order_id
+        }
+        
+    except mariadb.Error as e:
+        if conn:
+            conn.rollback()
+        print(f"Database Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save reject lab data: {str(e)}")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()

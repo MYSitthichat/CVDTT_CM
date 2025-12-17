@@ -30,7 +30,7 @@ class MainController(QObject):
 
         # Create controllers
         self.send_lab_controller: SendLabController = SendLabController(self.report_widget)
-        self.receive_lab_controller: ReceiveLabController = ReceiveLabController(self.receive_widget)
+        self.receive_lab_controller: ReceiveLabController = ReceiveLabController(self.receive_widget, main_controller=self)
         self.lab_edit_form_controller: LabEditFormController = LabEditFormController(self.edite_lab_widget)
 
         # Set reference to this controller in main_window
@@ -160,6 +160,8 @@ class MainController(QObject):
         self.main_window.ui.Edit_Form_pushButton.setVisible(show)
 
     def set_room_id_from_user(self, room, room_id):
+        # เคลียร์ข้อมูลเก่าก่อนตั้งค่า room ใหม่
+        self.receive_lab_controller.clear_all_data()
         self.receive_lab_controller._set_room_for_user(room, room_id)
 
     def get_user_login_id(self):

@@ -17,3 +17,27 @@ class ReceiveLabService(BaseService):
         params = {"lab_order_id": lab_order_id, "room_id": room_id}
         result = self._get("/get_lab_order/details", params=params)
         return result if result is not None else None
+    
+    def receive_lab_order(self, lab_order_id: int, receive_from_room: int, comment_for_sample: str, sample_status: str, updater_id: int):
+        """บันทึกการรับแลป"""
+        data = {
+            "lab_order_id": lab_order_id,
+            "receive_from_room": receive_from_room,
+            "comment_for_sample": comment_for_sample,
+            "sample_status": sample_status,
+            "updater_id": updater_id
+        }
+        result = self._post("/receive_lab_order", json=data)
+        return result if result is not None else None
+    
+    def reject_lab_order(self, lab_order_id: int, receive_from_room: int, comment_for_sample: str, sample_status: str, updater_id: int):
+        """ปฏิเสธการรับแลป"""
+        data = {
+            "lab_order_id": lab_order_id,
+            "receive_from_room": receive_from_room,
+            "comment_for_sample": comment_for_sample,
+            "sample_status": sample_status,
+            "updater_id": updater_id
+        }
+        result = self._post("/reject_lab_order", json=data)
+        return result if result is not None else None
