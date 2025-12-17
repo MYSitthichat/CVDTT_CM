@@ -287,60 +287,122 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
             cursor.execute(sql_test, (sample_id,))
             test_data = cursor.fetchone()
             if test_data:
-                # Parse parasite test data (columns 3 onwards, every 3 columns = preparation_name, state, amount)
-                # Structure: preparation_p1_name, preparation_p1_state, preparation_p1_amount, ...
+                # Parse parasite test data (columns 3 onwards, every 3 columns = t_name, t_state, t_price)
+                # Structure: t1_name, t1_state, t1_price, t2_name, t2_state, t2_price, ...
+                # สำหรับ Parasite: t_state เก็บจำนวน (0=ไม่เลือก, >0=เลือกและเป็นจำนวน)
                 raw_test_data = test_data[3:]  # Get all columns after id, sample_id, dtime
                 for i in range(0, len(raw_test_data), 3):
                     test_name = raw_test_data[i] if i < len(raw_test_data) else ""
-                    test_state = raw_test_data[i+1] if i+1 < len(raw_test_data) else 0
-                    test_amount = raw_test_data[i+2] if i+2 < len(raw_test_data) else 0
-                    # เฉพาะรายการที่ state = 1 เท่านั้น
-                    if test_state == 1 and test_name:
+                    test_state = int(raw_test_data[i+1]) if i+1 < len(raw_test_data) and raw_test_data[i+1] is not None else 0
+                    test_price = int(raw_test_data[i+2]) if i+2 < len(raw_test_data) and raw_test_data[i+2] is not None else 0
+                    # เฉพาะรายการที่ state > 0 (state คือจำนวนเลย)
+                    if test_state > 0 and test_name:
                         # ลบตัวเลขในวงเล็บออก เช่น "PCV (50)" -> "PCV"
                         clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
                         test_items.append({
                             "test_name": clean_name,
-                            "test_amount": 1
+                            "test_amount": test_state  # ใช้ state เป็นจำนวน
                         })
         
         elif room_id_val == 2:  # Bacteria
             sql_test = """SELECT * FROM lab_bacteria_biology WHERE sample_id = %s"""
             cursor.execute(sql_test, (sample_id,))
+            
+            # Get column names before fetching data
+            col_names = [desc[0] for desc in cursor.description]
             test_data = cursor.fetchone()
+            
             if test_data:
-                # Parse bacteria test data (columns 3 onwards, every 3 columns = preparation_name, state, amount)
-                raw_test_data = test_data[3:]
-                for i in range(0, len(raw_test_data), 3):
-                    test_name = raw_test_data[i] if i < len(raw_test_data) else ""
-                    test_state = raw_test_data[i+1] if i+1 < len(raw_test_data) else 0
-                    test_amount = raw_test_data[i+2] if i+2 < len(raw_test_data) else 0
-                    # เฉพาะรายการที่ state = 1 เท่านั้น
-                    if test_state == 1 and test_name:
-                        # ลบตัวเลขในวงเล็บออก เช่น "Swab [LT] (50)" -> "Swab [LT]"
-                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
-                        test_items.append({
-                            "test_name": clean_name,
-                            "test_amount": 1
-                        })
+                # Parse bacteria test data using column names (structure is complex with different patterns)
+                # 1. preparation_p1-p21: name, state, amount (3 columns each)
+                # 2. drug_sensitivity1-41: name, state (2 columns each - no amount, set amount=7)
+                # 3. bacteria_id1-12: name, state (2 columns each - set amount=7)
+                # 4. lab_request1-5: name, state, price (3 columns each - set amount=7)
+                
+                try:
+                    # Process preparation_p1-p21 (use state as amount)
+                    for i in range(1, 22):  # p1 to p21
+                        name_idx = col_names.index(f'preparation_p{i}_name')
+                        state_idx = col_names.index(f'preparation_p{i}_state')
+                        
+                        test_name = test_data[name_idx] if test_data[name_idx] else ""
+                        test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
+                        
+                        if test_state > 0 and test_name:
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_items.append({
+                                "test_name": clean_name,
+                                "test_amount": test_state
+                            })
+                    
+                    # Process drug_sensitivity1-41 (use state as amount)
+                    for i in range(1, 42):  # 1 to 41
+                        name_idx = col_names.index(f'drug_sensitivity{i}_name')
+                        state_idx = col_names.index(f'drug_sensitivity{i}_state')
+                        
+                        test_name = test_data[name_idx] if test_data[name_idx] else ""
+                        test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
+                        
+                        if test_state > 0 and test_name:
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_items.append({
+                                "test_name": clean_name,
+                                "test_amount": test_state
+                            })
+                    
+                    # Process bacteria_id1-12 (use state as amount)
+                    for i in range(1, 13):  # 1 to 12
+                        name_idx = col_names.index(f'bacteria_id{i}_name')
+                        state_idx = col_names.index(f'bacteria_id{i}_state')
+                        
+                        test_name = test_data[name_idx] if test_data[name_idx] else ""
+                        test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
+                        
+                        if test_state > 0 and test_name:
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_items.append({
+                                "test_name": clean_name,
+                                "test_amount": test_state
+                            })
+                    
+                    # Process lab_request1-5 (use state as amount)
+                    for i in range(1, 6):  # 1 to 5
+                        name_idx = col_names.index(f'lab_request{i}_name')
+                        state_idx = col_names.index(f'lab_request{i}_state')
+                        
+                        test_name = test_data[name_idx] if test_data[name_idx] else ""
+                        test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
+                        
+                        if test_state > 0 and test_name:
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_items.append({
+                                "test_name": clean_name,
+                                "test_amount": test_state
+                            })
+                except Exception as e:
+                    # If error occurs during parsing, return what we have so far
+                    print(f"Error parsing bacteria data: {e}")
         
         elif room_id_val == 8:  # Molecular Biology
             sql_test = """SELECT * FROM lab_molecular_biology WHERE sample_id = %s"""
             cursor.execute(sql_test, (sample_id,))
             test_data = cursor.fetchone()
             if test_data:
-                # Parse molecular test data (columns 3 onwards, every 3 columns = preparation_name, state, amount)
+                # Parse molecular test data (columns 3 onwards, every 3 columns = test_name, test_amount, test_price)
+                # Structure: test1_name, test1_amount, test1_price, test2_name, test2_amount, test2_price, ...
+                # สำหรับ Molecular: ไม่มี state, amount คือจำนวน (0=ไม่เลือก, >0=เลือกและเป็นจำนวน)
                 raw_test_data = test_data[3:]
                 for i in range(0, len(raw_test_data), 3):
                     test_name = raw_test_data[i] if i < len(raw_test_data) else ""
-                    test_state = raw_test_data[i+1] if i+1 < len(raw_test_data) else 0
-                    test_amount = raw_test_data[i+2] if i+2 < len(raw_test_data) else 0
-                    # เฉพาะรายการที่ state = 1 เท่านั้น
-                    if test_state == 1 and test_name:
+                    test_amount = int(raw_test_data[i+1]) if i+1 < len(raw_test_data) and raw_test_data[i+1] is not None else 0
+                    test_price = int(raw_test_data[i+2]) if i+2 < len(raw_test_data) and raw_test_data[i+2] is not None else 0
+                    # เฉพาะรายการที่ amount > 0 (amount คือจำนวนเลย)
+                    if test_amount > 0 and test_name:
                         # ลบตัวเลขในวงเล็บออก
                         clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
                         test_items.append({
                             "test_name": clean_name,
-                            "test_amount": 1
+                            "test_amount": test_amount  # ใช้ amount เป็นจำนวน
                         })
         
         return {
@@ -396,12 +458,12 @@ def receive_lab_order(request: ReceiveLabRequest):
         
         # บันทึกข้อมูลการรับแลป
         sql = """
-            INSERT INTO lab_receive_datail 
-            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, from_report_name, updater) 
-            VALUES (%s, %s, %s, %s, 1, %s, %s)
+            INSERT INTO lab_receive_detail 
+            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status,  updater) 
+            VALUES (%s, %s, %s, %s, 1, %s)
         """
         
-        cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.sample_status, request.updater_id))
+        cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.updater_id))
         conn.commit()
         
         return {
@@ -458,12 +520,12 @@ def reject_lab_order(request: RejectLabRequest):
         
         # บันทึกข้อมูลการปฏิเสธแลป
         sql = """
-            INSERT INTO lab_receive_datail 
-            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, from_report_name, updater) 
-            VALUES (%s, %s, %s, %s, 0, %s, %s)
+            INSERT INTO lab_receive_detail 
+            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, updater) 
+            VALUES (%s, %s, %s, %s, 0, %s)
         """
         
-        cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.sample_status, request.updater_id))
+        cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.updater_id))
         conn.commit()
         
         return {
