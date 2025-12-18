@@ -29,7 +29,7 @@ class MainController(QObject):
         self.edite_lab_widget: LabEditFormView = self.main_window.lab_edit_form_view
 
         # Create controllers
-        self.send_lab_controller: SendLabController = SendLabController(self.report_widget)
+        self.send_lab_controller: SendLabController = SendLabController(self.report_widget, main_controller=self)
         self.receive_lab_controller: ReceiveLabController = ReceiveLabController(self.receive_widget, main_controller=self)
         self.lab_edit_form_controller: LabEditFormController = LabEditFormController(self.edite_lab_widget)
 
@@ -52,6 +52,9 @@ class MainController(QObject):
 
     def show_report_work_page(self):
         self.main_window.show_report_work_page()
+        # โหลดข้อมูลอัตโนมัติเมื่อเข้าหน้า send_lab
+        if hasattr(self, 'send_lab_controller') and self.send_lab_controller:
+            self.send_lab_controller.reload_data()
 
     def show_lab_edit_form(self):
         self.main_window.show_lab_edit_form()
@@ -163,6 +166,10 @@ class MainController(QObject):
         # เคลียร์ข้อมูลเก่าก่อนตั้งค่า room ใหม่
         self.receive_lab_controller.clear_all_data()
         self.receive_lab_controller._set_room_for_user(room, room_id)
+                
+        # ตั้งค่า room สำหรับ send_lab_controller เช่นเดียวกัน
+        self.send_lab_controller.clear_all_data()
+        self.send_lab_controller._set_room_for_user(room, room_id)
 
     def get_user_login_id(self):
         return self.logged_in_user_id
