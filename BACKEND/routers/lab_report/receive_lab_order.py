@@ -279,17 +279,11 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
         sample_id = order_data["sample_id"]
         room_id_val = order_data["room_id"]
         room_code = order_data["room_code"] if order_data["room_code"] else ""
-        
-        # ใช้ room_id แทน room_code เพื่อระบุห้องแลป
-        # room_id: 2=Bacteria, 5=Parasite, 8=Molecular
         if room_id_val == 5:  # Parasite
             sql_test = """SELECT * FROM lab_parasite_biology WHERE sample_id = %s"""
             cursor.execute(sql_test, (sample_id,))
             test_data = cursor.fetchone()
             if test_data:
-                # Parse parasite test data (columns 3 onwards, every 3 columns = t_name, t_state, t_price)
-                # Structure: t1_name, t1_state, t1_price, t2_name, t2_state, t2_price, ...
-                # สำหรับ Parasite: t_state เก็บจำนวน (0=ไม่เลือก, >0=เลือกและเป็นจำนวน)
                 raw_test_data = test_data[3:]  # Get all columns after id, sample_id, dtime
                 for i in range(0, len(raw_test_data), 3):
                     test_name = raw_test_data[i] if i < len(raw_test_data) else ""
@@ -308,16 +302,10 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
             sql_test = """SELECT * FROM lab_bacteria_biology WHERE sample_id = %s"""
             cursor.execute(sql_test, (sample_id,))
             
-            # Get column names before fetching data
             col_names = [desc[0] for desc in cursor.description]
             test_data = cursor.fetchone()
             
             if test_data:
-                # Parse bacteria test data using column names (structure is complex with different patterns)
-                # 1. preparation_p1-p21: name, state, amount (3 columns each)
-                # 2. drug_sensitivity1-41: name, state (2 columns each - no amount, set amount=7)
-                # 3. bacteria_id1-12: name, state (2 columns each - set amount=7)
-                # 4. lab_request1-5: name, state, price (3 columns each - set amount=7)
                 
                 try:
                     # Process preparation_p1-p21 (use state as amount)
@@ -459,13 +447,8 @@ def receive_lab_order(request: ReceiveLabRequest):
         # บันทึกข้อมูลการรับแลป
         sql = """
             INSERT INTO lab_receive_detail 
-<<<<<<< HEAD
-            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, from_report_name, updater) 
-            VALUES (%s, %s, %s, %s, 1, %s, %s)
-=======
             (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status,  updater) 
             VALUES (%s, %s, %s, %s, 1, %s)
->>>>>>> 5d973b728349f14fabc59a097e4be8fdcb9bbeda
         """
         
         cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.updater_id))
