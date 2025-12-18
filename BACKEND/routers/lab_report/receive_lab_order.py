@@ -459,13 +459,8 @@ def receive_lab_order(request: ReceiveLabRequest):
         # บันทึกข้อมูลการรับแลป
         sql = """
             INSERT INTO lab_receive_detail 
-<<<<<<< HEAD
-            (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, from_report_name, updater) 
-            VALUES (%s, %s, %s, %s, 1, %s, %s)
-=======
             (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status,  updater) 
             VALUES (%s, %s, %s, %s, 1, %s)
->>>>>>> 5d973b728349f14fabc59a097e4be8fdcb9bbeda
         """
         
         cursor.execute(sql, (request.lab_order_id, case_id, request.receive_from_room, request.comment_for_sample, request.updater_id))
