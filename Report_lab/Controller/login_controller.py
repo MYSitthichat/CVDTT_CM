@@ -7,7 +7,7 @@ from SERVICES_REPORT_LAB.auth_service import AuthService
 from SERVICES_REPORT_LAB.employee_service import EmployeeService
 from PySide6.QtWidgets import QMessageBox
 
-DEBUG = False
+debug = False
 
 class Login_Controller(QObject):
     
@@ -35,7 +35,7 @@ class Login_Controller(QObject):
     def check_login(self):
         username = self.login_window.user_lineEdit.text()
         password = self.login_window.password_lineEdit.text()
-        if DEBUG == True:
+        if debug:
             self.logged_in_user_id = 222
             self.load_and_set_user_info(self.logged_in_user_id, username)
             self.switch_to_main()

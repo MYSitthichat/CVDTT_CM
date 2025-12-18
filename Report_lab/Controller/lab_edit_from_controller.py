@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QTableWidgetItem, QMessageBox, QFileDialog
-from PySide6.QtCore import QObject, Qt
+from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import QObject
 from View.view_lab_edite_form_frame import LabEditFormView
 
 class LabEditFormController(QObject):
@@ -19,16 +19,16 @@ class LabEditFormController(QObject):
 
 
     def edit_form_pushButton_clicked(self):
-        print("EDIT FORM BUTTON CLICKED - LabEditFormController")
+        QMessageBox.information(self.view, "Information", "Edit Form Button Clicked")
 
     def download_pushButton_clicked(self):
-        print("DOWNLOAD BUTTON CLICKED - LabEditFormController")
+        QMessageBox.information(self.view, "Information", "Download Button Clicked")
 
     def delete_pushButton_clicked(self):
-        print("DELETE BUTTON CLICKED - LabEditFormController")
+        QMessageBox.information(self.view, "Information", "Delete Button Clicked")
 
     def save_new_lab_pushButton_clicked(self):
-        print("SAVE NEW LAB BUTTON CLICKED - LabEditFormController")
+        QMessageBox.information(self.view, "Information", "Save New Lab Button Clicked")
 
     def save_form_pushButton_clicked(self):
-        print("SAVE FORM BUTTON CLICKED - LabEditFormController")
+        QMessageBox.information(self.view, "Information", "Save Form Button Clicked")

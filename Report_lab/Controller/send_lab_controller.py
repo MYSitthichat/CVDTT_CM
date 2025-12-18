@@ -1,5 +1,5 @@
-from PySide6.QtWidgets import QTableWidgetItem, QMessageBox, QFileDialog
-from PySide6.QtCore import QObject, Qt
+from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import QObject
 from View.view_report_from_frame import ReportFormView
 
 class SendLabController(QObject):
@@ -15,17 +15,20 @@ class SendLabController(QObject):
         self.view.ui.clear_location_file_pushButton.clicked.connect(self.clear_pushButton_clicked)
         self.view.ui.send_report_file_pushButton.clicked.connect(self.send_pushButton_clicked)
         self.view.ui.convert_word_to_pdf_pushButton.clicked.connect(self.convert_to_pdf_clicked)
+        self.view.ui.select_barcode_pushButton.clicked.connect(self.select_barcode_clicked)
         
-        
+
+    def select_barcode_clicked(self):
+        QMessageBox.information(self.view, "Information", "Select Barcode Button Clicked")
         
     def clear_pushButton_clicked(self):
-        print("CLEAR BUTTON CLICKED - SendLabController")
+        QMessageBox.information(self.view, "Information", "Clear Button Clicked")
         
     def send_pushButton_clicked(self):
-        print("SEND BUTTON CLICKED - SendLabController")
+        QMessageBox.information(self.view, "Information", "Send Button Clicked")
         
     def browse_file_clicked(self):
-        print("BROWSE FILE BUTTON CLICKED - SendLabController")
+        QMessageBox.information(self.view, "Information", "Browse File Button Clicked")
 
     def convert_to_pdf_clicked(self):
-        print("CONVERT TO PDF BUTTON CLICKED - SendLabController")
+        QMessageBox.information(self.view, "Information", "Convert To PDF Button Clicked")

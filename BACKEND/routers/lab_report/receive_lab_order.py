@@ -396,7 +396,7 @@ def receive_lab_order(request: ReceiveLabRequest):
         
         # บันทึกข้อมูลการรับแลป
         sql = """
-            INSERT INTO lab_receive_datail 
+            INSERT INTO lab_receive_detail 
             (lab_order_id, case_id, receive_from_room, comment_for_sample, room_action_status, from_report_name, updater) 
             VALUES (%s, %s, %s, %s, 1, %s, %s)
         """

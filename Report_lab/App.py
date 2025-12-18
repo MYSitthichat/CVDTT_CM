@@ -1,5 +1,8 @@
 import sys
 import os
+from PySide6.QtWidgets import QApplication
+from Controller.login_controller import Login_Controller 
+
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -9,9 +12,6 @@ if parent_dir not in sys.path:
 register_dir = os.path.join(parent_dir, 'Report_lab')
 if register_dir not in sys.path:
     sys.path.insert(0, register_dir)
-
-from PySide6.QtWidgets import QApplication
-from Controller.login_controller import Login_Controller 
 
 try:
     from qt_material import apply_stylesheet
