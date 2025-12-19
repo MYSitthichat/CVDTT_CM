@@ -6,6 +6,41 @@ from database import get_db_connection
 router = APIRouter(tags=["Send_lab"])
 
 
+
+@router.get("/get_detail/lab_order")
+def get_lab_order_detail(lab_order_id: int):
+    conn = get_db_connection()
+    print(f"Fetching details for Lab Order ID: {lab_order_id}")
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    try:
+        cursor = conn.cursor()
+        sql = """
+            SELECT 
+                lab_receive_detail.case_id, 
+                lab_receive_detail.lab_order_id, 
+                room_information.name AS room_name
+            FROM lab_receive_detail
+            LEFT JOIN room_information 
+                ON lab_receive_detail.receive_from_room = room_information.id
+            WHERE lab_receive_detail.room_action_status = 1 
+            AND lab_receive_detail.lab_order_id = ?
+        """
+        cursor.execute(sql, (lab_order_id,))
+        result = cursor.fetchone()
+        if not result:
+            raise HTTPException(status_code=404, detail="Lab order not found")
+        case_id, lab_order_id, room_name = result
+        return {
+            "case_id": case_id,
+            "lab_order_id": lab_order_id,
+            "room_name": room_name
+        }
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to retrieve lab order details")
+
+
 @router.get("/get_received_labs/to_day")
 def get_received_labs_to_day(room_id: str, offset: int = 0, limit: int = 50):
     """
@@ -31,7 +66,7 @@ def get_received_labs_to_day(room_id: str, offset: int = 0, limit: int = 50):
                 FROM lab_receive_detail lrd
                 INNER JOIN lab_order lo ON lrd.lab_order_id = lo.id
                 INNER JOIN sample_registration sr ON lo.sample_id = sr.id
-                WHERE lrd.room_action_status = 1
+                WHERE lrd.room_action_status = 1 AND lrd.send_success = 0
                     AND lo.status = 1
                 ORDER BY lrd.id DESC 
                 LIMIT ? OFFSET ?
@@ -48,7 +83,7 @@ def get_received_labs_to_day(room_id: str, offset: int = 0, limit: int = 50):
                 INNER JOIN lab_order lo ON lrd.lab_order_id = lo.id
                 INNER JOIN sample_registration sr ON lo.sample_id = sr.id
                 WHERE lrd.receive_from_room = ? 
-                    AND lrd.room_action_status = 1
+                    AND lrd.room_action_status = 1 AND lrd.send_success = 0
                     AND lo.status = 1
                 ORDER BY lrd.id DESC 
                 LIMIT ? OFFSET ?
@@ -67,7 +102,7 @@ def get_received_labs_to_day(room_id: str, offset: int = 0, limit: int = 50):
                 SELECT COUNT(*) 
                 FROM lab_receive_detail lrd
                 INNER JOIN lab_order lo ON lrd.lab_order_id = lo.id
-                WHERE lrd.room_action_status = 1
+                WHERE lrd.room_action_status = 1 AND lrd.send_success = 0
                     AND lo.status = 1
             """)
         else:
@@ -76,7 +111,7 @@ def get_received_labs_to_day(room_id: str, offset: int = 0, limit: int = 50):
                 FROM lab_receive_detail lrd
                 INNER JOIN lab_order lo ON lrd.lab_order_id = lo.id
                 WHERE lrd.receive_from_room = ? 
-                    AND lrd.room_action_status = 1
+                    AND lrd.room_action_status = 1 AND lrd.send_success = 0
                     AND lo.status = 1
             """, (room_id,))
         total_count = cursor.fetchone()[0]
@@ -133,7 +168,7 @@ def get_received_labs_by_barcode(barcode: str, room_id: str = ""):
                 INNER JOIN sample_registration sr ON lo.sample_id = sr.id
                 WHERE lrd.lab_order_id = ? 
                     AND lrd.receive_from_room = ? 
-                    AND lrd.room_action_status = 1
+                    AND lrd.room_action_status = 1 AND lrd.send_success = 0
                     AND lo.status = 1
                 ORDER BY lrd.id DESC 
             """
@@ -152,7 +187,7 @@ def get_received_labs_by_barcode(barcode: str, room_id: str = ""):
                 INNER JOIN lab_order lo ON lrd.lab_order_id = lo.id
                 INNER JOIN sample_registration sr ON lo.sample_id = sr.id
                 WHERE lrd.lab_order_id = ? 
-                    AND lrd.room_action_status = 1
+                    AND lrd.room_action_status = 1 AND lrd.send_success = 0
                     AND lo.status = 1
                 ORDER BY lrd.id DESC 
             """

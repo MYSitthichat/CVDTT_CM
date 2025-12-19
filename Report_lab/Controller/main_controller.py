@@ -7,6 +7,8 @@ from View.view_receive_lab_frame import ReceiveLabFormView
 from View.view_report_from_frame import ReportFormView
 from View.view_lab_edite_form_frame import LabEditFormView
 from SERVICES_REPORT_LAB.search_room import SearchRoomService
+from SERVICES_REPORT_LAB.save_report_lab_folder_service import SaveReportLabFolderService
+from PySide6.QtWidgets import QMessageBox
 
 class MainController(QObject):
     # Define signals
@@ -38,13 +40,24 @@ class MainController(QObject):
         self.login_controller = login_controller
 
         self.search_room_service = SearchRoomService()
-        
+        self.save_file_service = SaveReportLabFolderService()
         
         self.main_window.ui.receive_lab_order_pushButton.clicked.connect(self.show_receive_work_page)
         self.main_window.ui.send_lab_report_pushButton.clicked.connect(self.show_report_work_page)
         self.main_window.ui.Edit_Form_pushButton.clicked.connect(self.show_lab_edit_form)
-        
         self._setup_user_profile_connections()
+        
+        
+        
+        
+    def check_folder_in_backend(self):
+        result = self.save_file_service.initialize_lab_report_folders()
+        status = result.get("status") if result else "ERROR"
+        print("Folder Initialization Result:", status)
+        if status == "ERROR":
+            error_message = result.get("message", "An error occurred while initializing folders.")
+            QMessageBox.critical(self.main_window, "Folder Initialization Error", error_message)
+        return result
         
     def show_receive_work_page(self):
         self.main_window.show_receive_work_page()
@@ -72,6 +85,7 @@ class MainController(QObject):
             self.main_window.show_error_page()
         else:
             self.main_window.Show_main_page()
+        self.check_folder_in_backend()
 
     def hide_main_page(self):
         self.main_window.hide()

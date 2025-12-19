@@ -13,8 +13,8 @@ class SendLabService(BaseService):
         result = self._get("/get_received_labs/barcode", params=params)
         return result if result is not None else None
     
-    def get_lab_order_details(self, lab_order_id: str, room_id: str):
-        """ดึงรายละเอียดของ Lab Order สำหรับแสดงใน Dialog"""
-        params = {"lab_order_id": lab_order_id, "room_id": room_id}
-        result = self._get("/get_lab_order/details", params=params)
+    def get_detail_by_laborder(self, lab_order_id: str):
+        """ดึงรายละเอียดของ Lab Order ที่รับแล้วสำหรับแสดงใน Dialog"""
+        params = {"lab_order_id": lab_order_id}
+        result = self._get("/get_detail/lab_order", params=params)
         return result if result is not None else None
