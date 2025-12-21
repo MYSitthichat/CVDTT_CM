@@ -6,5 +6,8 @@ class ReportFormView(QWidget):
         super(ReportFormView, self).__init__(parent)
         self.ui = Ui_Report_Form()
         self.ui.setupUi(self)
+        self.ui.convert_file_progressBar.setVisible(True)
+        self.ui.convert_file_progressBar.setValue(0)
+        self.progress_value = 0
         # Signal connection moved to controller
 

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from routers.registation import auth, customer, employee, work, lab, barcode, check_job_progress,lab_order, after_death
-from routers.lab_report import select_room, receive_lab_order
+from routers.lab_report import select_room, receive_lab_order, send_lab , save_report_lab
 from database import get_db_connection
 from security import pwd_context
 import mariadb
@@ -19,6 +19,8 @@ app.include_router(lab_order.router)
 app.include_router(after_death.router)
 app.include_router(select_room.router)
 app.include_router(receive_lab_order.router)
+app.include_router(send_lab.router)
+app.include_router(save_report_lab.router)
 
 @app.get("/")
 def index():
