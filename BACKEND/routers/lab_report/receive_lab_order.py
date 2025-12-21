@@ -319,7 +319,8 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                         test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
                         
                         if test_state > 0 and test_name:
-                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_name_str = str(test_name) if test_name is not None else ""
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name_str).strip()
                             test_items.append({
                                 "test_name": clean_name,
                                 "test_amount": test_state
@@ -334,7 +335,8 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                         test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
                         
                         if test_state > 0 and test_name:
-                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_name_str = str(test_name) if test_name is not None else ""
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name_str).strip()
                             test_items.append({
                                 "test_name": clean_name,
                                 "test_amount": test_state
@@ -349,7 +351,8 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                         test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
                         
                         if test_state > 0 and test_name:
-                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_name_str = str(test_name) if test_name is not None else ""
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name_str).strip()
                             test_items.append({
                                 "test_name": clean_name,
                                 "test_amount": test_state
@@ -364,7 +367,8 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                         test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
                         
                         if test_state > 0 and test_name:
-                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                            test_name_str = str(test_name) if test_name is not None else ""
+                            clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name_str).strip()
                             test_items.append({
                                 "test_name": clean_name,
                                 "test_amount": test_state
@@ -388,8 +392,9 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                     test_price = int(raw_test_data[i+2]) if i+2 < len(raw_test_data) and raw_test_data[i+2] is not None else 0
                     # เฉพาะรายการที่ amount > 0 (amount คือจำนวนเลย)
                     if test_amount > 0 and test_name:
-                        # ลบตัวเลขในวงเล็บออก
-                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                        # ลบตัวเลขในวงเล็บออก - แปลงเป็น string ก่อนเพื่อป้องกัน error
+                        test_name_str = str(test_name) if test_name is not None else ""
+                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name_str).strip()
                         test_items.append({
                             "test_name": clean_name,
                             "test_amount": test_amount  # ใช้ amount เป็นจำนวน
