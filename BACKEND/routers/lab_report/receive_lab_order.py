@@ -298,7 +298,9 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                     # เฉพาะรายการที่ state > 0 (state คือจำนวนเลย)
                     if test_state > 0 and test_name:
                         # ลบตัวเลขในวงเล็บออก เช่น "PCV (50)" -> "PCV"
-                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name).strip()
+                        # แปลงเป็น string ก่อนใช้ re.sub เพื่อป้องกัน TypeError
+                        test_name_str = str(test_name) if test_name is not None else ""
+                        clean_name = re.sub(r'\s*\(\d+\)\s*$', '', test_name_str).strip()
                         test_items.append({
                             "test_name": clean_name,
                             "test_amount": test_state  # ใช้ state เป็นจำนวน
