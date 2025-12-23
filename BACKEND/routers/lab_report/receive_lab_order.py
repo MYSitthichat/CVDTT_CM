@@ -313,7 +313,7 @@ def get_lab_order_details(lab_order_id: str, room_id: str):
                     # Process preparation_p1-p21 (use state as amount)
                     for i in range(1, 22):  # p1 to p21
                         name_idx = col_names.index(f'preparation_p{i}_name')
-                        state_idx = col_names.index(f'preparation_p{i}_state')
+                        state_idx = col_names.index(f'preparation_p{i}_amount')
                         
                         test_name = test_data[name_idx] if test_data[name_idx] else ""
                         test_state = int(test_data[state_idx]) if test_data[state_idx] is not None else 0
