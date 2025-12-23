@@ -142,8 +142,8 @@ class ReceiveLabController(QObject):
         for template in self.all_templates:
             if template.get('report_name') == template_name:
                 self.selected_template = template
-                print(f"DEBUG: เลือก template: {template_name}")
-                print(f"DEBUG: Path: {template.get('report_path')}")
+                # print(f"DEBUG: เลือก template: {template_name}")
+                # print(f"DEBUG: Path: {template.get('report_path')}")
                 break
     
     def display_lab_order_details(self, order_data, test_items):
@@ -210,10 +210,10 @@ class ReceiveLabController(QObject):
         else:
             room_id = self.log_room_id if hasattr(self, 'log_room_id') else None
         
-        print(f"DEBUG: room_id = {room_id}")
+        # print(f"DEBUG: room_id = {room_id}")
         
         if room_id is None:
-            print("DEBUG: room_id เป็น None")
+            # print("DEBUG: room_id เป็น None")
             return
         
         # ดึงรายการ templates จาก database
@@ -222,21 +222,21 @@ class ReceiveLabController(QObject):
         # เก็บไว้ใน all_templates เพื่อใช้ตอน export
         self.all_templates = templates
         
-        print(f"DEBUG: พบ template {len(templates)} รายการจาก database")
-        for tmpl in templates:
-            print(f"  - {tmpl.get('report_name', '')}")
+        # print(f"DEBUG: พบ template {len(templates)} รายการจาก database")
+        # for tmpl in templates:
+        #     print(f"  - {tmpl.get('report_name', '')}")
         
         if not templates:
-            print("DEBUG: ไม่มี templates จาก database")
+            # print("DEBUG: ไม่มี templates จาก database")
             return
         
         # ค้นหา template ที่ตรงกับรายการตรวจ
         matched_templates = set()  # ใช้ set เพื่อไม่ให้ซ้ำ
         
-        print(f"\nDEBUG: กำลังค้นหาจาก test_items จำนวน {len(test_items)} รายการ:")
+        # print(f"\nDEBUG: กำลังค้นหาจาก test_items จำนวน {len(test_items)} รายการ:")
         for test_item in test_items:
             test_name = test_item.get('test_name', '').strip()
-            print(f"  - ชื่อรายการตรวจ: '{test_name}'")
+            # print(f"  - ชื่อรายการตรวจ: '{test_name}'")
             
             if not test_name:
                 continue
@@ -246,10 +246,10 @@ class ReceiveLabController(QObject):
                 template_name = template.get('report_name', '')
                 # ตรวจสอบว่า test_name อยู่ใน template_name หรือไม่
                 if test_name.lower() in template_name.lower():
-                    print(f"    ✓ ตรงกับ: {template_name}")
+                    # print(f"    ✓ ตรงกับ: {template_name}")
                     matched_templates.add(template_name)
         
-        print(f"\nDEBUG: พบ template ที่ตรงกัน {len(matched_templates)} รายการ")
+        # print(f"\nDEBUG: พบ template ที่ตรงกัน {len(matched_templates)} รายการ")
         
         # แสดงผลลัพธ์ใน tableView_3
         if matched_templates:

@@ -50,15 +50,15 @@ class ReceiveLabService(BaseService):
             
             # หา path ของ BACKEND folder
             current_file = os.path.abspath(__file__)
-            print(f"DEBUG Service: current_file = {current_file}")
+            # print(f"DEBUG Service: current_file = {current_file}")
             
             # Report_lab/SERVICES_REPORT_LAB/receive_lab_service.py -> BACKEND
             report_lab_path = os.path.dirname(os.path.dirname(current_file))  # Report_lab
             project_path = os.path.dirname(report_lab_path)  # CVDTT_CM
             backend_path = os.path.join(project_path, 'BACKEND')
             
-            print(f"DEBUG Service: backend_path = {backend_path}")
-            print(f"DEBUG Service: backend_path exists = {os.path.exists(backend_path)}")
+            # print(f"DEBUG Service: backend_path = {backend_path}")
+            # print(f"DEBUG Service: backend_path exists = {os.path.exists(backend_path)}")
             
             if backend_path not in sys.path:
                 sys.path.insert(0, backend_path)
@@ -67,7 +67,7 @@ class ReceiveLabService(BaseService):
             
             conn = get_db_connection()
             if conn is None:
-                print("DEBUG Service: ไม่สามารถเชื่อมต่อ database")
+                # print("DEBUG Service: ไม่สามารถเชื่อมต่อ database")
                 return []
             
             cursor = conn.cursor()
@@ -75,14 +75,14 @@ class ReceiveLabService(BaseService):
             if room_id:
                 query = "SELECT id, report_name, room_id, report_path, updater FROM report_information WHERE room_id = ?"
                 cursor.execute(query, (room_id,))
-                print(f"DEBUG Service: query with room_id = {room_id}")
+                # print(f"DEBUG Service: query with room_id = {room_id}")
             else:
                 query = "SELECT id, report_name, room_id, report_path, updater FROM report_information"
                 cursor.execute(query)
-                print("DEBUG Service: query all templates")
+                # print("DEBUG Service: query all templates")
             
             results = cursor.fetchall()
-            print(f"DEBUG Service: พบผลลัพธ์ {len(results)} รายการ")
+            # print(f"DEBUG Service: พบผลลัพธ์ {len(results)} รายการ")
             
             templates = []
             for row in results:
@@ -94,7 +94,7 @@ class ReceiveLabService(BaseService):
                     'updater': row[4]
                 }
                 templates.append(template_info)
-                print(f"DEBUG Service: - {template_info['report_name']}")
+                # print(f"DEBUG Service: - {template_info['report_name']}")
             
             cursor.close()
             conn.close()
