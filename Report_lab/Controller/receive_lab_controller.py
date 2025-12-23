@@ -6,10 +6,12 @@ from SERVICES_REPORT_LAB.receive_lab_service import ReceiveLabService
 
 
 
-
 class ReceiveLabController(QObject):
     """ Controller for the Receive Lab Page """
 
+    # ==========================================
+    # INITIALIZATION - การเริ่มต้น
+    # ==========================================
     def __init__(self, view: ReceiveLabFormView, main_controller=None):
         super().__init__()
         self.view: ReceiveLabFormView = view
@@ -25,11 +27,17 @@ class ReceiveLabController(QObject):
         self.log_room = None
         self.log_room_id = None
         self.admin_comein = False
+        # Template selection state
+        self.selected_template = None
+        self.all_templates = []  # เก็บรายการ template ทั้งหมด
         # Setup table model
         self.setup_table_model()
         
         self._setup_connections()
     
+    # ==========================================
+    # TABLE SETUP - ตั้งค่าตาราง
+    # ==========================================
     def setup_table_model(self):
         """Setup QStandardItemModel for tableView"""
         self.model = QStandardItemModel()
@@ -58,9 +66,19 @@ class ReceiveLabController(QObject):
         self.view.ui.tableView_2.setSelectionMode(self.view.ui.tableView_2.SelectionMode.SingleSelection)
         self.view.ui.tableView_2.setAlternatingRowColors(True)
         
-        
-        
+        # Setup QStandardItemModel for tableView_3 (Template view)
+        self.template_model = QStandardItemModel()
+        self.template_model.setHorizontalHeaderLabels(['ชื่อไฟล์ Template'])
+        self.view.ui.tableView_3.setModel(self.template_model)
+        self.view.ui.tableView_3.horizontalHeader().setStretchLastSection(True)
+        self.view.ui.tableView_3.setShowGrid(True)
+        self.view.ui.tableView_3.setSelectionBehavior(self.view.ui.tableView_3.SelectionBehavior.SelectRows)
+        self.view.ui.tableView_3.setSelectionMode(self.view.ui.tableView_3.SelectionMode.SingleSelection)
+        self.view.ui.tableView_3.setAlternatingRowColors(True)
     
+    # ==========================================
+    # SIGNAL CONNECTIONS - การเชื่อมต่อสัญญาณ
+    # ==========================================
     def _setup_connections(self):
         self.view.ui.clear_pushButton.clicked.connect(self.clear_pushButton_clicked)
         self.view.ui.export_pushButton.clicked.connect(self.export_pushButton_clicked)
@@ -72,9 +90,14 @@ class ReceiveLabController(QObject):
         self.view.ui.tableView.doubleClicked.connect(self.on_cell_double_clicked)
         self.view.ui.tableView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.view.ui.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
+        # เชื่อมต่อการคลิกเลือก template
+        self.view.ui.tableView_3.clicked.connect(self.on_template_selected)
+        # เชื่อมต่อการคลิกเลือก template
+        self.view.ui.tableView_3.clicked.connect(self.on_template_selected)
 
-
-
+    # ==========================================
+    # EVENT HANDLERS - TABLE INTERACTIONS - จัดการเหตุการณ์ตาราง
+    # ==========================================
     def on_cell_double_clicked(self, index):
         """เมื่อ double click ที่แถวใน tableView จะแสดงรายละเอียดของ Lab Order นั้น"""
         row = index.row()
@@ -108,10 +131,26 @@ class ReceiveLabController(QObject):
         except Exception as e:
             QMessageBox.warning(self.view, "Error", f"ไม่สามารถดึงรายละเอียดได้: {str(e)}")
     
+    def on_template_selected(self, index):
+        """เมื่อคลิกเลือก template ใน tableView_3"""
+        row = index.row()
+        template_name = self.template_model.item(row, 0).text()
+        
+        # หา template ที่ตรงกันจากรายการ all_templates
+        self.selected_template = None
+        for template in self.all_templates:
+            if template.get('report_name') == template_name:
+                self.selected_template = template
+                print(f"DEBUG: เลือก template: {template_name}")
+                print(f"DEBUG: Path: {template.get('report_path')}")
+                break
+    
     def display_lab_order_details(self, order_data, test_items):
         """แสดงรายละเอียด Lab Order และรายการตรวจในตาราง"""
         # เคลียร์ตารางรายละเอียดเดิม
         self.detail_model.removeRows(0, self.detail_model.rowCount())
+        # เคลียร์ตาราง template
+        self.template_model.removeRows(0, self.template_model.rowCount())
         
         # เพิ่มรายละเอียด Lab Order (แถวแรกๆ)
         details = [
@@ -154,10 +193,75 @@ class ReceiveLabController(QObject):
             empty_item = QStandardItem("")
             self.detail_model.appendRow([no_data_item, empty_item])
         
+        # ค้นหาและแสดง template ที่ตรงกับรายการตรวจ
+        self.find_and_display_matching_templates(test_items)
+    
+    def find_and_display_matching_templates(self, test_items):
+        """ค้นหาและแสดงไฟล์ template ที่ตรงกับรายการตรวจ"""
+        if not test_items:
+            print("DEBUG: ไม่มี test_items")
+            return
         
+        # ดึง room_id
+        if self.admin_comein == True:
+            room_id = self.view.get_type_search()
+        else:
+            room_id = self.log_room_id if hasattr(self, 'log_room_id') else None
         
+        print(f"DEBUG: room_id = {room_id}")
         
+        if room_id is None:
+            print("DEBUG: room_id เป็น None")
+            return
         
+        # ดึงรายการ templates จาก database
+        templates = self.receive_lab_service.get_report_templates(room_id)
+        
+        # เก็บไว้ใน all_templates เพื่อใช้ตอน export
+        self.all_templates = templates
+        
+        print(f"DEBUG: พบ template {len(templates)} รายการจาก database")
+        for tmpl in templates:
+            print(f"  - {tmpl.get('report_name', '')}")
+        
+        if not templates:
+            print("DEBUG: ไม่มี templates จาก database")
+            return
+        
+        # ค้นหา template ที่ตรงกับรายการตรวจ
+        matched_templates = set()  # ใช้ set เพื่อไม่ให้ซ้ำ
+        
+        print(f"\nDEBUG: กำลังค้นหาจาก test_items จำนวน {len(test_items)} รายการ:")
+        for test_item in test_items:
+            test_name = test_item.get('test_name', '').strip()
+            print(f"  - ชื่อรายการตรวจ: '{test_name}'")
+            
+            if not test_name:
+                continue
+            
+            # ค้นหา template ที่มีชื่อตรงกับรายการตรวจ
+            for template in templates:
+                template_name = template.get('report_name', '')
+                # ตรวจสอบว่า test_name อยู่ใน template_name หรือไม่
+                if test_name.lower() in template_name.lower():
+                    print(f"    ✓ ตรงกับ: {template_name}")
+                    matched_templates.add(template_name)
+        
+        print(f"\nDEBUG: พบ template ที่ตรงกัน {len(matched_templates)} รายการ")
+        
+        # แสดงผลลัพธ์ใน tableView_3
+        if matched_templates:
+            for template_name in sorted(matched_templates):
+                name_item = QStandardItem(template_name)
+                self.template_model.appendRow([name_item])
+        else:
+            # ไม่พบ template ที่ตรงกัน
+            no_template_item = QStandardItem("ไม่พบ Template ที่ตรงกัน")
+            self.template_model.appendRow([no_template_item])
+    
+    # ==========================================
+    # LAB ORDER ACTIONS - RECEIVE & REJECT - การรับและปฏิเสธแลป
+    # ==========================================
     def receive_lab_orders(self):
         """บันทึกการรับแลป"""
         # ตรวจสอบว่ามีการเลือก Lab Order หรือไม่
@@ -283,18 +387,70 @@ class ReceiveLabController(QObject):
         except Exception as e:
             QMessageBox.critical(self.view, "ข้อผิดพลาด", f"เกิดข้อผิดพลาด: {str(e)}")
 
-
+    # ==========================================
+    # BUTTON HANDLERS - EXPORT & CLEAR - จัดการปุ่ม Export และ Clear
+    # ==========================================
     def export_pushButton_clicked(self):
-        print("Export button clicked - ReceiveLabController")
-
-
+        """เมื่อกด Export จะคัดลอกไฟล์ template ที่เลือกไปยัง location ที่กำหนด"""
+        # ตรวจสอบว่ามีการเลือก template หรือไม่
+        if not self.selected_template:
+            QMessageBox.warning(self.view, "แจ้งเตือน", "กรุณาเลือกไฟล์ Template ที่ต้องการ Export ก่อน")
+            return
+        
+        template_name = self.selected_template.get('report_name', '')
+        template_path = self.selected_template.get('report_path', '')
+        
+        print(f"DEBUG Export: template_name = {template_name}")
+        print(f"DEBUG Export: template_path = {template_path}")
+        
+        # สร้าง full path ของไฟล์
+        import os
+        source_file = os.path.join(template_path, template_name)
+        print(f"DEBUG Export: source_file = {source_file}")
+        
+        # ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
+        if not os.path.exists(source_file):
+            QMessageBox.warning(self.view, "ข้อผิดพลาด", f"ไม่พบไฟล์ Template:\n{source_file}")
+            return
+        
+        # เปิด file dialog ให้เลือกสถานที่บันทึก
+        from PySide6.QtWidgets import QFileDialog
+        
+        # ดึงนามสกุลไฟล์
+        file_extension = os.path.splitext(template_name)[1]
+        filter_text = f"Word Documents (*{file_extension})" if file_extension == '.docx' else f"All Files (*{file_extension})"
+        
+        save_path, _ = QFileDialog.getSaveFileName(
+            self.view,
+            "บันทึกไฟล์ Template",
+            template_name,
+            filter_text
+        )
+        
+        if not save_path:
+            print("DEBUG Export: ยกเลิกการบันทึก")
+            return
+        
+        # คัดลอกไฟล์
+        try:
+            import shutil
+            shutil.copy2(source_file, save_path)
+            print(f"DEBUG Export: คัดลอกไฟล์สำเร็จ -> {save_path}")
+            QMessageBox.information(self.view, "สำเร็จ", f"บันทึกไฟล์สำเร็จ:\n{save_path}")
+        except Exception as e:
+            print(f"DEBUG Export Error: {e}")
+            QMessageBox.critical(self.view, "ข้อผิดพลาด", f"ไม่สามารถคัดลอกไฟล์ได้:\n{str(e)}")
 
     def clear_pushButton_clicked(self):
         self.view.ui.barcode_lineEdit.clear()
         self.model.removeRows(0, self.model.rowCount())
         self.detail_model.removeRows(0, self.detail_model.rowCount())
+        self.template_model.removeRows(0, self.template_model.rowCount())
         self.reset_lazy_loading_state()
     
+    # ==========================================
+    # DATA MANAGEMENT - RESET & CLEAR - จัดการข้อมูล รีเซ็ตและเคลียร์
+    # ==========================================
     def reset_lazy_loading_state(self):
         self.current_offset = 0
         self.is_loading = False
@@ -306,8 +462,12 @@ class ReceiveLabController(QObject):
         self.view.ui.barcode_lineEdit.clear()
         self.model.removeRows(0, self.model.rowCount())
         self.detail_model.removeRows(0, self.detail_model.rowCount())
+        self.template_model.removeRows(0, self.template_model.rowCount())
         self.reset_lazy_loading_state()
     
+    # ==========================================
+    # LAZY LOADING - SCROLL HANDLER - โหลดข้อมูลแบบค่อยเป็นค่อยไป
+    # ==========================================
     def on_scroll(self, value):
         scrollbar = self.view.ui.tableView.verticalScrollBar()
         if value >= scrollbar.maximum() - 10:
@@ -316,6 +476,9 @@ class ReceiveLabController(QObject):
                 if barcode == "":
                     self.load_more_lab_orders()
     
+    # ==========================================
+    # DATA LOADING - SEARCH & LOAD - โหลดข้อมูล ค้นหาและโหลด
+    # ==========================================
     def loaded_lab_orders(self):
         barcode = self.view.ui.barcode_lineEdit.text().strip()
         if barcode == "":
@@ -368,7 +531,6 @@ class ReceiveLabController(QObject):
         except Exception as e:
             QMessageBox.warning(self.view, "Search Error", f"ไม่สามารถค้นหาข้อมูลได้: {str(e)}")
     
-    
     def load_more_lab_orders(self):
         if self.is_loading or not self.has_more_data:
             return
@@ -411,6 +573,9 @@ class ReceiveLabController(QObject):
         finally:
             self.is_loading = False
 
+    # ==========================================
+    # ROOM & ACCESS CONTROL - จัดการห้องและการเข้าถึง
+    # ==========================================
     def _set_room_for_user(self, room, room_id):
         self.log_room = room
         self.log_room_id = room_id
