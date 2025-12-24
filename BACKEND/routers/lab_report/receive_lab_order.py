@@ -877,29 +877,6 @@ def export_word_template(request: ExportTemplateRequest):
                 row_text = ' '.join([cell.text for cell in row.cells])
                 
                 for cell_idx, cell in enumerate(row.cells):
-                    # ตรวจสอบ Row 4 และ Row 6 (ที่อยู่)
-                    if row_idx == 4 and cell_idx == 0:
-                        for para in cell.paragraphs:
-                            for run in para.runs:
-                                run.text = ''
-                            if len(para.runs) > 0:
-                                para.runs[0].text = f"ที่อยู่: {data.get('owner_address', '')}"
-                            else:
-                                para.add_run(f"ที่อยู่: {data.get('owner_address', '')}")
-                            break
-                        continue
-                    
-                    if row_idx == 6 and cell_idx == 0:
-                        for para in cell.paragraphs:
-                            for run in para.runs:
-                                run.text = ''
-                            if len(para.runs) > 0:
-                                para.runs[0].text = f"ที่อยู่: {data.get('sender_address', '')}"
-                            else:
-                                para.add_run(f"ที่อยู่: {data.get('sender_address', '')}")
-                            break
-                        continue
-                    
                     cell_position = (row_idx, cell_idx)
                     cell_id = id(cell._element)
                     is_merged = False
@@ -916,9 +893,46 @@ def export_word_template(request: ExportTemplateRequest):
                     for para in cell.paragraphs:
                         cell_text = para.text.strip()
                         
+                        # จัดการฟิลด์ที่อยู่ - หาแถวที่มี "ที่อยู่:" และตรวจสอบว่าเป็นแถวของเจ้าของหรือผู้ส่ง
+                        if 'ที่อยู่:' in cell_text:
+                            # ตรวจสอบว่าเป็นแถวก่อนหน้า (เจ้าของหรือผู้ส่ง)
+                            is_owner_row = False
+                            is_sender_row = False
+                            
+                            # ตรวจสอบแถวก่อนหน้า 1-2 แถว
+                            if row_idx > 0:
+                                prev_row_text = ' '.join([c.text for c in table.rows[row_idx - 1].cells])
+                                if 'ชื่อเจ้าของ:' in prev_row_text:
+                                    is_owner_row = True
+                                elif 'ชื่อผู้ส่ง:' in prev_row_text:
+                                    is_sender_row = True
+                            
+                            if is_owner_row:
+                                # ที่อยู่ของเจ้าของ
+                                for para_item in cell.paragraphs:
+                                    for run in para_item.runs:
+                                        run.text = ''
+                                    if len(para_item.runs) > 0:
+                                        para_item.runs[0].text = f"ที่อยู่: {data.get('owner_address', '')}"
+                                    else:
+                                        para_item.add_run(f"ที่อยู่: {data.get('owner_address', '')}")
+                                    break
+                                continue
+                            elif is_sender_row:
+                                # ที่อยู่ของผู้ส่ง
+                                for para_item in cell.paragraphs:
+                                    for run in para_item.runs:
+                                        run.text = ''
+                                    if len(para_item.runs) > 0:
+                                        para_item.runs[0].text = f"ที่อยู่: {data.get('sender_address', '')}"
+                                    else:
+                                        para_item.add_run(f"ที่อยู่: {data.get('sender_address', '')}")
+                                    break
+                                continue
+                        
                         # จัดการฟิลด์เจ้าของ
                         if 'ชื่อเจ้าของ:' in row_text or 'ชื่อ:' in row_text:
-                            if cell_text.startswith('ชื่อเจ้าของ:') and cell_idx == 0:
+                            if cell_text.startswith('ชื่อเจ้าของ:'):
                                 for para in cell.paragraphs:
                                     for run in para.runs:
                                         run.text = ''
@@ -927,7 +941,7 @@ def export_word_template(request: ExportTemplateRequest):
                                     else:
                                         para.add_run(f"ชื่อเจ้าของ: {data.get('owner_name', '')}")
                                     break
-                            elif cell_text == 'โทร.' and cell_idx == 4:
+                            elif cell_text.startswith('โทร.'):
                                 for para in cell.paragraphs:
                                     for run in para.runs:
                                         run.text = ''
@@ -936,7 +950,7 @@ def export_word_template(request: ExportTemplateRequest):
                                     else:
                                         para.add_run(f"โทร. {data.get('owner_phone', '')}")
                                     break
-                            elif cell_text == 'E-mail:' and cell_idx == 6:
+                            elif cell_text.startswith('E-mail:'):
                                 for para in cell.paragraphs:
                                     for run in para.runs:
                                         run.text = ''
@@ -948,7 +962,7 @@ def export_word_template(request: ExportTemplateRequest):
                         
                         # จัดการฟิลด์ผู้ส่ง
                         elif 'ชื่อผู้ส่ง:' in row_text:
-                            if cell_text.startswith('ชื่อผู้ส่ง:') and cell_idx == 0:
+                            if cell_text.startswith('ชื่อผู้ส่ง:'):
                                 for para in cell.paragraphs:
                                     for run in para.runs:
                                         run.text = ''
@@ -957,7 +971,7 @@ def export_word_template(request: ExportTemplateRequest):
                                     else:
                                         para.add_run(f"ชื่อผู้ส่ง: {data.get('sender_name', '')}")
                                     break
-                            elif cell_text == 'โทร.' and cell_idx == 4:
+                            elif cell_text.startswith('โทร.'):
                                 for para in cell.paragraphs:
                                     for run in para.runs:
                                         run.text = ''
@@ -966,7 +980,7 @@ def export_word_template(request: ExportTemplateRequest):
                                     else:
                                         para.add_run(f"โทร. {data.get('sender_phone', '')}")
                                     break
-                            elif cell_text == 'E-mail:' and cell_idx == 6:
+                            elif cell_text.startswith('E-mail:'):
                                 for para in cell.paragraphs:
                                     for run in para.runs:
                                         run.text = ''
@@ -986,18 +1000,32 @@ def export_word_template(request: ExportTemplateRequest):
                                 else:
                                     para.add_run(f"ชนิดสัตว์: {data.get('species', '')}")
                                 break
-                        elif cell_text.startswith('ชื่อสัตว์:') and cell_idx == 1:
-                            if cell_idx + 1 < len(row.cells):
-                                next_cell = row.cells[cell_idx + 1]
-                                for next_para in next_cell.paragraphs:
-                                    for run in next_para.runs:
-                                        run.text = ''
-                                    if len(next_para.runs) > 0:
-                                        next_para.runs[0].text = data.get('animal_name', '')
-                                    else:
-                                        next_para.add_run(data.get('animal_name', ''))
-                                    break
-                        elif cell_text.startswith('ชนิดตัวอย่าง:') and cell_idx == 0:
+                        elif cell_text.startswith('ชื่อสัตว์:'):
+                            # หา cell ถัดไปในแถวเดียวกัน
+                            try:
+                                # หา index ของ cell ปัจจุบัน
+                                for idx, c in enumerate(row.cells):
+                                    if c._element == cell._element:
+                                        current_idx = idx
+                                        break
+                                
+                                # เติมข้อมูลใน cell ถัดไป
+                                if current_idx + 1 < len(row.cells):
+                                    next_cell = row.cells[current_idx + 1]
+                                    for next_para in next_cell.paragraphs:
+                                        # ล้างข้อมูลเดิม
+                                        for run in next_para.runs:
+                                            run.text = ''
+                                        # เติมข้อมูลใหม่
+                                        if len(next_para.runs) > 0:
+                                            next_para.runs[0].text = data.get('animal_name', '')
+                                        else:
+                                            next_para.add_run(data.get('animal_name', ''))
+                                        break
+                            except Exception as e:
+                                print(f"Error filling animal name: {e}")
+                                pass
+                        elif cell_text.startswith('ชนิดตัวอย่าง:'):
                             for para in cell.paragraphs:
                                 for run in para.runs:
                                     run.text = ''
@@ -1006,7 +1034,7 @@ def export_word_template(request: ExportTemplateRequest):
                                 else:
                                     para.add_run(f"ชนิดตัวอย่าง: {data.get('sample_type', '')}")
                                 break
-                        elif cell_text.startswith('อายุ:') and cell_idx == 7:
+                        elif cell_text.startswith('อายุ:'):
                             for para in cell.paragraphs:
                                 for run in para.runs:
                                     run.text = ''

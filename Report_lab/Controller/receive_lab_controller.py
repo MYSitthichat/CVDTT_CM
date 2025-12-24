@@ -207,10 +207,6 @@ class ReceiveLabController(QObject):
     
     def find_and_display_matching_templates(self, test_items):
         """ค้นหาและแสดงไฟล์ template ที่ตรงกับรายการตรวจ"""
-        # ตรวจสอบ DEBUG MODE ก่อน - ถ้า False จะไม่แสดง template
-        if not self.DEBUG:
-            return
-        
         if not test_items:
             print("DEBUG: ไม่มี test_items")
             return
