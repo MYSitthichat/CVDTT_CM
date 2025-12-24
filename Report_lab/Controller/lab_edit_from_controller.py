@@ -252,7 +252,6 @@ class LabEditFormController(QObject):
                 user_id = self.main_controller.get_logged_in_user_id() or 1
                 
             success, message = self.report_info_service.delete_report(report_id, user_id)
-            
             if success:
                 QMessageBox.information(self.view, "Success", "ลบข้อมูลเรียบร้อยแล้ว")
                 self.set_initial_ui_state()
@@ -299,10 +298,11 @@ class LabEditFormController(QObject):
     def load_report_data(self):
         if self.user_room_id is None:
             return
-        reports = self.report_info_service.get_reports_by_room_and_status(
+        result = self.report_info_service.get_reports_by_room_and_status(
             room_id=self.user_room_id,
             status=1
         )
+        reports = result if isinstance(result, list) else []
         self.populate_tree_widget(reports)
     
     def populate_tree_widget(self, reports):
