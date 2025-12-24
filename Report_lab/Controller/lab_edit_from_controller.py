@@ -152,9 +152,8 @@ class LabEditFormController(QObject):
             room_id_to_save = self.current_room_id_of_item if (self.editing_report_id and self.current_room_id_of_item) else (self.user_room_id if self.user_room_id else 999)
             
             # --- PATH LOGIC (สำคัญ) ---
-            # Relative Path สำหรับ DB: "Saved_Forms\Room_X"
-            rel_folder = os.path.join("Saved_Forms", f"Room_{room_id_to_save}")
-            # Absolute Path สำหรับ Copy File: "C:\App\Saved_Forms\Room_X"
+            # Relative Path สำหรับ DB: "BACKEND/report_template/word/Room_X"
+            rel_folder = os.path.join("BACKEND", "report_template", "word", f"Room_{room_id_to_save}")
             abs_folder = os.path.join(root_path, rel_folder)
 
             if not os.path.exists(abs_folder):
