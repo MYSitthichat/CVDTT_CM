@@ -241,36 +241,13 @@ class ReceiveLabController(QObject):
             # print("DEBUG: ไม่มี templates จาก database")
             return
         
-        # ค้นหา template ที่ตรงกับรายการตรวจ
-        matched_templates = set()  # ใช้ set เพื่อไม่ให้ซ้ำ
+        # แสดงไฟล์ template ทั้งหมดของ room_id เดียวกัน (ไม่กรองตามรายการตรวจ)
+        # print(f"\nDEBUG: แสดง template ทั้งหมดของ room_id: {room_id}")
         
-        # print(f"\nDEBUG: กำลังค้นหาจาก test_items จำนวน {len(test_items)} รายการ:")
-        for test_item in test_items:
-            test_name = test_item.get('test_name', '').strip()
-            # print(f"  - ชื่อรายการตรวจ: '{test_name}'")
-            
-            if not test_name:
-                continue
-            
-            # ค้นหา template ที่มีชื่อตรงกับรายการตรวจ
-            for template in templates:
-                template_name = template.get('report_name', '')
-                # ตรวจสอบว่า test_name อยู่ใน template_name หรือไม่
-                if test_name.lower() in template_name.lower():
-                    # print(f"    ✓ ตรงกับ: {template_name}")
-                    matched_templates.add(template_name)
-        
-        # print(f"\nDEBUG: พบ template ที่ตรงกัน {len(matched_templates)} รายการ")
-        
-        # แสดงผลลัพธ์ใน tableView_3
-        if matched_templates:
-            for template_name in sorted(matched_templates):
-                name_item = QStandardItem(template_name)
-                self.template_model.appendRow([name_item])
-        else:
-            # ไม่พบ template ที่ตรงกัน
-            no_template_item = QStandardItem("ไม่พบ Template ที่ตรงกัน")
-            self.template_model.appendRow([no_template_item])
+        for template in templates:
+            template_name = template.get('report_name', '')
+            name_item = QStandardItem(template_name)
+            self.template_model.appendRow([name_item])
     
     # ==========================================
     # LAB ORDER ACTIONS - RECEIVE & REJECT - การรับและปฏิเสธแลป
@@ -450,9 +427,20 @@ class ReceiveLabController(QObject):
         # ตัดเอาส่วนสำคัญจากชื่อ template
         template_name_without_ext = os.path.splitext(template_name)[0]
         
-        # หาส่วนที่มี "VITEK" หรือคำสำคัญอื่นๆ
+        # หาส่วนที่มี "VITEK" หรือคำสำคัญอื่นๆ สำหรับ Bacteria
         template_suffix = ""
-        if "VITEK2 with MIC" in template_name_without_ext:
+        
+        # ตรวจสอบว่าเป็น Parasite template หรือไม่
+        if "Parasite_blood" in template_name:
+            template_suffix = "_parasite_blood"
+        elif "Parasite_feces dog_cat" in template_name:
+            template_suffix = "_parasite_feces_dog_cat"
+        elif "Parasite_feces" in template_name:
+            template_suffix = "_parasite_feces"
+        elif "Parasite_iden" in template_name:
+            template_suffix = "_parasite_iden"
+        # ตรวจสอบว่าเป็น Bacteria template หรือไม่
+        elif "VITEK2 with MIC" in template_name_without_ext:
             template_suffix = "_VITEK2 with MIC"
         elif "VITEK2 iden" in template_name_without_ext:
             template_suffix = "_VITEK2 iden"
