@@ -17,9 +17,16 @@ class ReceiveLabController(QObject):
         self.view: ReceiveLabFormView = view
         self.receive_lab_service = ReceiveLabService()
         self.main_controller = main_controller
+
+
+        # DEBUG MODE - เปลี่ยนเป็น True เพื่อแสดงไฟล์ template, False เพื่อซ่อน
+        self.DEBUG = True  # เปลี่ยนค่านี้เป็น True/False
+        
+
         # Lazy loading state
         self.current_offset = 0
         self.limit = 50
+        self.BATCH_SIZE = 50  # Define BATCH_SIZE for lazy loading
         self.is_loading = False
         self.has_more_data = True
         self.all_data = []
@@ -200,6 +207,10 @@ class ReceiveLabController(QObject):
     
     def find_and_display_matching_templates(self, test_items):
         """ค้นหาและแสดงไฟล์ template ที่ตรงกับรายการตรวจ"""
+        # ตรวจสอบ DEBUG MODE ก่อน - ถ้า False จะไม่แสดง template
+        if not self.DEBUG:
+            return
+        
         if not test_items:
             print("DEBUG: ไม่มี test_items")
             return
@@ -413,13 +424,13 @@ class ReceiveLabController(QObject):
         template_name = self.selected_template.get('report_name', '')
         template_path = self.selected_template.get('report_path', '')
         
-        print(f"DEBUG Export: template_name = {template_name}")
-        print(f"DEBUG Export: template_path = {template_path}")
+        # print(f"DEBUG Export: template_name = {template_name}")
+        # print(f"DEBUG Export: template_path = {template_path}")
         
         # สร้าง full path ของไฟล์
         import os
         source_file = os.path.join(template_path, template_name)
-        print(f"DEBUG Export: source_file = {source_file}")
+        # print(f"DEBUG Export: source_file = {source_file}")
         
         # ตรวจสอบว่าไฟล์มีอยู่จริงหรือไม่
         if not os.path.exists(source_file):
@@ -437,8 +448,6 @@ class ReceiveLabController(QObject):
         lab_order_str = str(self.current_lab_order_id).zfill(12)
         
         # ตัดเอาส่วนสำคัญจากชื่อ template
-        # เช่น "2.Template ห้องปฏิบัติการแบคทีเรียวิทยา Ver Blind_VITEK2 with MIC.docx"
-        # -> "VITEK2 with MIC"
         template_name_without_ext = os.path.splitext(template_name)[0]
         
         # หาส่วนที่มี "VITEK" หรือคำสำคัญอื่นๆ
@@ -449,7 +458,6 @@ class ReceiveLabController(QObject):
             template_suffix = "_VITEK2 iden"
         elif "MIC" in template_name_without_ext and "VITEK2" not in template_name_without_ext:
             template_suffix = "_MIC"
-        # เพิ่มเงื่อนไขอื่นๆ ตามต้องการ
         
         default_filename = f"{lab_order_str}{template_suffix}{file_extension}"
         
@@ -461,551 +469,35 @@ class ReceiveLabController(QObject):
         )
         
         if not save_path:
-            print("DEBUG Export: ยกเลิกการบันทึก")
+            # print("DEBUG Export: ยกเลิกการบันทึก")
             return
         
-        # ดึงข้อมูลจาก database และเติมลงใน template
+        # เรียก API เพื่อ Export Word template
         try:
-            data = self.get_template_data()
-            if data:
-                self.fill_word_template(source_file, save_path, data)
-                print(f"DEBUG Export: เติมข้อมูลและบันทึกไฟล์สำเร็จ -> {save_path}")
+            result = self.receive_lab_service.export_word_template(
+                lab_order_id=self.current_lab_order_id,
+                template_path=template_path,
+                template_name=template_name,
+                output_filename=os.path.basename(save_path)
+            )
+            
+            if result and result.get('success', False):
+                # บันทึกไฟล์ที่ได้จาก API ลงในตำแหน่งที่ผู้ใช้เลือก
+                with open(save_path, 'wb') as f:
+                    f.write(result['content'])
+                
+                # print(f"DEBUG Export: บันทึกไฟล์สำเร็จ -> {save_path}")
                 QMessageBox.information(self.view, "สำเร็จ", f"บันทึกไฟล์สำเร็จ:\n{save_path}")
             else:
-                QMessageBox.warning(self.view, "ข้อผิดพลาด", "ไม่สามารถดึงข้อมูลจาก database ได้")
-        except Exception as e:
-            print(f"DEBUG Export Error: {e}")
-            import traceback
-            print(traceback.format_exc())
-            QMessageBox.critical(self.view, "ข้อผิดพลาด", f"ไม่สามารถเติมข้อมูลและบันทึกไฟล์ได้:\n{str(e)}")
-    
-    def get_template_data(self):
-        """ดึงข้อมูลจาก database สำหรับเติมลงใน template"""
-        try:
-            import sys
-            import os
-            from datetime import datetime
-            
-            print(f"DEBUG get_template_data: เริ่มดึงข้อมูลสำหรับ lab_order_id = {self.current_lab_order_id}")
-            
-            # เพิ่ม BACKEND path
-            current_file = os.path.abspath(__file__)
-            report_lab_path = os.path.dirname(os.path.dirname(current_file))
-            project_path = os.path.dirname(report_lab_path)
-            backend_path = os.path.join(project_path, 'BACKEND')
-            
-            if backend_path not in sys.path:
-                sys.path.insert(0, backend_path)
-            
-            from database import get_db_connection  # type: ignore
-            
-            conn = get_db_connection()
-            if conn is None:
-                print("DEBUG get_template_data: ไม่สามารถเชื่อมต่อ database")
-                return None
-            
-            cursor = conn.cursor()
-            
-            # 1. ดึง id จาก lab_receive_detail (เลขที่รายงาน)
-            query1 = """
-                SELECT id, dtime
-                FROM lab_receive_detail 
-                WHERE lab_order_id = ? 
-                ORDER BY id DESC 
-                LIMIT 1
-            """
-            print(f"DEBUG: Query1 - lab_order_id = {self.current_lab_order_id}")
-            cursor.execute(query1, (self.current_lab_order_id,))
-            result1 = cursor.fetchone()
-            report_id = result1[0] if result1 else None
-            receive_dtime = result1[1] if result1 else None
-            print(f"DEBUG: ผลลัพธ์ Query1 - report_id = {report_id}, receive_dtime = {receive_dtime}")
-            
-            # 2. ดึงข้อมูลจาก lab_order และ sample_registration
-            query2 = """
-                SELECT sr.collect_date, sr.id as case_id, sr.name, sr.species, sr.breed, 
-                       sr.sex, sr.age_year, sr.age_month, sr.age_day, sr.sample_type, 
-                       lo.id as lab_order_id, sr.case_id
-                FROM lab_order lo
-                LEFT JOIN sample_registration sr ON lo.sample_id = sr.id
-                WHERE lo.id = ?
-            """
-            print(f"DEBUG: Query2 - lab_order_id = {self.current_lab_order_id}")
-            cursor.execute(query2, (self.current_lab_order_id,))
-            result2 = cursor.fetchone()
-            
-            if result2:
-                collect_date = result2[0]
-                case_id = result2[1]
-                animal_name = result2[2]
-                species = result2[3]
-                breed = result2[4]
-                sex = result2[5]
-                age_year = result2[6]
-                age_month = result2[7]
-                age_day = result2[8]
-                sample_type = result2[9]
-                registration_case_id = result2[11]  # case_id จาก sample_registration
-                print(f"DEBUG: ผลลัพธ์ Query2 - collect_date = {collect_date}, case_id = {case_id}")
-                print(f"DEBUG: animal_name = {animal_name}, species = {species}, breed = {breed}")
-                print(f"DEBUG: age_year = {age_year}, age_month = {age_month}, age_day = {age_day}")
-                print(f"DEBUG: registration_case_id = {registration_case_id}")
-            else:
-                print("DEBUG: ไม่พบข้อมูลจาก Query2")
-                collect_date = case_id = animal_name = species = breed = sex = None
-                age_year = age_month = age_day = sample_type = registration_case_id = None
-            
-            # 3. ดึงข้อมูล owner และ sender จาก case_registration และ customer
-            owner_name = owner_phone = owner_email = owner_address = ''
-            sender_name = sender_phone = sender_email = sender_address = ''
-            
-            if registration_case_id:
-                query3 = """
-                    SELECT cr.owner_id, cr.sender_id,
-                           o.name as owner_name, o.surname as owner_surname, 
-                           o.phone as owner_phone, o.email as owner_email, 
-                           o.contact_address as owner_address,
-                           s.name as sender_name, s.surname as sender_surname,
-                           s.phone as sender_phone, s.email as sender_email,
-                           s.contact_address as sender_address
-                    FROM case_registration cr
-                    LEFT JOIN customer o ON cr.owner_id = o.id
-                    LEFT JOIN customer s ON cr.sender_id = s.id
-                    WHERE cr.id = ?
-                """
-                print(f"DEBUG: Query3 - registration_case_id = {registration_case_id}")
-                cursor.execute(query3, (registration_case_id,))
-                result3 = cursor.fetchone()
+                message = result.get('message', 'ไม่สามารถ Export ได้') if result else 'ไม่สามารถ Export ได้'
+                QMessageBox.warning(self.view, "ข้อผิดพลาด", message)
                 
-                if result3:
-                    owner_name = f"{result3[2] or ''} {result3[3] or ''}".strip()
-                    owner_phone = result3[4] or ''
-                    owner_email = result3[5] or ''
-                    owner_address = result3[6] or ''
-                    
-                    sender_name = f"{result3[7] or ''} {result3[8] or ''}".strip()
-                    sender_phone = result3[9] or ''
-                    sender_email = result3[10] or ''
-                    sender_address = result3[11] or ''
-                    
-                    print(f"DEBUG: owner_name = {owner_name}, owner_phone = {owner_phone}")
-                    print(f"DEBUG: sender_name = {sender_name}, sender_phone = {sender_phone}")
-                else:
-                    print("DEBUG: ไม่พบข้อมูลจาก Query3")
-            
-            cursor.close()
-            conn.close()
-            
-            # 4. สร้างเลขที่ตัวอย่าง: D(day today)-lab_order_id
-            today = datetime.now()
-            day_str = str(today.day)  # เอาเฉพาะวัน
-            sample_number = f"D{day_str}-{self.current_lab_order_id}"
-            
-            # 5. จัดรูปแบบอายุ
-            age_text = ''
-            age_parts = []
-            if age_year:
-                age_parts.append(f"{age_year} ปี")
-            if age_month:
-                age_parts.append(f"{age_month} เดือน")
-            if age_day:
-                age_parts.append(f"{age_day} วัน")
-            age_text = ' '.join(age_parts)
-            
-            # 6. แปลงวันที่ให้เป็นรูปแบบ DD/MM/YYYY
-            formatted_collect_date = ''
-            if collect_date:
-                try:
-                    # ลอง parse วันที่จาก string
-                    if isinstance(collect_date, str):
-                        # ถ้าเป็น format YYYY-MM-DD หรือ YYYY-MM-DD HH:MM:SS
-                        date_part = collect_date.split(' ')[0]  # เอาเฉพาะส่วนวันที่
-                        from datetime import datetime as dt
-                        date_obj = dt.strptime(date_part, '%Y-%m-%d')
-                        formatted_collect_date = date_obj.strftime('%d/%m/%Y')
-                    else:
-                        formatted_collect_date = str(collect_date)
-                except:
-                    formatted_collect_date = str(collect_date)
-            
-            data = {
-                'report_id': str(report_id) if report_id else '',
-                'sample_number': sample_number,
-                'collect_date': formatted_collect_date,
-                'lab_order_id': self.current_lab_order_id,
-                'case_id': case_id,
-                'animal_name': animal_name if animal_name else '',
-                'species': species if species else '',
-                'breed': breed if breed else '',
-                'sex': sex if sex else '',
-                'age': age_text,
-                'sample_type': sample_type if sample_type else '',
-                'receive_dtime': str(receive_dtime) if receive_dtime else '',
-                'owner_name': owner_name,
-                'owner_phone': owner_phone,
-                'owner_email': owner_email,
-                'owner_address': owner_address,
-                'sender_name': sender_name,
-                'sender_phone': sender_phone,
-                'sender_email': sender_email,
-                'sender_address': sender_address
-            }
-            
-            print(f"DEBUG get_template_data: ข้อมูลที่ได้ = {data}")
-            return data
-            
         except Exception as e:
-            print(f"ERROR in get_template_data: {e}")
+            # print(f"DEBUG Export Error: {e}")
             import traceback
             print(traceback.format_exc())
-            return None
+            QMessageBox.critical(self.view, "ข้อผิดพลาด", f"ไม่สามารถ Export ไฟล์ได้:\n{str(e)}")
     
-    def fill_word_template(self, source_file, output_file, data):
-        """เติมข้อมูลลงใน Word template"""
-        try:
-            from docx import Document
-            
-            print(f"DEBUG fill_word_template: เริ่มเติมข้อมูล")
-            print(f"DEBUG: source_file = {source_file}")
-            print(f"DEBUG: output_file = {output_file}")
-            
-            # เปิดไฟล์ template
-            doc = Document(source_file)
-            print(f"DEBUG: เปิดไฟล์ template สำเร็จ")
-            
-            # สร้าง mapping ของข้อมูล (แทนที่เฉพาะส่วนหลัง colon)
-            # หมายเหตุ: ฟิลด์ที่อยู่ใน table และจัดการแยก (next_cell) ไม่ควรอยู่ใน replacements นี้
-            replacements = {
-                'เลขที่รายงาน:': f"เลขที่รายงาน: {data.get('report_id', '')}",
-                'วันที่รับตัวอย่าง:': f"วันที่รับตัวอย่าง: {data.get('collect_date', '')}",
-                'เลขที่ตัวอย่าง:': f"เลขที่ตัวอย่าง: {data.get('sample_number', '')}",
-                'พันธุ์:': f"พันธุ์: {data.get('breed', '')}",
-                'เพศ:': f"เพศ: {data.get('sex', '')}",
-                # ฟิลด์อื่นๆ (ชื่อเจ้าของ, ชื่อผู้ส่ง, ชนิดสัตว์, ชื่อสัตว์, อายุ, ชนิดตัวอย่าง) 
-                # ถูกจัดการแยกด้วย next_cell logic ด้านล่าง
-            }
-            
-            # เพิ่ม mapping สำหรับ โทร. และ E-mail: ของเจ้าของและผู้ส่ง
-            # ใช้ startswith เพราะอาจมีหลายแบบ
-            phone_email_replacements = {
-                ('ชื่อเจ้าของ:', 'โทร.'): data.get('owner_phone', ''),
-                ('ชื่อเจ้าของ:', 'E-mail:'): data.get('owner_email', ''),
-                ('ที่อยู่:', 'owner'): data.get('owner_address', ''),
-                ('ชื่อผู้ส่ง:', 'โทร.'): data.get('sender_phone', ''),
-                ('ชื่อผู้ส่ง:', 'E-mail:'): data.get('sender_email', ''),
-                ('ที่อยู่:', 'sender'): data.get('sender_address', '')
-            }
-            
-            print(f"DEBUG fill_word_template: replacements = {replacements}")
-            print(f"DEBUG: จำนวน paragraphs = {len(doc.paragraphs)}")
-            print(f"DEBUG: จำนวน tables = {len(doc.tables)}")
-            
-            # นับจำนวนการแทนที่
-            replacement_count = 0
-            
-            # ฟังก์ชันแทนที่ข้อความใน paragraph
-            def replace_text_in_paragraph(paragraph):
-                nonlocal replacement_count
-                full_text = paragraph.text
-                
-                # ตรวจสอบและแทนที่
-                for key, value in replacements.items():
-                    if key in full_text:
-                        print(f"DEBUG: พบคำว่า '{key}' ใน paragraph -> จะแทนที่ด้วย '{value}'")
-                        
-                        # เก็บ formatting จาก run แรก
-                        original_font = None
-                        if len(paragraph.runs) > 0:
-                            original_run = paragraph.runs[0]
-                            original_font = original_run.font
-                        
-                        # ลบ runs ทั้งหมด
-                        inline = paragraph.runs
-                        for i in range(len(inline)-1, -1, -1):
-                            p = inline[i]._element
-                            p.getparent().remove(p)
-                        
-                        # สร้าง run ใหม่พร้อมข้อความที่แทนที่แล้ว
-                        new_text = full_text.replace(key, value)
-                        new_run = paragraph.add_run(new_text)
-                        
-                        # คัดลอก formatting กลับมา
-                        if original_font:
-                            new_run.font.name = original_font.name
-                            new_run.font.size = original_font.size
-                            new_run.font.bold = original_font.bold
-                            new_run.font.italic = original_font.italic
-                            new_run.font.underline = original_font.underline
-                            new_run.font.color.rgb = original_font.color.rgb
-                        
-                        replacement_count += 1
-                        print(f"DEBUG: แทนที่สำเร็จ -> '{new_text[:50]}...'")
-                        break  # หยุดหลังแทนที่ครั้งแรก
-            
-            # แทนที่ข้อความใน paragraphs
-            print(f"DEBUG: กำลังตรวจสอบ paragraphs...")
-            for i, paragraph in enumerate(doc.paragraphs):
-                if paragraph.text.strip():  # เฉพาะ paragraph ที่มีข้อความ
-                    print(f"DEBUG: Paragraph {i}: {paragraph.text[:100]}")
-                replace_text_in_paragraph(paragraph)
-            
-            # แทนที่ข้อความใน tables
-            print(f"DEBUG: กำลังตรวจสอบ tables...")
-            processed_cells = set()  # เก็บ (row_idx, cell_idx) ของ cell ที่ประมวลผลแล้ว
-            
-            for table_idx, table in enumerate(doc.tables):
-                print(f"DEBUG: Table {table_idx}")
-                for row_idx, row in enumerate(table.rows):
-                    # ตรวจสอบว่าแถวนี้มี "ชื่อเจ้าของ:" หรือ "ชื่อผู้ส่ง:" หรือไม่
-                    row_text = ' '.join([cell.text for cell in row.cells])
-                    
-                    for cell_idx, cell in enumerate(row.cells):
-                        # ตรวจสอบ Row 4 (ที่อยู่เจ้าของ) และ Row 6 (ที่อยู่ผู้ส่ง) ก่อนเช็ค merged cell
-                        if row_idx == 4 and cell_idx == 0:
-                            # Row 4 = ที่อยู่ของเจ้าของ
-                            print(f"DEBUG: Row 4 Cell[0] - ใส่ที่อยู่เจ้าของ: {data.get('owner_address', '')}")
-                            for para in cell.paragraphs:
-                                for run in para.runs:
-                                    run.text = ''
-                                if len(para.runs) > 0:
-                                    para.runs[0].text = f"ที่อยู่: {data.get('owner_address', '')}"
-                                else:
-                                    para.add_run(f"ที่อยู่: {data.get('owner_address', '')}")
-                                replacement_count += 1
-                                print(f"DEBUG: ใส่ owner_address สำเร็จ")
-                                break
-                            continue  # ข้ามการตรวจสอบอื่นๆ
-                        
-                        if row_idx == 6 and cell_idx == 0:
-                            # Row 6 = ที่อยู่ของผู้ส่ง
-                            print(f"DEBUG: Row 6 Cell[0] - ใส่ที่อยู่ผู้ส่ง: {data.get('sender_address', '')}")
-                            for para in cell.paragraphs:
-                                for run in para.runs:
-                                    run.text = ''
-                                if len(para.runs) > 0:
-                                    para.runs[0].text = f"ที่อยู่: {data.get('sender_address', '')}"
-                                else:
-                                    para.add_run(f"ที่อยู่: {data.get('sender_address', '')}")
-                                replacement_count += 1
-                                print(f"DEBUG: ใส่ sender_address สำเร็จ")
-                                break
-                            continue  # ข้ามการตรวจสอบอื่นๆ
-                        
-                        # ใช้ (row_idx, cell_idx) เพื่อ identify cell แทน id(cell._element)
-                        cell_position = (row_idx, cell_idx)
-                        
-                        # แสดง cell ก่อนตรวจสอบ
-                        cell_text_preview = cell.text.strip()[:50] if cell.text.strip() else '(empty)'
-                        
-                        # ตรวจสอบว่า cell นี้เป็น merged cell หรือไม่
-                        cell_id = id(cell._element)
-                        is_merged = False
-                        for prev_cell_idx in range(cell_idx):
-                            if id(row.cells[prev_cell_idx]._element) == cell_id:
-                                is_merged = True
-                                break
-                        
-                        if is_merged:
-                            print(f"DEBUG: SKIPPED Table[{table_idx}] Row[{row_idx}] Cell[{cell_idx}]: {cell_text_preview} (merged cell)")
-                            continue
-                        
-                        if cell_position in processed_cells:
-                            print(f"DEBUG: SKIPPED Table[{table_idx}] Row[{row_idx}] Cell[{cell_idx}]: {cell_text_preview} (already processed)")
-                            continue
-                        
-                        processed_cells.add(cell_position)
-                        
-                        # ตรวจสอบทุก paragraph ใน cell
-                        for para in cell.paragraphs:
-                            cell_text = para.text.strip()
-                            if cell_text:
-                                print(f"DEBUG: Table[{table_idx}] Row[{row_idx}] Cell[{cell_idx}]: {cell_text[:50]}")
-                            
-                            # จัดการฟิลด์พิเศษ: ชื่อเจ้าของ, โทร., E-mail:, ที่อยู่:
-                            if 'ชื่อเจ้าของ:' in row_text or 'ชื่อ:' in row_text:
-                                # แถวนี้เป็นของเจ้าของ
-                                print(f"DEBUG: เจอแถวเจ้าของ - cell_text = '{cell_text}'")
-                                if cell_text.startswith('ชื่อเจ้าของ:') and cell_idx == 0:
-                                    # Row 3 Cell[0-3] เป็น merged cell, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ label ชื่อเจ้าของ - จะใส่ข้อมูลใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"ชื่อเจ้าของ: {data.get('owner_name', '')}"
-                                        else:
-                                            para.add_run(f"ชื่อเจ้าของ: {data.get('owner_name', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ owner_name: {data.get('owner_name', '')} สำเร็จ")
-                                        break
-                                elif cell_text == 'โทร.' and cell_idx == 4:
-                                    # Row 3 Cell[4-5] เป็น merged cell, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ โทร. เจ้าของ - จะใส่ '{data.get('owner_phone', '')}' ใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"โทร. {data.get('owner_phone', '')}"
-                                        else:
-                                            para.add_run(f"โทร. {data.get('owner_phone', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ owner_phone: {data.get('owner_phone', '')} สำเร็จ")
-                                        break
-                                elif cell_text == 'E-mail:' and cell_idx == 6:
-                                    # Row 3 Cell[6-7] เป็น merged cell, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ E-mail เจ้าของ - จะใส่ '{data.get('owner_email', '')}' ใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"E-mail: {data.get('owner_email', '')}"
-                                        else:
-                                            para.add_run(f"E-mail: {data.get('owner_email', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ owner_email: {data.get('owner_email', '')} สำเร็จ")
-                                        break
-                                elif cell_text.startswith('ที่อยู่:') and row_idx == 4:
-                                    # Row 4 Cell[0-7] เป็น merged cell ทั้งหมด, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ ที่อยู่ เจ้าของ (row_idx=4) - จะใส่ '{data.get('owner_address', '')}' ใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"ที่อยู่: {data.get('owner_address', '')}"
-                                        else:
-                                            para.add_run(f"ที่อยู่: {data.get('owner_address', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ owner_address: {data.get('owner_address', '')} สำเร็จ")
-                                        break
-                            
-                            elif 'ชื่อผู้ส่ง:' in row_text:
-                                # แถวนี้เป็นของผู้ส่ง
-                                if cell_text.startswith('ชื่อผู้ส่ง:') and cell_idx == 0:
-                                    # Row 5 Cell[0-3] เป็น merged cell, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ label ชื่อผู้ส่ง - จะใส่ข้อมูลใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"ชื่อผู้ส่ง: {data.get('sender_name', '')}"
-                                        else:
-                                            para.add_run(f"ชื่อผู้ส่ง: {data.get('sender_name', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ sender_name: {data.get('sender_name', '')} สำเร็จ")
-                                        break
-                                elif cell_text == 'โทร.' and cell_idx == 4:
-                                    # Row 5 Cell[4-5] เป็น merged cell, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ โทร. ผู้ส่ง - จะใส่ '{data.get('sender_phone', '')}' ใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"โทร. {data.get('sender_phone', '')}"
-                                        else:
-                                            para.add_run(f"โทร. {data.get('sender_phone', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ sender_phone: {data.get('sender_phone', '')} สำเร็จ")
-                                        break
-                                elif cell_text == 'E-mail:' and cell_idx == 6:
-                                    # Row 5 Cell[6-7] เป็น merged cell, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ E-mail ผู้ส่ง - จะใส่ '{data.get('sender_email', '')}' ใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"E-mail: {data.get('sender_email', '')}"
-                                        else:
-                                            para.add_run(f"E-mail: {data.get('sender_email', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ sender_email: {data.get('sender_email', '')} สำเร็จ")
-                                        break
-                                elif cell_text.startswith('ที่อยู่:') and row_idx == 6:
-                                    # Row 6 Cell[0-7] เป็น merged cell ทั้งหมด, ใส่ข้อมูลใน cell เดียวกัน
-                                    print(f"DEBUG: เจอ ที่อยู่ ผู้ส่ง (row_idx=6) - จะใส่ '{data.get('sender_address', '')}' ใน cell เดียวกัน")
-                                    for para in cell.paragraphs:
-                                        for run in para.runs:
-                                            run.text = ''
-                                        if len(para.runs) > 0:
-                                            para.runs[0].text = f"ที่อยู่: {data.get('sender_address', '')}"
-                                        else:
-                                            para.add_run(f"ที่อยู่: {data.get('sender_address', '')}")
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ sender_address: {data.get('sender_address', '')} สำเร็จ")
-                                        break
-                            
-                            # จัดการฟิลด์สัตว์: ชนิดสัตว์, ชื่อสัตว์, ชนิดตัวอย่าง, อายุ
-                            print(f"DEBUG: ตรวจสอบฟิลด์สัตว์ - cell_text = '{cell_text}'")
-                            if cell_text.startswith('ชนิดสัตว์:'):
-                                # ROW 7 Cell[0] - ไม่มี cell ถัดไป (Cell[1] คือ label "ชื่อสัตว์:")
-                                # ต้องใส่ข้อมูลใน cell เดียวกัน
-                                print(f"DEBUG: เจอ ชนิดสัตว์ - จะใส่ '{data.get('species', '')}' ใน cell เดียวกัน")
-                                for para in cell.paragraphs:
-                                    for run in para.runs:
-                                        run.text = ''
-                                    if len(para.runs) > 0:
-                                        para.runs[0].text = f"ชนิดสัตว์: {data.get('species', '')}"
-                                    else:
-                                        para.add_run(f"ชนิดสัตว์: {data.get('species', '')}")
-                                    replacement_count += 1
-                                    print(f"DEBUG: ใส่ species: {data.get('species', '')} สำเร็จ")
-                                    break
-                            elif cell_text.startswith('ชื่อสัตว์:') and cell_idx == 1:
-                                # ROW 7 Cell[1] - label, ใส่ข้อมูลใน Cell[2-4] (merged)
-                                print(f"DEBUG: เจอ ชื่อสัตว์ label - จะใส่ '{data.get('animal_name', '')}' ใน cell[2]")
-                                if cell_idx + 1 < len(row.cells):
-                                    next_cell = row.cells[cell_idx + 1]  # Cell[2]
-                                    for next_para in next_cell.paragraphs:
-                                        for run in next_para.runs:
-                                            run.text = ''
-                                        if len(next_para.runs) > 0:
-                                            next_para.runs[0].text = data.get('animal_name', '')
-                                        else:
-                                            next_para.add_run(data.get('animal_name', ''))
-                                        replacement_count += 1
-                                        print(f"DEBUG: ใส่ animal_name: {data.get('animal_name', '')} สำเร็จ")
-                                        break
-                            elif cell_text.startswith('ชนิดตัวอย่าง:') and cell_idx == 0:
-                                # ROW 8 Cell[0-6] - merged cell, ใส่ข้อมูลใน cell เดียวกัน
-                                print(f"DEBUG: เจอ ชนิดตัวอย่าง - จะใส่ '{data.get('sample_type', '')}' ใน cell เดียวกัน")
-                                for para in cell.paragraphs:
-                                    for run in para.runs:
-                                        run.text = ''
-                                    if len(para.runs) > 0:
-                                        para.runs[0].text = f"ชนิดตัวอย่าง: {data.get('sample_type', '')}"
-                                    else:
-                                        para.add_run(f"ชนิดตัวอย่าง: {data.get('sample_type', '')}")
-                                    replacement_count += 1
-                                    print(f"DEBUG: ใส่ sample_type: {data.get('sample_type', '')} สำเร็จ")
-                                    break
-                            elif cell_text.startswith('อายุ:') and cell_idx == 7:
-                                # ROW 8 Cell[7] - cell สุดท้าย ไม่มี cell ถัดไป, ใส่ใน cell เดียวกัน
-                                print(f"DEBUG: เจอ อายุ - จะใส่ '{data.get('age', '')}' ใน cell เดียวกัน")
-                                for para in cell.paragraphs:
-                                    for run in para.runs:
-                                        run.text = ''
-                                    if len(para.runs) > 0:
-                                        para.runs[0].text = f"อายุ: {data.get('age', '')}"
-                                    else:
-                                        para.add_run(f"อายุ: {data.get('age', '')}")
-                                    replacement_count += 1
-                                    print(f"DEBUG: ใส่ age: {data.get('age', '')} สำเร็จ")
-                                    break
-                            
-                            # แทนที่ข้อความปกติ
-                            replace_text_in_paragraph(para)
-            
-            print(f"DEBUG: แทนที่ข้อความทั้งหมด {replacement_count} ครั้ง")
-            
-            # บันทึกไฟล์
-            doc.save(output_file)
-            print(f"DEBUG fill_word_template: บันทึกไฟล์สำเร็จ -> {output_file}")
-            
-        except Exception as e:
-            print(f"ERROR in fill_word_template: {e}")
-            import traceback
-            print(traceback.format_exc())
-            raise
-
     def clear_pushButton_clicked(self):
         self.view.ui.barcode_lineEdit.clear()
         self.model.removeRows(0, self.model.rowCount())
@@ -1013,6 +505,8 @@ class ReceiveLabController(QObject):
         self.template_model.removeRows(0, self.template_model.rowCount())
         self.reset_lazy_loading_state()
     
+
+
     # ==========================================
     # DATA MANAGEMENT - RESET & CLEAR - จัดการข้อมูล รีเซ็ตและเคลียร์
     # ==========================================
@@ -1034,16 +528,11 @@ class ReceiveLabController(QObject):
     # LAZY LOADING - SCROLL HANDLER - โหลดข้อมูลแบบค่อยเป็นค่อยไป
     # ==========================================
     def on_scroll(self, value):
-        scrollbar = self.view.ui.tableView.verticalScrollBar()
+        scrollbar = self.view.ui.receive_list_tableView.verticalScrollBar()
         if value >= scrollbar.maximum() - 10:
-            if self.has_more_data and not self.is_loading:
-                barcode = self.view.ui.barcode_lineEdit.text()
-                if barcode == "":
-                    self.load_more_lab_orders()
+            if self.has_more_data:
+                self.load_more_lab_orders()
     
-    # ==========================================
-    # DATA LOADING - SEARCH & LOAD - โหลดข้อมูล ค้นหาและโหลด
-    # ==========================================
     def loaded_lab_orders(self):
         barcode = self.view.ui.barcode_lineEdit.text().strip()
         if barcode == "":
@@ -1137,7 +626,7 @@ class ReceiveLabController(QObject):
             self.has_more_data = False
         finally:
             self.is_loading = False
-
+    
     # ==========================================
     # ROOM & ACCESS CONTROL - จัดการห้องและการเข้าถึง
     # ==========================================

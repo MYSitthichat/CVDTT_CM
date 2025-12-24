@@ -43,65 +43,70 @@ class ReceiveLabService(BaseService):
         return result if result is not None else None
     
     def get_report_templates(self, room_id: int = None):
-        """ดึงรายการ report templates จาก database"""
+        """ดึงรายการ report templates จาก API"""
         try:
-            import sys
-            import os
+            params = {}
+            if room_id is not None:
+                params['room_id'] = room_id
             
-            # หา path ของ BACKEND folder
-            current_file = os.path.abspath(__file__)
-            # print(f"DEBUG Service: current_file = {current_file}")
+            result = self._get("/get_report_templates", params=params)
             
-            # Report_lab/SERVICES_REPORT_LAB/receive_lab_service.py -> BACKEND
-            report_lab_path = os.path.dirname(os.path.dirname(current_file))  # Report_lab
-            project_path = os.path.dirname(report_lab_path)  # CVDTT_CM
-            backend_path = os.path.join(project_path, 'BACKEND')
-            
-            # print(f"DEBUG Service: backend_path = {backend_path}")
-            # print(f"DEBUG Service: backend_path exists = {os.path.exists(backend_path)}")
-            
-            if backend_path not in sys.path:
-                sys.path.insert(0, backend_path)
-            
-            from database import get_db_connection
-            
-            conn = get_db_connection()
-            if conn is None:
-                # print("DEBUG Service: ไม่สามารถเชื่อมต่อ database")
-                return []
-            
-            cursor = conn.cursor()
-            
-            if room_id:
-                query = "SELECT id, report_name, room_id, report_path, updater FROM report_information WHERE room_id = ?"
-                cursor.execute(query, (room_id,))
-                # print(f"DEBUG Service: query with room_id = {room_id}")
+            if result and result.get('success', False):
+                return result.get('templates', [])
             else:
-                query = "SELECT id, report_name, room_id, report_path, updater FROM report_information"
-                cursor.execute(query)
-                # print("DEBUG Service: query all templates")
-            
-            results = cursor.fetchall()
-            # print(f"DEBUG Service: พบผลลัพธ์ {len(results)} รายการ")
-            
-            templates = []
-            for row in results:
-                template_info = {
-                    'id': row[0],
-                    'report_name': row[1],
-                    'room_id': row[2],
-                    'report_path': row[3],
-                    'updater': row[4]
-                }
-                templates.append(template_info)
-                # print(f"DEBUG Service: - {template_info['report_name']}")
-            
-            cursor.close()
-            conn.close()
-            
-            return templates
+                print(f"Error getting report templates: {result}")
+                return []
+                
         except Exception as e:
-            import traceback
             print(f"Error getting report templates: {e}")
-            print(f"Traceback: {traceback.format_exc()}")
             return []
+    
+    def get_template_data(self, lab_order_id: int):
+        """ดึงข้อมูลสำหรับเติมลงใน template ผ่าน API"""
+        try:
+            params = {"lab_order_id": lab_order_id}
+            result = self._get("/get_template_data", params=params)
+            
+            if result and result.get('success', False):
+                return result.get('data', {})
+            else:
+                print(f"Error getting template data: {result}")
+                return None
+                
+        except Exception as e:
+            print(f"Error getting template data: {e}")
+            return None
+    
+    def export_word_template(self, lab_order_id: int, template_path: str, template_name: str, output_filename: str):
+        """Export Word template ผ่าน API และดาวน์โหลดไฟล์"""
+        try:
+            data = {
+                "lab_order_id": lab_order_id,
+                "template_path": template_path,
+                "template_name": template_name,
+                "output_filename": output_filename
+            }
+            
+            import requests
+            url = f"{self.base_url}/export_word_template"
+            response = requests.post(url, json=data, timeout=30)
+            
+            if response.status_code == 200:
+                return {
+                    "success": True,
+                    "content": response.content,  # ไฟล์ Word ที่ได้
+                    "filename": output_filename
+                }
+            else:
+                error_msg = f"Server Error: {response.status_code}"
+                try:
+                    error_detail = response.json()
+                    error_msg += f" - {error_detail.get('detail', response.text)}"
+                except:
+                    error_msg += f" - {response.text}"
+                print(error_msg)
+                return {"success": False, "message": error_msg}
+                
+        except Exception as e:
+            print(f"Error exporting template: {e}")
+            return {"success": False, "message": str(e)}

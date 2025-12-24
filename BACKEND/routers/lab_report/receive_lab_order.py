@@ -1,11 +1,16 @@
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import mariadb
 import re
+import os
+import tempfile
 from database import get_db_connection
 
 router = APIRouter(tags=["Receive_lab_order"])
 
+# DEBUG MODE - เปลี่ยนเป็น True เพื่อแสดงข้อมูลทั้งหมด, False เพื่อแสดงแค่ 3 ฟิลด์
+DEBUG = True  # เปลี่ยนค่านี้เป็น True/False
 
 # Pydantic models สำหรับรับข้อมูล
 class ReceiveLabRequest(BaseModel):
@@ -22,6 +27,13 @@ class RejectLabRequest(BaseModel):
     comment_for_sample: str = ""
     sample_status: str = "เสียหาย/ไม่ปกติ"
     updater_id: int  # employee_id ของคนที่ login
+
+
+class ExportTemplateRequest(BaseModel):
+    lab_order_id: int
+    template_path: str
+    template_name: str
+    output_filename: str
 
 
 @router.get("/get_lab_order/detail")
@@ -540,3 +552,488 @@ def reject_lab_order(request: RejectLabRequest):
             cursor.close()
         if conn:
             conn.close()
+
+
+@router.get("/get_report_templates")
+def get_report_templates(room_id: int = None):
+    """
+    ดึงรายการ report templates จาก database
+    - หากมี room_id จะกรองเฉพาะ template ของห้องนั้น
+    - หากไม่มี room_id จะดึงทั้งหมด
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    cursor = None
+    try:
+        cursor = conn.cursor()
+        
+        if room_id:
+            query = """
+                SELECT id, report_name, room_id, report_path, updater 
+                FROM report_information 
+                WHERE room_id = ?
+                ORDER BY report_name
+            """
+            cursor.execute(query, (room_id,))
+        else:
+            query = """
+                SELECT id, report_name, room_id, report_path, updater 
+                FROM report_information
+                ORDER BY room_id, report_name
+            """
+            cursor.execute(query)
+        
+        results = cursor.fetchall()
+        
+        templates = []
+        for row in results:
+            template_info = {
+                'id': row[0],
+                'report_name': row[1],
+                'room_id': row[2],
+                'report_path': row[3],
+                'updater': row[4]
+            }
+            templates.append(template_info)
+        
+        return {
+            "success": True,
+            "templates": templates,
+            "count": len(templates)
+        }
+        
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve report templates: {str(e)}")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+
+
+@router.get("/get_template_data")
+def get_template_data(lab_order_id: int):
+    """
+    ดึงข้อมูลจาก database สำหรับเติมลงใน template
+    - ข้อมูล lab_receive_detail (report_id)
+    - ข้อมูล sample_registration และ lab_order
+    - ข้อมูล owner และ sender จาก customer
+    """
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    cursor = None
+    try:
+        from datetime import datetime
+        cursor = conn.cursor()
+        
+        # 1. ดึง id จาก lab_receive_detail (เลขที่รายงาน)
+        query1 = """
+            SELECT id, dtime
+            FROM lab_receive_detail 
+            WHERE lab_order_id = ? 
+            ORDER BY id DESC 
+            LIMIT 1
+        """
+        cursor.execute(query1, (lab_order_id,))
+        result1 = cursor.fetchone()
+        report_id = result1[0] if result1 else None
+        receive_dtime = result1[1] if result1 else None
+        
+        # 2. ดึงข้อมูลจาก lab_order และ sample_registration
+        query2 = """
+            SELECT sr.collect_date, sr.id as case_id, sr.name, sr.species, sr.breed, 
+                   sr.sex, sr.age_year, sr.age_month, sr.age_day, sr.sample_type, 
+                   lo.id as lab_order_id, sr.case_id
+            FROM lab_order lo
+            LEFT JOIN sample_registration sr ON lo.sample_id = sr.id
+            WHERE lo.id = ?
+        """
+        cursor.execute(query2, (lab_order_id,))
+        result2 = cursor.fetchone()
+        
+        if result2:
+            collect_date = result2[0]
+            case_id = result2[1]
+            animal_name = result2[2]
+            species = result2[3]
+            breed = result2[4]
+            sex = result2[5]
+            age_year = result2[6]
+            age_month = result2[7]
+            age_day = result2[8]
+            sample_type = result2[9]
+            registration_case_id = result2[11]
+        else:
+            raise HTTPException(status_code=404, detail="Lab order not found")
+        
+        # 3. ดึงข้อมูล owner และ sender
+        owner_name = owner_phone = owner_email = owner_address = ''
+        sender_name = sender_phone = sender_email = sender_address = ''
+        
+        if registration_case_id:
+            query3 = """
+                SELECT cr.owner_id, cr.sender_id,
+                       o.name as owner_name, o.surname as owner_surname, 
+                       o.phone as owner_phone, o.email as owner_email, 
+                       o.contact_address as owner_address,
+                       s.name as sender_name, s.surname as sender_surname,
+                       s.phone as sender_phone, s.email as sender_email,
+                       s.contact_address as sender_address
+                FROM case_registration cr
+                LEFT JOIN customer o ON cr.owner_id = o.id
+                LEFT JOIN customer s ON cr.sender_id = s.id
+                WHERE cr.id = ?
+            """
+            cursor.execute(query3, (registration_case_id,))
+            result3 = cursor.fetchone()
+            
+            if result3:
+                owner_name = f"{result3[2] or ''} {result3[3] or ''}".strip()
+                owner_phone = result3[4] or ''
+                owner_email = result3[5] or ''
+                owner_address = result3[6] or ''
+                
+                sender_name = f"{result3[7] or ''} {result3[8] or ''}".strip()
+                sender_phone = result3[9] or ''
+                sender_email = result3[10] or ''
+                sender_address = result3[11] or ''
+        
+        # 4. สร้างเลขที่ตัวอย่าง
+        today = datetime.now()
+        day_str = str(today.day)
+        sample_number = f"D{day_str}-{lab_order_id}"
+        
+        # 5. จัดรูปแบบอายุ
+        age_text = ''
+        age_parts = []
+        if age_year:
+            age_parts.append(f"{age_year} ปี")
+        if age_month:
+            age_parts.append(f"{age_month} เดือน")
+        if age_day:
+            age_parts.append(f"{age_day} วัน")
+        age_text = ' '.join(age_parts)
+        
+        # 6. แปลงวันที่
+        formatted_collect_date = ''
+        if collect_date:
+            try:
+                if isinstance(collect_date, str):
+                    date_part = collect_date.split(' ')[0]
+                    date_obj = datetime.strptime(date_part, '%Y-%m-%d')
+                    formatted_collect_date = date_obj.strftime('%d/%m/%Y')
+                else:
+                    formatted_collect_date = str(collect_date)
+            except:
+                formatted_collect_date = str(collect_date)
+        
+        # ตรวจสอบ DEBUG MODE
+        if DEBUG:
+            # DEBUG = TRUE: แสดงข้อมูลทั้งหมด
+            return {
+                "success": True,
+                "data": {
+                    'report_id': str(report_id) if report_id else '',
+                    'sample_number': sample_number,
+                    'collect_date': formatted_collect_date,
+                    'lab_order_id': lab_order_id,
+                    'case_id': case_id,
+                    'animal_name': animal_name if animal_name else '',
+                    'species': species if species else '',
+                    'breed': breed if breed else '',
+                    'sex': sex if sex else '',
+                    'age': age_text,
+                    'sample_type': sample_type if sample_type else '',
+                    'receive_dtime': str(receive_dtime) if receive_dtime else '',
+                    'owner_name': owner_name,
+                    'owner_phone': owner_phone,
+                    'owner_email': owner_email,
+                    'owner_address': owner_address,
+                    'sender_name': sender_name,
+                    'sender_phone': sender_phone,
+                    'sender_email': sender_email,
+                    'sender_address': sender_address
+                }
+            }
+        else:
+            # DEBUG = FALSE: แสดงเฉพาะ 3 ฟิลด์
+            return {
+                "success": True,
+                "data": {
+                    'report_id': str(report_id) if report_id else '',
+                    'sample_number': sample_number,
+                    'collect_date': formatted_collect_date,
+                    # ฟิลด์อื่นๆ จะเป็นค่าว่าง
+                    'lab_order_id': lab_order_id,
+                    'case_id': case_id,
+                    'animal_name': '',
+                    'species': '',
+                    'breed': '',
+                    'sex': '',
+                    'age': '',
+                    'sample_type': '',
+                    'receive_dtime': '',
+                    'owner_name': '',
+                    'owner_phone': '',
+                    'owner_email': '',
+                    'owner_address': '',
+                    'sender_name': '',
+                    'sender_phone': '',
+                    'sender_email': '',
+                    'sender_address': ''
+                }
+            }
+        
+    except mariadb.Error as e:
+        print(f"Query Error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve template data: {str(e)}")
+    
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@router.post("/export_word_template")
+def export_word_template(request: ExportTemplateRequest):
+    """
+    Export Word template โดยเติมข้อมูลจาก database
+    - ดึงข้อมูลจาก get_template_data
+    - เติมข้อมูลลงใน Word template
+    - ส่งไฟล์กลับไปให้ client download
+    """
+    try:
+        from docx import Document
+        
+        # 1. ดึงข้อมูลสำหรับเติมลงใน template
+        template_data_result = get_template_data(request.lab_order_id)
+        if not template_data_result.get('success'):
+            raise HTTPException(status_code=404, detail="Cannot retrieve template data")
+        
+        data = template_data_result['data']
+        
+        # 2. สร้าง full path ของไฟล์ template
+        source_file = os.path.join(request.template_path, request.template_name)
+        
+        if not os.path.exists(source_file):
+            raise HTTPException(status_code=404, detail=f"Template file not found: {source_file}")
+        
+        # 3. เปิดไฟล์ template
+        doc = Document(source_file)
+        
+        # 4. สร้าง mapping ของข้อมูล
+        replacements = {
+            'เลขที่รายงาน:': f"เลขที่รายงาน: {data.get('report_id', '')}",
+            'วันที่รับตัวอย่าง:': f"วันที่รับตัวอย่าง: {data.get('collect_date', '')}",
+            'เลขที่ตัวอย่าง:': f"เลขที่ตัวอย่าง: {data.get('sample_number', '')}",
+            'พันธุ์:': f"พันธุ์: {data.get('breed', '')}",
+            'เพศ:': f"เพศ: {data.get('sex', '')}",
+        }
+        
+        # 5. แทนที่ข้อความใน paragraphs
+        def replace_text_in_paragraph(paragraph):
+            full_text = paragraph.text
+            for key, value in replacements.items():
+                if key in full_text:
+                    original_font = None
+                    if len(paragraph.runs) > 0:
+                        original_font = paragraph.runs[0].font
+                    
+                    inline = paragraph.runs
+                    for i in range(len(inline)-1, -1, -1):
+                        p = inline[i]._element
+                        p.getparent().remove(p)
+                    
+                    new_text = full_text.replace(key, value)
+                    new_run = paragraph.add_run(new_text)
+                    
+                    if original_font:
+                        new_run.font.name = original_font.name
+                        new_run.font.size = original_font.size
+                        new_run.font.bold = original_font.bold
+                        new_run.font.italic = original_font.italic
+                        new_run.font.underline = original_font.underline
+                        new_run.font.color.rgb = original_font.color.rgb
+                    break
+        
+        # แทนที่ใน paragraphs
+        for paragraph in doc.paragraphs:
+            replace_text_in_paragraph(paragraph)
+        
+        # 6. แทนที่ข้อความใน tables
+        processed_cells = set()
+        
+        for table_idx, table in enumerate(doc.tables):
+            for row_idx, row in enumerate(table.rows):
+                row_text = ' '.join([cell.text for cell in row.cells])
+                
+                for cell_idx, cell in enumerate(row.cells):
+                    # ตรวจสอบ Row 4 และ Row 6 (ที่อยู่)
+                    if row_idx == 4 and cell_idx == 0:
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                run.text = ''
+                            if len(para.runs) > 0:
+                                para.runs[0].text = f"ที่อยู่: {data.get('owner_address', '')}"
+                            else:
+                                para.add_run(f"ที่อยู่: {data.get('owner_address', '')}")
+                            break
+                        continue
+                    
+                    if row_idx == 6 and cell_idx == 0:
+                        for para in cell.paragraphs:
+                            for run in para.runs:
+                                run.text = ''
+                            if len(para.runs) > 0:
+                                para.runs[0].text = f"ที่อยู่: {data.get('sender_address', '')}"
+                            else:
+                                para.add_run(f"ที่อยู่: {data.get('sender_address', '')}")
+                            break
+                        continue
+                    
+                    cell_position = (row_idx, cell_idx)
+                    cell_id = id(cell._element)
+                    is_merged = False
+                    for prev_cell_idx in range(cell_idx):
+                        if id(row.cells[prev_cell_idx]._element) == cell_id:
+                            is_merged = True
+                            break
+                    
+                    if is_merged or cell_position in processed_cells:
+                        continue
+                    
+                    processed_cells.add(cell_position)
+                    
+                    for para in cell.paragraphs:
+                        cell_text = para.text.strip()
+                        
+                        # จัดการฟิลด์เจ้าของ
+                        if 'ชื่อเจ้าของ:' in row_text or 'ชื่อ:' in row_text:
+                            if cell_text.startswith('ชื่อเจ้าของ:') and cell_idx == 0:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.text = ''
+                                    if len(para.runs) > 0:
+                                        para.runs[0].text = f"ชื่อเจ้าของ: {data.get('owner_name', '')}"
+                                    else:
+                                        para.add_run(f"ชื่อเจ้าของ: {data.get('owner_name', '')}")
+                                    break
+                            elif cell_text == 'โทร.' and cell_idx == 4:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.text = ''
+                                    if len(para.runs) > 0:
+                                        para.runs[0].text = f"โทร. {data.get('owner_phone', '')}"
+                                    else:
+                                        para.add_run(f"โทร. {data.get('owner_phone', '')}")
+                                    break
+                            elif cell_text == 'E-mail:' and cell_idx == 6:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.text = ''
+                                    if len(para.runs) > 0:
+                                        para.runs[0].text = f"E-mail: {data.get('owner_email', '')}"
+                                    else:
+                                        para.add_run(f"E-mail: {data.get('owner_email', '')}")
+                                    break
+                        
+                        # จัดการฟิลด์ผู้ส่ง
+                        elif 'ชื่อผู้ส่ง:' in row_text:
+                            if cell_text.startswith('ชื่อผู้ส่ง:') and cell_idx == 0:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.text = ''
+                                    if len(para.runs) > 0:
+                                        para.runs[0].text = f"ชื่อผู้ส่ง: {data.get('sender_name', '')}"
+                                    else:
+                                        para.add_run(f"ชื่อผู้ส่ง: {data.get('sender_name', '')}")
+                                    break
+                            elif cell_text == 'โทร.' and cell_idx == 4:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.text = ''
+                                    if len(para.runs) > 0:
+                                        para.runs[0].text = f"โทร. {data.get('sender_phone', '')}"
+                                    else:
+                                        para.add_run(f"โทร. {data.get('sender_phone', '')}")
+                                    break
+                            elif cell_text == 'E-mail:' and cell_idx == 6:
+                                for para in cell.paragraphs:
+                                    for run in para.runs:
+                                        run.text = ''
+                                    if len(para.runs) > 0:
+                                        para.runs[0].text = f"E-mail: {data.get('sender_email', '')}"
+                                    else:
+                                        para.add_run(f"E-mail: {data.get('sender_email', '')}")
+                                    break
+                        
+                        # จัดการฟิลด์สัตว์
+                        if cell_text.startswith('ชนิดสัตว์:'):
+                            for para in cell.paragraphs:
+                                for run in para.runs:
+                                    run.text = ''
+                                if len(para.runs) > 0:
+                                    para.runs[0].text = f"ชนิดสัตว์: {data.get('species', '')}"
+                                else:
+                                    para.add_run(f"ชนิดสัตว์: {data.get('species', '')}")
+                                break
+                        elif cell_text.startswith('ชื่อสัตว์:') and cell_idx == 1:
+                            if cell_idx + 1 < len(row.cells):
+                                next_cell = row.cells[cell_idx + 1]
+                                for next_para in next_cell.paragraphs:
+                                    for run in next_para.runs:
+                                        run.text = ''
+                                    if len(next_para.runs) > 0:
+                                        next_para.runs[0].text = data.get('animal_name', '')
+                                    else:
+                                        next_para.add_run(data.get('animal_name', ''))
+                                    break
+                        elif cell_text.startswith('ชนิดตัวอย่าง:') and cell_idx == 0:
+                            for para in cell.paragraphs:
+                                for run in para.runs:
+                                    run.text = ''
+                                if len(para.runs) > 0:
+                                    para.runs[0].text = f"ชนิดตัวอย่าง: {data.get('sample_type', '')}"
+                                else:
+                                    para.add_run(f"ชนิดตัวอย่าง: {data.get('sample_type', '')}")
+                                break
+                        elif cell_text.startswith('อายุ:') and cell_idx == 7:
+                            for para in cell.paragraphs:
+                                for run in para.runs:
+                                    run.text = ''
+                                if len(para.runs) > 0:
+                                    para.runs[0].text = f"อายุ: {data.get('age', '')}"
+                                else:
+                                    para.add_run(f"อายุ: {data.get('age', '')}")
+                                break
+                        
+                        # แทนที่ข้อความปกติ
+                        replace_text_in_paragraph(para)
+        
+        # 7. บันทึกไฟล์ลง temporary location
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.docx', delete=False) as tmp_file:
+            output_path = tmp_file.name
+            doc.save(output_path)
+        
+        # 8. ส่งไฟล์กลับไปให้ client
+        return FileResponse(
+            path=output_path,
+            filename=request.output_filename,
+            media_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            background=None  # Don't delete file immediately, let OS handle it
+        )
+        
+    except Exception as e:
+        print(f"Export Error: {e}")
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to export template: {str(e)}")
