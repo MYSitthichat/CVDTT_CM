@@ -152,9 +152,11 @@ class LabEditFormController(QObject):
             room_id_to_save = self.current_room_id_of_item if (self.editing_report_id and self.current_room_id_of_item) else (self.user_room_id if self.user_room_id else 999)
             
             # --- PATH LOGIC (สำคัญ) ---
-            # Relative Path สำหรับ DB: "BACKEND/report_template/word/Room_X"
-            rel_folder = os.path.join("BACKEND", "report_template", "word", f"Room_{room_id_to_save}")
-            abs_folder = os.path.join(root_path, rel_folder)
+            # หาตำแหน่ง BACKEND ที่แท้จริง (relative จาก root_path)
+            backend_root = os.path.join(root_path, "..", "BACKEND")
+            backend_root = os.path.abspath(backend_root)
+            rel_folder = os.path.join("report_template", "word", f"Room_{room_id_to_save}")
+            abs_folder = os.path.join(backend_root, rel_folder)
 
             if not os.path.exists(abs_folder):
                 os.makedirs(abs_folder)
@@ -168,7 +170,7 @@ class LabEditFormController(QObject):
                     # มีการเปลี่ยนไฟล์ -> Copy ใหม่
                     file_name = os.path.basename(self.pending_file_path)
                     shutil.copy2(self.pending_file_path, os.path.join(abs_folder, file_name))
-                    db_path_to_save = os.path.join(rel_folder, file_name) # Save Relative
+                    db_path_to_save = os.path.join("report_template", "word", f"Room_{room_id_to_save}", file_name) # Save Relative (ไม่รวม BACKEND)
                 else:
                     # ไม่เปลี่ยนไฟล์ -> ใช้ Path เดิม (ต้องแปลงกลับเป็น Relative ถ้าทำได้)
                     current_abs = self.current_report_path
@@ -192,7 +194,7 @@ class LabEditFormController(QObject):
                 
                 file_name = os.path.basename(self.pending_file_path)
                 shutil.copy2(self.pending_file_path, os.path.join(abs_folder, file_name))
-                db_path_to_save = os.path.join(rel_folder, file_name) # Save Relative
+                db_path_to_save = os.path.join("report_template", "word", f"Room_{room_id_to_save}", file_name) # Save Relative (ไม่รวม BACKEND)
                 
                 success, message = self.report_info_service.add_report(
                     report_name=new_report_name,
@@ -277,8 +279,11 @@ class LabEditFormController(QObject):
         combo.clear()
         if not reports: return
         
-        # เตรียม Root Path
+        # เตรียม Root Path (Frontend)
         root_path = self.get_app_root_path()
+
+        # [เพิ่ม] หา Path ของ BACKEND (ถอยจาก Frontend ไป 1 ชั้น แล้วเข้า BACKEND)
+        backend_root = os.path.abspath(os.path.join(root_path, "..", "BACKEND"))
         
         grouped_reports = {}
         for r in reports:
@@ -302,9 +307,11 @@ class LabEditFormController(QObject):
                 # --- PATH CONVERSION: DB (Relative) -> APP (Absolute) ---
                 db_path = r.get('report_path', '')
                 full_path = db_path
-                if db_path and not os.path.isabs(db_path):
-                    full_path = os.path.join(root_path, db_path)
                 
-                child.setData(0, 1001, full_path)
+                if db_path and not os.path.isabs(db_path):
+                    # [แก้ไข] เปลี่ยนจาก join(root_path, ...) เป็น join(backend_root, ...)
+                    full_path = os.path.join(backend_root, db_path)
+                
+                child.setData(0, 1001, full_path) # เก็บ Path เต็มไว้สำหรับปุ่ม Download
                 
         tree.expandAll()
