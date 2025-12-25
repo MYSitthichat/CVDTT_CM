@@ -5,7 +5,7 @@ from View.view_report_from_frame import ReportFormView
 from View.view_receive_lab_frame import ReceiveLabFormView
 from View.view_error_page import ErrorPageView
 from View.view_lab_edite_form_frame import LabEditFormView
-
+from View.view_export_from_frame import ExportFormView
 
 
 class MainWindow(QMainWindow):
@@ -20,6 +20,7 @@ class MainWindow(QMainWindow):
         self.receive_lab_form_view = ReceiveLabFormView()
         self.error_page_view = ErrorPageView()
         self.lab_edit_form_view = LabEditFormView()
+        self.export_form_view = ExportFormView()
         # Store reference to main controller (will be set by MainController)
         self.main_controller = None
         
@@ -37,6 +38,7 @@ class MainWindow(QMainWindow):
         self.ui.stackedWidget.addWidget(self.receive_lab_form_view)
         self.ui.stackedWidget.addWidget(self.error_page_view)
         self.ui.stackedWidget.addWidget(self.lab_edit_form_view)
+        self.ui.stackedWidget.addWidget(self.export_form_view)
         self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
 
 
@@ -45,7 +47,10 @@ class MainWindow(QMainWindow):
 
     def show_report_work_page(self):
         self.ui.stackedWidget.setCurrentWidget(self.report_form_view)
-        
+
+    def show_export_form(self):
+        self.ui.stackedWidget.setCurrentWidget(self.export_form_view)
+
     def show_lab_edit_form(self):
         self.ui.stackedWidget.setCurrentWidget(self.lab_edit_form_view)
 

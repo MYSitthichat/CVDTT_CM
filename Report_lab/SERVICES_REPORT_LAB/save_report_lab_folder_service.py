@@ -17,7 +17,7 @@ class SaveReportLabFolderService(BaseService):
     def save_report_files(self, lab_name, barcode, lab_id, case_id, room_id, updater, date_str, word_path, pdf_path):
         """ ส่งไฟล์และข้อมูลลง Database """
         try:
-            api_url = "http://127.0.0.1:8000/save_report_files" 
+            api_url = "http://202.28.24.55:8000/save_report_files" 
             
             # เตรียม Data (ตัด sample_id ออกตามที่คุณต้องการ)
             payload = {

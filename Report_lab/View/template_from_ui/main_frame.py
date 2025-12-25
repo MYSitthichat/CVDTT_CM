@@ -51,8 +51,12 @@ class Ui_MainWindow(object):
         self.logout_pushButton.setFont(font)
         self.Edit_Form_pushButton = QPushButton(self.frame)
         self.Edit_Form_pushButton.setObjectName(u"Edit_Form_pushButton")
-        self.Edit_Form_pushButton.setGeometry(QRect(5, 130, 251, 51))
+        self.Edit_Form_pushButton.setGeometry(QRect(5, 190, 251, 51))
         self.Edit_Form_pushButton.setFont(font)
+        self.merg_Form_pushButton = QPushButton(self.frame)
+        self.merg_Form_pushButton.setObjectName(u"merg_Form_pushButton")
+        self.merg_Form_pushButton.setGeometry(QRect(5, 130, 251, 51))
+        self.merg_Form_pushButton.setFont(font)
         self.stackedWidget = QStackedWidget(self.centralwidget)
         self.stackedWidget.setObjectName(u"stackedWidget")
         self.stackedWidget.setGeometry(QRect(275, 5, 1270, 890))
@@ -77,8 +81,9 @@ class Ui_MainWindow(object):
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(QCoreApplication.translate("MainWindow", u"REPORT LAB", None))
         self.receive_lab_order_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e23\u0e31\u0e1a\u0e43\u0e1a\u0e2a\u0e48\u0e07\u0e41\u0e25\u0e1b", None))
-        self.send_lab_report_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e2a\u0e23\u0e49\u0e32\u0e07 REPORT", None))
+        self.send_lab_report_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e2a\u0e48\u0e07 REPORT", None))
         self.logout_pushButton.setText(QCoreApplication.translate("MainWindow", u"LOGOUT", None))
         self.Edit_Form_pushButton.setText(QCoreApplication.translate("MainWindow", u"Edite Form", None))
+        self.merg_Form_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e23\u0e27\u0e21\u0e1f\u0e2d\u0e23\u0e4c\u0e21", None))
     # retranslateUi
 

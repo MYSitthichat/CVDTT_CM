@@ -207,7 +207,6 @@ class SendLabController(QObject):
             else:
                 msg = result.get('message', 'Unknown Error') if result else 'Unknown Error'
                 QMessageBox.critical(self.view, "ล้มเหลว", f"Server Error:\n{msg}")
-
         except Exception as e:
             QMessageBox.critical(self.view, "Error", f"เกิดข้อผิดพลาด: {str(e)}")
             
@@ -350,7 +349,6 @@ class SendLabController(QObject):
         self.view.ui.barcode_tableView.setEnabled(True)
         self.view.ui.search_location_file_pushButton.setEnabled(False)
         self.current_lab_order_id = None
-        
         load_room_id = "" if self.admin_comein else self.log_room_id
         if load_room_id is not None:
             self.load_received_labs_data(load_room_id, self.current_offset, self.limit)

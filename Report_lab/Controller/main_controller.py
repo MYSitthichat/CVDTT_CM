@@ -45,6 +45,7 @@ class MainController(QObject):
         self.main_window.ui.receive_lab_order_pushButton.clicked.connect(self.show_receive_work_page)
         self.main_window.ui.send_lab_report_pushButton.clicked.connect(self.show_report_work_page)
         self.main_window.ui.Edit_Form_pushButton.clicked.connect(self.show_lab_edit_form)
+        self.main_window.ui.merg_Form_pushButton.clicked.connect(self.show_export_form_page)
         self._setup_user_profile_connections()
         
         
@@ -58,7 +59,11 @@ class MainController(QObject):
             error_message = result.get("message", "An error occurred while initializing folders.")
             QMessageBox.critical(self.main_window, "Folder Initialization Error", error_message)
         return result
-        
+    
+    def show_export_form_page(self):
+        self.main_window.show_export_form()
+    
+    
     def show_receive_work_page(self):
         self.main_window.show_receive_work_page()
         self.main_window.receive_lab_form_view.clear_all_table()

@@ -496,9 +496,9 @@ class ReceiveLabController(QObject):
             
             if backend_path not in sys.path:
                 sys.path.insert(0, backend_path)
-            
-            from database import get_db_connection  # type: ignore
-            
+
+            from BACKEND.database import get_db_connection  # type: ignore
+
             conn = get_db_connection()
             if conn is None:
                 print("DEBUG get_template_data: ไม่สามารถเชื่อมต่อ database")

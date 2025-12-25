@@ -29,6 +29,11 @@ if __name__ == '__main__':
     login_app.Show_login_page()
     app.exec()
 
+
+
+
+
+
 # Available themes
 # Light Themes:
     # 'light_blue.xml'

@@ -1,7 +1,7 @@
 import requests
 
 # ตั้งค่า IP Server ที่นี่
-API_URL = "http://127.0.0.1:8000"
+API_URL = "http://202.28.24.55:8000"
 
 class BaseService:
     def __init__(self):

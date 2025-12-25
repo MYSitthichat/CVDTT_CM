@@ -74,9 +74,8 @@ class SpecimenController(QObject):
                 rooms = room_details['lab_rooms']
                 button_keywords = {
                     'microbiology': [
-                        'microbiology', 'bacteria', 'bact', 'จุลชีววิทยา', 
-                        'แบคทีเรีย', 'bacterial', 'micro', 'เชื้อ','D403',
-                        'แบคทีเรีย'
+                        'bacteria', 'bact', 
+                        'แบคทีเรีย', 'bacterial', 'เชื้อ','D403',
                     ],
                     'parasitology': [
                         'parasitology', 'parasite', 'para', 'ปรสิตวิทยา', 
@@ -107,7 +106,7 @@ class SpecimenController(QObject):
                                 break 
                         if button_key in self.room_mapping:
                             break
-                
+                print(room_id)
                 button_names = {
                     'microbiology': 'จุลชีววิทยา (MICROBIOLOGY)',
                     'parasitology': 'ปรสิตวิทยา (PARASITOLOGY)',

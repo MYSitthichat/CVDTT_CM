@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MergForm</class>
+ <widget class="QWidget" name="MergForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1270</width>
+    <height>890</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1270</width>
+    <height>890</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1270</width>
+    <height>890</height>
+   </size>
+  </property>
+  <property name="sizeIncrement">
+   <size>
+    <width>1270</width>
+    <height>890</height>
+   </size>
+  </property>
+  <property name="baseSize">
+   <size>
+    <width>1270</width>
+    <height>890</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>TH Niramit AS</family>
+    <pointsize>20</pointsize>
+    <bold>true</bold>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <widget class="QLineEdit" name="barcode_lineEdit">
+   <property name="geometry">
+    <rect>
+     <x>85</x>
+     <y>10</y>
+     <width>191</width>
+     <height>41</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="barcode_label">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>15</y>
+     <width>71</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Barcode</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="search_pushButton">
+   <property name="geometry">
+    <rect>
+     <x>280</x>
+     <y>10</y>
+     <width>101</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ค้นหา</string>
+   </property>
+  </widget>
+  <widget class="QTableView" name="from_list_tableView">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>55</y>
+     <width>381</width>
+     <height>171</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="show_report_pushButton">
+   <property name="geometry">
+    <rect>
+     <x>255</x>
+     <y>230</y>
+     <width>130</width>
+     <height>50</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>แสดงรายงาน</string>
+   </property>
+  </widget>
+  <widget class="QProgressBar" name="show_report_progressBar">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>230</y>
+     <width>240</width>
+     <height>50</height>
+    </rect>
+   </property>
+   <property name="value">
+    <number>24</number>
+   </property>
+   <property name="textVisible">
+    <bool>false</bool>
+   </property>
+  </widget>
+  <widget class="QFrame" name="export_frame">
+   <property name="geometry">
+    <rect>
+     <x>5</x>
+     <y>290</y>
+     <width>380</width>
+     <height>591</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Shape::Box</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Shadow::Raised</enum>
+   </property>
+   <widget class="QPushButton" name="combine_page_pushButton">
+    <property name="geometry">
+     <rect>
+      <x>250</x>
+      <y>10</y>
+      <width>125</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ใบปะหน้า</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="Export_pushButton">
+    <property name="geometry">
+     <rect>
+      <x>235</x>
+      <y>535</y>
+      <width>141</width>
+      <height>51</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>ส่งออกรายงาน</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QFrame" name="show_report_frame">
+   <property name="geometry">
+    <rect>
+     <x>390</x>
+     <y>11</y>
+     <width>875</width>
+     <height>870</height>
+    </rect>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::Shape::Box</enum>
+   </property>
+   <property name="frameShadow">
+    <enum>QFrame::Shadow::Raised</enum>
+   </property>
+   <widget class="QWebEngineView" name="report_webEngineView">
+    <property name="geometry">
+     <rect>
+      <x>7</x>
+      <y>7</y>
+      <width>860</width>
+      <height>855</height>
+     </rect>
+    </property>
+    <property name="url">
+     <url>
+      <string>about:blank</string>
+     </url>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QWebEngineView</class>
+   <extends>QWidget</extends>
+   <header location="global">QtWebEngineWidgets/QWebEngineView</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
