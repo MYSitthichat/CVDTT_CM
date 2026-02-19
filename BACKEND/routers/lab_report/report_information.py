@@ -14,6 +14,7 @@ class ReportAddRequest(BaseModel):
     room_id: int
     report_path: str
     updater_id: int
+    detail: str = ""
 
 class ReportVersionRequest(BaseModel):
     old_report_id: int
@@ -21,6 +22,7 @@ class ReportVersionRequest(BaseModel):
     new_path: str
     room_id: int
     updater_id: int
+    detail: str = ""
 
 class ReportDeleteRequest(BaseModel):
     report_id: int
@@ -35,33 +37,35 @@ def dict_factory(cursor, row):
 
 # --- API Endpoints ---
 
-@router.get("/by_room_and_status")
-def get_reports_by_room_and_status(room_id: int, status: int = 1):
+@router.get("/all_by_status")
+def get_all_reports_by_status(status: int = 1):
     conn = get_db_connection()
     if not conn:
         raise HTTPException(status_code=500, detail="Database connection failed")
     
     try:
         cursor = conn.cursor()
-        
-        # --- แก้ไข SQL ตรงนี้: ตัด created_at, updated_at ออก ---
+    
         sql = """
-            SELECT id, report_name, room_id, report_path, status, updater
-            FROM report_information 
-            WHERE room_id = ? AND status = ?
-            ORDER BY id DESC
+            SELECT 
+                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater, t1.detail, 
+                t2.name AS room_name
+            FROM report_information t1
+            LEFT JOIN room_information t2 ON t1.room_id = t2.id
+            WHERE t1.status = ?
+            ORDER BY t1.room_id ASC, t1.id DESC
         """
-        cursor.execute(sql, (room_id, status))
+
+        cursor.execute(sql, (status,))
         
         columns = [col[0] for col in cursor.description]
         results = []
         for row in cursor.fetchall():
             results.append(dict(zip(columns, row)))
             
-        return results
+        return {"data": results}
 
     except mariadb.Error as e:
-        # เพิ่ม print เพื่อดู error จริงใน terminal backend ด้วย
         print(f"DEBUG DB ERROR: {e}") 
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
     finally:
@@ -76,10 +80,10 @@ def add_report(request: ReportAddRequest):
     try:
         cursor = conn.cursor()
         sql = """
-            INSERT INTO report_information (report_name, room_id, report_path, updater, status) 
-            VALUES (?, ?, ?, ?, 1)
+            INSERT INTO report_information (report_name, room_id, report_path, updater, status, detail) 
+            VALUES (?, ?, ?, ?, 1, ?)
         """
-        cursor.execute(sql, (request.report_name, request.room_id, request.report_path, request.updater_id))
+        cursor.execute(sql, (request.report_name, request.room_id, request.report_path, request.updater_id, request.detail))
         conn.commit()
         
         return {"status": "success", "message": "Report added successfully"}
@@ -105,10 +109,10 @@ def save_new_report_version(request: ReportVersionRequest):
         
         # 2. Insert ตัวใหม่ (status = 1)
         insert_sql = """
-            INSERT INTO report_information (report_name, room_id, report_path, updater, status) 
-            VALUES (?, ?, ?, ?, 1)
+            INSERT INTO report_information (report_name, room_id, report_path, updater, status, detail) 
+            VALUES (?, ?, ?, ?, 1, ?)
         """
-        cursor.execute(insert_sql, (request.new_name, request.room_id, request.new_path, request.updater_id))
+        cursor.execute(insert_sql, (request.new_name, request.room_id, request.new_path, request.updater_id, request.detail))
         
         conn.commit()
         return {"status": "success", "message": "Version updated successfully"}
@@ -136,6 +140,64 @@ def delete_report(report_id: int, updater_id: int):
 
     except mariadb.Error as e:
         conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        conn.close()
+
+@router.get("/by_room_and_status")
+def get_reports_by_room_and_status(room_id: int, status: int = 1):
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        
+        sql = """
+            SELECT 
+                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater, t1.detail,
+                t2.name AS room_name
+            FROM report_information t1
+            LEFT JOIN room_information t2 ON t1.room_id = t2.id
+            WHERE t1.room_id = ? AND t1.status = ?
+            ORDER BY t1.id DESC
+        """
+        
+        cursor.execute(sql, (room_id, status))
+        
+        columns = [col[0] for col in cursor.description]
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+            
+        return results
+
+    except mariadb.Error as e:
+        print(f"DEBUG DB ERROR: {e}") 
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+    finally:
+        conn.close()
+
+@router.get("/get_all_rooms_list")
+def get_all_rooms_list():
+    conn = get_db_connection()
+    if not conn:
+        raise HTTPException(status_code=500, detail="Database connection failed")
+    
+    try:
+        cursor = conn.cursor()
+        sql = "SELECT id, name FROM room_information ORDER BY id ASC"
+        cursor.execute(sql)
+        
+        columns = [col[0] for col in cursor.description]
+        results = []
+        for row in cursor.fetchall():
+            results.append(dict(zip(columns, row)))
+            
+        return {"data": results}
+
+    except mariadb.Error as e:
+        print(f"DEBUG DB ERROR: {e}") 
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
     finally:
         conn.close()

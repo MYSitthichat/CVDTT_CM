@@ -15,6 +15,8 @@ class LabEditFormController(QObject):
         self.main_controller = main_controller
         self.report_info_service = ReportInformationService()
         self.user_room_id = None
+        self.user_group_id = None
+        self.room_name_map = {}
         
         # State variables
         self.pending_file_path = None
@@ -54,9 +56,9 @@ class LabEditFormController(QObject):
 
     def setup_table_widget(self):
         tree = self.view.ui.list_detail_treeWidget
-        tree.setColumnWidth(0, 600)
-        tree.setColumnWidth(1, 150)
-        tree.setColumnWidth(2, 300)
+        tree.setColumnWidth(0, 400)
+        tree.setColumnWidth(1, 100)
+        tree.setColumnWidth(2, 550)
         tree.header().setStretchLastSection(True)
         tree.setSelectionMode(tree.SelectionMode.SingleSelection)
         tree.setSelectionBehavior(tree.SelectionBehavior.SelectRows)
@@ -137,8 +139,9 @@ class LabEditFormController(QObject):
 
     def save_form_pushButton_clicked(self):
         try:
-            # 1. Validate
             new_report_name = self.view.ui.form_name_lineEdit.text().strip()
+            detail_text = self.view.ui.detail_from_textEdit.toPlainText()
+            
             if not new_report_name:
                 QMessageBox.warning(self.view, "Warning", "กรุณากรอกชื่อแบบฟอร์ม")
                 return
@@ -147,12 +150,27 @@ class LabEditFormController(QObject):
             user_id = 1
             if self.main_controller:
                 user_id = self.main_controller.get_logged_in_user_id() or 1
+
+            allow_all = self.user_group_id in [1, 2, 3, 18, 19, 20]
+            room_id_to_save = None
+
+            if self.editing_report_id:
+                room_id_to_save = self.current_room_id_of_item
+            else:
+                if allow_all:
+                    selected_room_name = self.view.ui.lab_name_comboBox.currentText()
+                    room_id_to_save = self.room_name_map.get(selected_room_name)
+                    
+                    if not room_id_to_save:
+                        QMessageBox.warning(self.view, "Error", "ไม่สามารถระบุ ID ของห้องที่เลือกได้")
+                        return
+                else:
+                    room_id_to_save = self.user_room_id
+
+            if not room_id_to_save:
+                room_id_to_save = 999 
             
-            # เตรียม Folder ปลายทาง
-            room_id_to_save = self.current_room_id_of_item if (self.editing_report_id and self.current_room_id_of_item) else (self.user_room_id if self.user_room_id else 999)
-            
-            # --- PATH LOGIC (สำคัญ) ---
-            # หาตำแหน่ง BACKEND ที่แท้จริง (relative จาก root_path)
+            # --- PATH LOGIC (เหมือนเดิม) ---
             backend_root = os.path.join(root_path, "..", "BACKEND")
             backend_root = os.path.abspath(backend_root)
             rel_folder = os.path.join("report_template", "word", f"Room_{room_id_to_save}")
@@ -184,7 +202,8 @@ class LabEditFormController(QObject):
                     new_name=new_report_name,
                     new_path=db_path_to_save,
                     room_id=room_id_to_save,
-                    updater_id=user_id
+                    updater_id=user_id,
+                    detail=detail_text
                 )
             else:
                 # === NEW ===
@@ -200,7 +219,8 @@ class LabEditFormController(QObject):
                     report_name=new_report_name,
                     room_id=room_id_to_save,
                     report_path=db_path_to_save,
-                    updater_id=user_id
+                    updater_id=user_id,
+                    detail=detail_text
                 )
 
             # --- 3. Result ---
@@ -258,6 +278,9 @@ class LabEditFormController(QObject):
             except Exception as e:
                 QMessageBox.critical(self.view, "Error", str(e))
 
+    def set_user_group_id(self, group_id):
+        self.user_group_id = group_id
+
     def reload_data(self):
         self.load_report_data()
     
@@ -265,8 +288,16 @@ class LabEditFormController(QObject):
         self.user_room_id = room_id
     
     def load_report_data(self):
-        if self.user_room_id is None: return
-        result = self.report_info_service.get_reports_by_room_and_status(self.user_room_id, 1)
+        # เงื่อนไขพิเศษ ให้โหลดทั้งหมด
+        allow_all = self.user_group_id in [1, 2, 3, 18, 19, 20]
+
+        if allow_all:
+            result = self.report_info_service.get_all_reports_with_status(1)
+        else:
+            # User ทั่วไป โหลดตามห้องตัวเอง
+            if self.user_room_id is None: return
+            result = self.report_info_service.get_reports_by_room_and_status(self.user_room_id, 1)
+            
         reports = result if isinstance(result, list) else []
         self.populate_tree_widget(reports)
     
@@ -277,20 +308,44 @@ class LabEditFormController(QObject):
         
         tree.clear()
         combo.clear()
-        if not reports: return
+        self.room_name_map.clear() 
         
-        # เตรียม Root Path (Frontend)
-        root_path = self.get_app_root_path()
+        # เช็คสิทธิ์
+        allow_all = self.user_group_id in [1, 2, 3, 18, 19, 20]
 
-        # [เพิ่ม] หา Path ของ BACKEND (ถอยจาก Frontend ไป 1 ชั้น แล้วเข้า BACKEND)
+        if allow_all:
+            # ถ้าเป็น Admin ให้ดึงรายชื่อห้องทั้งหมดจาก DB มาใส่
+            all_rooms = self.report_info_service.get_all_rooms_list()
+            
+            for room in all_rooms:
+                r_name = room.get('name')
+                r_id = room.get('id')
+                if r_name and r_id:
+                    self.room_name_map[r_name] = r_id
+                    combo.addItem(r_name)
+        else:
+            # ถ้าเป็น User ธรรมดา ให้ใส่เฉพาะห้องที่มีใน report หรือห้องตัวเอง
+            if reports:
+                for r in reports:
+                    name = r.get('room_name', f"Room {r.get('room_id')}")
+                    rid = r.get('room_id')
+                    if name not in self.room_name_map:
+                        self.room_name_map[name] = rid
+                        combo.addItem(name)
+            else:
+                pass
+
+        root_path = self.get_app_root_path()
         backend_root = os.path.abspath(os.path.join(root_path, "..", "BACKEND"))
         
         grouped_reports = {}
-        for r in reports:
-            key = f"Room {r.get('room_id', '?')}"
-            grouped_reports.setdefault(key, []).append(r)
-        
-        combo.addItems(list(grouped_reports.keys()))
+        if reports:
+            for r in reports:
+                key = r.get('room_name')
+                if not key:
+                     key = f"Room {r.get('room_id', '?')}"
+                
+                grouped_reports.setdefault(key, []).append(r)
 
         for g_name, g_reports in grouped_reports.items():
             parent = QTreeWidgetItem(tree)
@@ -301,17 +356,18 @@ class LabEditFormController(QObject):
                 child = QTreeWidgetItem(parent)
                 child.setText(0, r.get('report_name', 'No Name'))
                 child.setText(1, "1")
+                
+                detail_db = r.get('detial') or r.get('detail') or "" 
+                child.setText(2, str(detail_db))
+                
                 child.setData(0, 1000, r.get('id'))
                 child.setData(0, 1002, r.get('room_id'))
                 
-                # --- PATH CONVERSION: DB (Relative) -> APP (Absolute) ---
                 db_path = r.get('report_path', '')
                 full_path = db_path
-                
                 if db_path and not os.path.isabs(db_path):
-                    # [แก้ไข] เปลี่ยนจาก join(root_path, ...) เป็น join(backend_root, ...)
                     full_path = os.path.join(backend_root, db_path)
                 
-                child.setData(0, 1001, full_path) # เก็บ Path เต็มไว้สำหรับปุ่ม Download
+                child.setData(0, 1001, full_path)
                 
-        tree.expandAll()
+        tree.collapseAll()

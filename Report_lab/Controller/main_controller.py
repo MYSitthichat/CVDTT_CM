@@ -75,13 +75,10 @@ class MainController(QObject):
             self.send_lab_controller.reload_data()
 
     def show_lab_edit_form(self):
-        print(f"DEBUG MainController: show_lab_edit_form called")
         self.main_window.show_lab_edit_form()
         # โหลดข้อมูลเมื่อเปิดหน้า lab edit form (ใช้ QTimer เพื่อให้ widget แสดงผลก่อน)
         if hasattr(self, 'lab_edit_form_controller') and self.lab_edit_form_controller:
-            print(f"DEBUG MainController: lab_edit_form_controller exists, room_id = {self.lab_edit_form_controller.user_room_id}")
             if self.lab_edit_form_controller.user_room_id is not None:
-                print(f"DEBUG MainController: Loading report data for room_id = {self.lab_edit_form_controller.user_room_id}")
                 # ใช้ QTimer delay เล็กน้อยเพื่อให้ UI แสดงผลก่อน
                 from PySide6.QtCore import QTimer
                 QTimer.singleShot(100, self.lab_edit_form_controller.reload_data)
@@ -99,10 +96,10 @@ class MainController(QObject):
         
 
     def Show_main_page(self,group_id):
-        if group_id and group_id >=18:
-            self.main_window.show_error_page()
-        else:
+        if group_id and group_id <= 20:
             self.main_window.Show_main_page()
+        else:
+            self.main_window.show_error_page()
         self.check_folder_in_backend()
 
     def hide_main_page(self):
@@ -148,8 +145,9 @@ class MainController(QObject):
             role = user_info.get('position', 'Staff')
             email = user_info.get('email', '')
             group_id = user_info.get('group_id')  # ดึง group_id จาก user_info
-            
-            print(f"DEBUG MainController: User group_id = {group_id}")
+
+            if hasattr(self, 'lab_edit_form_controller') and self.lab_edit_form_controller:
+                self.lab_edit_form_controller.set_user_group_id(group_id)
 
             if "ศาสตร์" in role:
                 room = role.split("ศาสตร์")[-1].strip()
@@ -189,11 +187,9 @@ class MainController(QObject):
         
         # ถ้ามี group_id ให้ใช้เป็น room_id โดยตรง
         if group_id is not None:
-            print(f"DEBUG MainController: Using group_id={group_id} as room_id")
             room_id = group_id
             self.set_room_id_from_user(room, room_id)
-            # แสดงปุ่ม Edit Form ถ้า group_id < 18 (logic เดียวกับ Show_main_page)
-            self.status_lab_edit_button(group_id < 18)
+            self.status_lab_edit_button(group_id <= 20)
         elif cleaned_name != "ห้องปฏิบัติการส่วนกลาง":
             for word in stop_words:
                 cleaned_name = cleaned_name.replace(word, "").strip()
@@ -201,7 +197,7 @@ class MainController(QObject):
             room_id = self.search_room_service.search_room(cleaned_name)
             self.set_room_id_from_user(cleaned_name, room_id)
             self.status_lab_edit_button(False)
-        else:
+        else:   
             room_id = 999
             self.set_room_id_from_user(cleaned_name, room_id)
             self.status_lab_edit_button(True)
@@ -211,7 +207,6 @@ class MainController(QObject):
         self.main_window.ui.Edit_Form_pushButton.setVisible(show)
 
     def set_room_id_from_user(self, room, room_id):
-        print(f"DEBUG MainController: set_room_id_from_user called with room={room}, room_id={room_id}")
         # เคลียร์ข้อมูลเก่าก่อนตั้งค่า room ใหม่
         self.receive_lab_controller.clear_all_data()
         self.receive_lab_controller._set_room_for_user(room, room_id)
@@ -222,7 +217,6 @@ class MainController(QObject):
         
         # ตั้งค่า room_id สำหรับ lab_edit_form_controller
         if hasattr(self, 'lab_edit_form_controller') and self.lab_edit_form_controller:
-            print(f"DEBUG MainController: Setting room_id={room_id} for lab_edit_form_controller")
             self.lab_edit_form_controller.set_room_id(room_id)
         else:
             print(f"WARNING MainController: lab_edit_form_controller not found")
