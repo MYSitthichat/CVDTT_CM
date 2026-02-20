@@ -115,7 +115,7 @@
     <rect>
      <x>5</x>
      <y>320</y>
-     <width>871</width>
+     <width>1261</width>
      <height>561</height>
     </rect>
    </property>
@@ -130,7 +130,7 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>531</width>
+      <width>571</width>
       <height>501</height>
      </rect>
     </property>
@@ -161,10 +161,10 @@
    <widget class="QPushButton" name="receive_pushButton">
     <property name="geometry">
      <rect>
-      <x>550</x>
-      <y>500</y>
+      <x>600</x>
+      <y>460</y>
       <width>151</width>
-      <height>51</height>
+      <height>71</height>
      </rect>
     </property>
     <property name="font">
@@ -181,10 +181,10 @@
    <widget class="QPushButton" name="reject_pushButton">
     <property name="geometry">
      <rect>
-      <x>710</x>
-      <y>500</y>
+      <x>770</x>
+      <y>460</y>
       <width>151</width>
-      <height>51</height>
+      <height>71</height>
      </rect>
     </property>
     <property name="font">
@@ -201,8 +201,8 @@
    <widget class="QLabel" name="sample_status_label">
     <property name="geometry">
      <rect>
-      <x>550</x>
-      <y>50</y>
+      <x>830</x>
+      <y>40</y>
       <width>201</width>
       <height>31</height>
      </rect>
@@ -221,7 +221,7 @@
    <widget class="QRadioButton" name="sample_status_good_radioButton">
     <property name="geometry">
      <rect>
-      <x>550</x>
+      <x>790</x>
       <y>80</y>
       <width>81</width>
       <height>31</height>
@@ -241,7 +241,7 @@
    <widget class="QRadioButton" name="sample_status_bad_radioButton">
     <property name="geometry">
      <rect>
-      <x>640</x>
+      <x>880</x>
       <y>80</y>
       <width>161</width>
       <height>31</height>
@@ -261,52 +261,10 @@
    <widget class="QTextEdit" name="comment_status_textEdit">
     <property name="geometry">
      <rect>
-      <x>550</x>
+      <x>600</x>
       <y>120</y>
-      <width>311</width>
-      <height>371</height>
-     </rect>
-    </property>
-    <property name="frameShape">
-     <enum>QFrame::Shape::Box</enum>
-    </property>
-   </widget>
-  </widget>
-  <widget class="QFrame" name="from_lab_order_frame">
-   <property name="geometry">
-    <rect>
-     <x>880</x>
-     <y>320</y>
-     <width>381</width>
-     <height>561</height>
-    </rect>
-   </property>
-   <property name="frameShape">
-    <enum>QFrame::Shape::StyledPanel</enum>
-   </property>
-   <property name="frameShadow">
-    <enum>QFrame::Shadow::Raised</enum>
-   </property>
-   <widget class="QTableView" name="tableView_3">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>50</y>
-      <width>361</width>
-      <height>201</height>
-     </rect>
-    </property>
-    <property name="frameShape">
-     <enum>QFrame::Shape::Box</enum>
-    </property>
-   </widget>
-   <widget class="QLabel" name="barcode_label_2">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>10</y>
-      <width>141</width>
-      <height>31</height>
+      <width>651</width>
+      <height>331</height>
      </rect>
     </property>
     <property name="font">
@@ -316,28 +274,8 @@
       <bold>true</bold>
      </font>
     </property>
-    <property name="text">
-     <string>ไฟล์ TEMPLATE</string>
-    </property>
-   </widget>
-   <widget class="QPushButton" name="export_pushButton">
-    <property name="geometry">
-     <rect>
-      <x>210</x>
-      <y>260</y>
-      <width>161</width>
-      <height>51</height>
-     </rect>
-    </property>
-    <property name="font">
-     <font>
-      <family>TH Niramit AS</family>
-      <pointsize>20</pointsize>
-      <bold>true</bold>
-     </font>
-    </property>
-    <property name="text">
-     <string>EXPORT</string>
+    <property name="frameShape">
+     <enum>QFrame::Shape::Box</enum>
     </property>
    </widget>
   </widget>

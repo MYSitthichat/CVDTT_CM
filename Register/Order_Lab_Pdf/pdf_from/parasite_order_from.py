@@ -9,40 +9,41 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle, 
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.fonts import addMapping
-
-# [FIX] Import Barcode Factory
 from reportlab.graphics.barcode import createBarcodeDrawing
 
+# --- 1. RESOURCE HELPER FUNCTION (Corrected) ---
+def get_resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for Nuitka/PyInstaller """
+    if getattr(sys, 'frozen', False):
+        # If the application is run as a bundle (compiled), Nuitka/PyInstaller 
+        # unpacks to a temp folder. We use that path.
+        base_path = os.path.dirname(sys.modules['__main__'].__file__)
+    else:
+        # If running as a normal .py script, we look in the project root.
+        # This file is in: Order_Lab_Pdf/pdf_from/
+        # We go up 3 levels to find the project root where 'logo.jpg' lives.
+        base_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+    return os.path.join(base_path, relative_path)
+
 # --- Config & Font Setup ---
-# Support both development and compiled executable (Nuitka, PyInstaller)
 def get_base_path():
     """Get base path for resources - works with Nuitka and PyInstaller"""
-    # For Nuitka
     if '__compiled__' in globals():
-        # Nuitka compiled - use executable directory
         return os.path.dirname(os.path.abspath(sys.argv[0]))
-    # For PyInstaller
     elif getattr(sys, 'frozen', False):
-        # PyInstaller - use _MEIPASS
         return getattr(sys, '_MEIPASS', os.path.dirname(os.path.abspath(sys.argv[0])))
-    # For normal Python
     else:
-        # Development mode
         return os.path.dirname(os.path.abspath(__file__))
 
 base_path = get_base_path()
 
-# Try multiple paths to find fonts folder
+# Font search logic
 fonts_folder_candidates = [
-    # For Nuitka/PyInstaller - fonts in same dir as exe
     os.path.join(base_path, 'fonts'),
-    # For Nuitka/PyInstaller - fonts in parent dir
     os.path.join(os.path.dirname(base_path), 'fonts'),
-    # For development - Register/fonts
     os.path.join(base_path, '..', '..', 'fonts'),
-    # For development - CVDTT_CM/fonts (legacy)
     os.path.join(base_path, '..', '..', '..', 'fonts'),
-    # Fallback to script directory
     os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'fonts'),
 ]
 
@@ -52,13 +53,11 @@ for candidate in fonts_folder_candidates:
     test_font = os.path.join(candidate, 'TH Niramit AS.ttf')
     if os.path.exists(test_font):
         fonts_folder = candidate
-        # print(f"✓ Fonts found at: {fonts_folder}")
         break
 
 if fonts_folder is None:
-    # Final fallback
     fonts_folder = os.path.join(base_path, 'fonts')
-    print(f"⚠ Font folder not found, using fallback: {fonts_folder}")
+    # print(f"⚠ Font folder not found, using fallback: {fonts_folder}")
 
 font_files = {
     'normal': 'TH Niramit AS.ttf',
@@ -83,7 +82,8 @@ if os.path.exists(font_path_normal):
     except Exception as e:
         print(f"Error registering font: {e}")
 else:
-    print(f"Font file not found at: {font_path_normal}")
+    # print(f"Font file not found at: {font_path_normal}")
+    pass
 
 def set_paragraph_h1_style():
     styles = getSampleStyleSheet()
@@ -103,12 +103,10 @@ def set_paragraph_style():
 
 HEADER_COLOR = colors.HexColor('#E8F4F8')
 
-# [FIX] Helper Function: No Human Readable, Adjusted Height
 def get_barcode_drawing(value, height=10*mm):
     try:
         val_str = str(value).strip()
         if not val_str or val_str.lower() == 'none': return Spacer(1, height)
-        # humanReadable=False
         d = createBarcodeDrawing('Code128', value=val_str, barHeight=height, barWidth=1.2, humanReadable=False)
         return d
     except Exception as e:
@@ -134,25 +132,28 @@ def create_parasite_biology(sample_detail, data, output_file):
     if raw_barcode is None: raw_barcode = ""
     barcode_val = str(raw_barcode).zfill(12)
 
-    # Logo - ใช้ 2 logo วางข้างๆ กัน
-    logo_dir = os.path.join(os.path.dirname(__file__), "logo")
-    logo1_path = os.path.join(logo_dir, "logo.jpg")
-    logo2_path = os.path.join(logo_dir, "group.png")
+    # --- [CRITICAL FIX] USE THE HELPER FUNCTION ---
+    # We do NOT look for a 'logo' subdirectory. We look for the packed files directly.
+    logo1_path = get_resource_path("logo.jpg")
+    logo2_path = get_resource_path("group.png")
     
-    # สร้าง logo images ขนาดเท่ากัน
+    # Create logo images
     logo1_img = ""
     logo2_img = ""
-    logo_height = 1.0 * inch  # กำหนดความสูงเท่ากัน
+    logo_height = 1.0 * inch
     
+    # Check if files exist (using the helper path)
     if os.path.exists(logo1_path):
-        # logo.jpg เป็นสี่เหลี่ยมจัตุรัส
         logo1_img = Image(logo1_path, width=logo_height, height=logo_height)
+    else:
+        print(f"[Warning] Logo 1 not found at: {logo1_path}")
     
     if os.path.exists(logo2_path):
-        # group.png ปรับให้มีความสูงเท่ากันและให้ aspect ratio คงที่
         logo2_img = Image(logo2_path, width=logo_height, height=logo_height)
+    else:
+        print(f"[Warning] Logo 2 not found at: {logo2_path}")
     
-    # สร้างตารางสำหรับวาง logo 2 อัน
+    # Create table for logos
     logo_data = [[logo1_img, logo2_img]]
     logo_table = Table(logo_data, colWidths=[1.05*inch, 1.05*inch])
     logo_table.setStyle(TableStyle([
@@ -170,7 +171,7 @@ def create_parasite_biology(sample_detail, data, output_file):
         [logo_table, 'ใบคำขอรับบริการทดสอบปรสิตวิทยา', barcode_drawing],
         ['', Paragraph("ศูนย์ชันสูตรโรคสัตว์และถ่ายทอดเทคโนโลยี คณะสัตวแพทยศาสตร์ มหาวิทยาลัยเชียงใหม่ <br/> (Center of Veterinary Diagnosis and Technology Transfer) <br/> Tel. 053-948041 Mobile 094-6362641 <br/> E-mail vet_diag@cmu.ac.th", set_paragraph_style()), ''],
     ]
-    col_widths = [130, 243, 150]  # ปรับเพิ่มขนาดคอลัมน์ logo เป็น 130
+    col_widths = [130, 243, 150]
     table = Table(title_data, colWidths=col_widths, hAlign='LEFT')
     table.setStyle(TableStyle([
         ('FONTNAME', (0, 0), (-1, -1), 'THNiramitAS'),
@@ -181,12 +182,9 @@ def create_parasite_biology(sample_detail, data, output_file):
         ('SPAN', (2, 0), (2, 1)),
         ('ALIGN', (0, 0), (0, 1), 'CENTER'),
         ('ALIGN', (2, 0), (2, 1), 'CENTER'),
-        
-        # [FIX] ขยับบาร์โค้ดลงมา ไม่ให้ทับตัวหนังสือ
         ('VALIGN', (2, 0), (2, 1), 'BOTTOM'),
         ('BOTTOMPADDING', (2, 0), (2, 1), 5),
         ('TOPPADDING', (2, 0), (2, 1), 15),
-        
         ('PADDING', (0, 0), (-1, -1), 0),
     ]))
     elements.append(table)
@@ -258,7 +256,7 @@ def create_parasite_biology(sample_detail, data, output_file):
     pdf_file.build(elements)
 
 if __name__ == "__main__":
-    # Mock Data
+    # Mock Data for Testing
     mock_sample = ["" for _ in range(30)]
     mock_sample[0] = "2025-12-08 13:24:04"
     mock_sample[25] = "0000001539"
