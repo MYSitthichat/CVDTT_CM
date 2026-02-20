@@ -19,7 +19,6 @@ except ImportError:
     print("\n[Error] not found qt-material")
     print("error please run: pip install qt-material\n")
     sys.exit()
-    
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

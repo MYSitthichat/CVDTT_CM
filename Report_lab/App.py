@@ -33,7 +33,6 @@ if __name__ == '__main__':
 
 
 
-
 # Available themes
 # Light Themes:
     # 'light_blue.xml'
