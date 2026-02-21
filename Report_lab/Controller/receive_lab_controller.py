@@ -74,22 +74,17 @@ class ReceiveLabController(QObject):
         self.view.ui.tableView_2.setSelectionMode(self.view.ui.tableView_2.SelectionMode.SingleSelection)
         self.view.ui.tableView_2.setAlternatingRowColors(True)
         
-        # Setup QStandardItemModel for tableView_3 (Template view)
+        # Setup QStandardItemModel for Template (kept for internal use, no UI binding)
         self.template_model = QStandardItemModel()
         self.template_model.setHorizontalHeaderLabels(['ชื่อไฟล์ Template'])
-        self.view.ui.tableView_3.setModel(self.template_model)
-        self.view.ui.tableView_3.horizontalHeader().setStretchLastSection(True)
-        self.view.ui.tableView_3.setShowGrid(True)
-        self.view.ui.tableView_3.setSelectionBehavior(self.view.ui.tableView_3.SelectionBehavior.SelectRows)
-        self.view.ui.tableView_3.setSelectionMode(self.view.ui.tableView_3.SelectionMode.SingleSelection)
-        self.view.ui.tableView_3.setAlternatingRowColors(True)
     
     # ==========================================
     # SIGNAL CONNECTIONS - การเชื่อมต่อสัญญาณ
     # ==========================================
     def _setup_connections(self):
         self.view.ui.clear_pushButton.clicked.connect(self.clear_pushButton_clicked)
-        self.view.ui.export_pushButton.clicked.connect(self.export_pushButton_clicked)
+        # Note: export_pushButton removed from UI - export functionality moved elsewhere
+        # self.view.ui.export_pushButton.clicked.connect(self.export_pushButton_clicked)
         self.view.ui.search_pushButton.clicked.connect(self.loaded_lab_orders)
         self.view.ui.receive_pushButton.clicked.connect(self.receive_lab_orders)
         self.view.ui.reject_pushButton.clicked.connect(self.reject_lab_orders)
@@ -98,10 +93,7 @@ class ReceiveLabController(QObject):
         self.view.ui.tableView.doubleClicked.connect(self.on_cell_double_clicked)
         self.view.ui.tableView.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.view.ui.tableView.setSelectionBehavior(QAbstractItemView.SelectRows)
-        # เชื่อมต่อการคลิกเลือก template
-        self.view.ui.tableView_3.clicked.connect(self.on_template_selected)
-        # เชื่อมต่อการคลิกเลือก template
-        self.view.ui.tableView_3.clicked.connect(self.on_template_selected)
+        # Note: tableView_3 connections removed as the template window was removed from UI
 
     # ==========================================
     # EVENT HANDLERS - TABLE INTERACTIONS - จัดการเหตุการณ์ตาราง
@@ -140,7 +132,7 @@ class ReceiveLabController(QObject):
             QMessageBox.warning(self.view, "Error", f"ไม่สามารถดึงรายละเอียดได้: {str(e)}")
     
     def on_template_selected(self, index):
-        """เมื่อคลิกเลือก template ใน tableView_3"""
+        """เมื่อเลือก template (method kept for compatibility)"""
         row = index.row()
         template_name = self.template_model.item(row, 0).text()
         
@@ -255,12 +247,12 @@ class ReceiveLabController(QObject):
             QMessageBox.warning(self.view, "แจ้งเตือน", "กรุณาเลือก Lab Order ที่ต้องการรับก่อน (ดับเบิ้ลคลิกที่รายการ)")
             return
         
-        # ตรวจสอบว่าเลือกสถานะตัวอย่างหรือไม่
-        sample_status = ""
+        # ตรวจสอบว่าเลือกสถานะตัวอย่างหรือไม่ ("1"=ปกติ, "0"=เสียหาย/ไม่ปกติ)
+        sample_status = None
         if self.view.ui.sample_status_good_radioButton.isChecked():
-            sample_status = "ปกติ"
+            sample_status = "1"  # ปกติ -> room_action_status = 1
         elif self.view.ui.sample_status_bad_radioButton.isChecked():
-            sample_status = "เสียหาย/ไม่ปกติ"
+            sample_status = "0"  # เสียหาย/ไม่ปกติ -> room_action_status = 0
         else:
             QMessageBox.warning(self.view, "แจ้งเตือน", "กรุณาเลือกสภาพสิ่งส่งตรวจ (ปกติ หรือ เสียหาย/ไม่ปกติ)")
             return
@@ -268,8 +260,12 @@ class ReceiveLabController(QObject):
         # ดึง comment
         comment = self.view.ui.comment_status_textEdit.toPlainText().strip()
         
-        # ดึง room_id
-        room_id = self.log_room_id if hasattr(self, 'log_room_id') else None
+        # ดึง room_id (ตรวจสอบว่าเป็น admin หรือไม่)
+        if self.admin_comein == True:
+            room_id = self.view.get_type_search()
+        else:
+            room_id = self.log_room_id if hasattr(self, 'log_room_id') else None
+        
         if room_id is None:
             QMessageBox.warning(self.view, "ข้อผิดพลาด", "ไม่พบข้อมูลห้องแลป")
             return
@@ -324,11 +320,12 @@ class ReceiveLabController(QObject):
             QMessageBox.warning(self.view, "แจ้งเตือน", "กรุณาดับเบิลคลิกเลือก Lab Order ที่ต้องการปฏิเสธ")
             return
         
-        # ตรวจสอบสภาพสิ่งส่งตรวจ
+        # ตรวจสอบสภาพสิ่งส่งตรวจ ("1"=ปกติ, "0"=เสียหาย/ไม่ปกติ)
+        sample_status = None
         if self.view.ui.sample_status_good_radioButton.isChecked():
-            sample_status = "ปกติ"
+            sample_status = "1"  # ปกติ -> room_action_status = 1
         elif self.view.ui.sample_status_bad_radioButton.isChecked():
-            sample_status = "เสียหาย/ไม่ปกติ"
+            sample_status = "0"  # เสียหาย/ไม่ปกติ -> room_action_status = 0
         else:
             QMessageBox.warning(self.view, "แจ้งเตือน", "กรุณาเลือกสภาพสิ่งส่งตรวจ (ปกติ หรือ เสียหาย/ไม่ปกติ)")
             return
@@ -336,8 +333,12 @@ class ReceiveLabController(QObject):
         # ดึง comment
         comment = self.view.ui.comment_status_textEdit.toPlainText().strip()
         
-        # ดึง room_id
-        room_id = self.log_room_id if hasattr(self, 'log_room_id') else None
+        # ดึง room_id (ตรวจสอบว่าเป็น admin หรือไม่)
+        if self.admin_comein == True:
+            room_id = self.view.get_type_search()
+        else:
+            room_id = self.log_room_id if hasattr(self, 'log_room_id') else None
+        
         if room_id is None:
             QMessageBox.warning(self.view, "ข้อผิดพลาด", "ไม่พบข้อมูลห้องแลป")
             return

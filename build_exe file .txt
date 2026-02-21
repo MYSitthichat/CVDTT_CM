@@ -1,0 +1,10 @@
+## Reg.exe ##
+
+nuitka --onefile --mingw64 --enable-plugin=pyside6 --windows-console-mode=disable --include-package-data=qt_material --include-data-file=group.png=group.png --include-data-file=logo.jpg=logo.jpg App.py
+
+
+
+## Report.exe ##
+
+nuitka --onefile --mingw64 --enable-plugin=pyside6 --windows-console-mode=disable App.py
+
