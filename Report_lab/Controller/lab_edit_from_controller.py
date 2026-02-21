@@ -1,6 +1,7 @@
 import os
 import sys
 import shutil
+import subprocess
 from PySide6.QtWidgets import QMessageBox, QTreeWidgetItem, QFileDialog
 from PySide6.QtCore import QObject
 from View.view_lab_edite_form_frame import LabEditFormView
@@ -16,13 +17,12 @@ class LabEditFormController(QObject):
         self.report_info_service = ReportInformationService()
         self.user_room_id = None
         self.user_group_id = None
-        self.room_name_map = {}
         
         # State variables
         self.pending_file_path = None
         self.editing_report_id = None
         self.current_report_path = None
-        self.current_room_id_of_item = None 
+        self.current_lab_name_of_item = None 
         
         self._setup_connections()
         self.setup_table_widget()
@@ -31,15 +31,15 @@ class LabEditFormController(QObject):
     def set_initial_ui_state(self):
         """กำหนดสถานะเริ่มต้น"""
         self.view.ui.Download_form_pushButton.setEnabled(False)
-        self.view.ui.lab_name_comboBox.setEnabled(False)
+        self.view.ui.lab_name_comboBox.setEnabled(True)   # user เลือก lab ได้ตลอด
         self.view.ui.form_name_lineEdit.setEnabled(False)
         self.view.ui.detail_from_textEdit.setEnabled(False)
         self.view.ui.save_form_pushButton.setEnabled(False)
         
-        self.view.ui.new_lab_name_lineEdit.setEnabled(False)
-        self.view.ui.new_lab_detail_textEdit.setEnabled(False)
-        self.view.ui.save_new_lab_pushButton.setEnabled(False)
+        # ส่วน New Lab — ขึ้นอยู่กับ group_id
+        self._apply_group_permissions()
         
+        # เคลียร์ข้อมูล
         self.view.ui.form_name_lineEdit.clear()
         self.view.ui.detail_from_textEdit.clear()
         
@@ -48,6 +48,7 @@ class LabEditFormController(QObject):
 
     def _setup_connections(self):
         self.view.ui.list_detail_treeWidget.itemSelectionChanged.connect(self.on_item_selection_changed)
+        self.view.ui.lab_name_comboBox.currentIndexChanged.connect(self.on_lab_name_comboBox_changed)
         self.view.ui.Edte_form_pushButton.clicked.connect(self.edit_form_pushButton_clicked)
         self.view.ui.Download_form_pushButton.clicked.connect(self.download_pushButton_clicked)
         self.view.ui.Delete_form_pushButton.clicked.connect(self.delete_pushButton_clicked)
@@ -56,49 +57,76 @@ class LabEditFormController(QObject):
 
     def setup_table_widget(self):
         tree = self.view.ui.list_detail_treeWidget
-        tree.setColumnWidth(0, 400)
-        tree.setColumnWidth(1, 100)
-        tree.setColumnWidth(2, 550)
+        tree.setColumnWidth(0, 600)
+        tree.setColumnWidth(1, 150)
+        tree.setColumnWidth(2, 300)
         tree.header().setStretchLastSection(True)
         tree.setSelectionMode(tree.SelectionMode.SingleSelection)
         tree.setSelectionBehavior(tree.SelectionBehavior.SelectRows)
         tree.setEditTriggers(tree.EditTrigger.NoEditTriggers)
         tree.setAlternatingRowColors(True)
 
+    def on_lab_name_comboBox_changed(self, index: int):
+        """เมื่อ user เลือก lab จาก comboBox โดยตรง (ไม่ผ่าน TreeWidget)
+        ถ้าไม่ได้อยู่ใน Edit Mode ให้เปิดฟิลด์เพื่อกรอกข้อมูล New Form"""
+        if self.editing_report_id:
+            # อยู่ใน Edit Mode อยู่แล้ว — ไม่ต้องทำอะไรพิเศษ
+            return
+        if index >= 0:
+            # มีการเลือก lab → เปิดฟิลด์สำหรับเพิ่มฟอร์มใหม่
+            # ยกเลิก tree selection เฉพาะเมื่อไม่ได้อยู่ใน Edit Mode
+            tree = self.view.ui.list_detail_treeWidget
+            tree.blockSignals(True)
+            tree.clearSelection()
+            tree.blockSignals(False)
+            self.editing_report_id = None
+            self.pending_file_path = None
+            self.view.ui.form_name_lineEdit.clear()
+            self.view.ui.form_name_lineEdit.setEnabled(True)
+            self.view.ui.detail_from_textEdit.clear()
+            self.view.ui.detail_from_textEdit.setEnabled(True)
+            self.view.ui.save_form_pushButton.setEnabled(True)
+            self.view.ui.Download_form_pushButton.setEnabled(False)
+
     def get_app_root_path(self):
-        """ดึง Path ที่ตั้งของโปรแกรม เพื่อทำ Relative Path"""
         if getattr(sys, 'frozen', False):
             application_path = os.path.dirname(sys.executable)
         else:
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            application_path = os.path.dirname(current_dir) # ถอย 2 step จาก controller -> root
-            # เช็คว่าถอยถูกไหม (ควรจะเจอ folder BACKEND หรือ Report_lab)
-            if not os.path.exists(os.path.join(application_path, 'Saved_Forms')):
-                 # fallback: ลองถอยอีกชั้นถ้า structure ลึกกว่าปกติ
-                 pass
+            application_path = os.path.dirname(current_dir)
         return application_path
 
     def on_item_selection_changed(self):
         selected_items = self.view.ui.list_detail_treeWidget.selectedItems()
         if not selected_items:
+            # ถ้าไม่มีการเลือก ให้ Reset กลับไปสถานะเริ่มต้น (พร้อมสำหรับ New Form)
             self.set_initial_ui_state()
             return
 
         item = selected_items[0]
         report_id = item.data(0, 1000)
         
-        if not report_id: # Group Header
+        if not report_id:
+            # กรณีคลิก Group Header — เตรียม New Form Mode โดยเลือก lab นั้นไว้ล่วงหน้า
             self.set_initial_ui_state()
+            lab_name = item.text(0)
+            combo = self.view.ui.lab_name_comboBox
+            combo.blockSignals(True)
+            combo.setCurrentText(lab_name)
+            combo.blockSignals(False)
+            combo.setEnabled(True)
+            self.view.ui.form_name_lineEdit.setEnabled(True)
+            self.view.ui.detail_from_textEdit.setEnabled(True)
+            self.view.ui.save_form_pushButton.setEnabled(True)
             return
 
         # --- EDIT MODE SETUP ---
         self.editing_report_id = report_id
-        
-        # Path นี้ถูกแปลงเป็น Absolute แล้วใน populate_tree_widget
-        self.current_report_path = item.data(0, 1001) 
-        self.current_room_id_of_item = item.data(0, 1002) 
+        self.current_report_path = item.data(0, 1001)
+        self.current_lab_name_of_item = item.data(0, 1002)
         self.pending_file_path = None
 
+        # Display Data
         report_name = item.text(0)
         detail = item.text(2)
 
@@ -107,8 +135,12 @@ class LabEditFormController(QObject):
 
         parent_item = item.parent()
         if parent_item:
-            self.view.ui.lab_name_comboBox.setCurrentText(parent_item.text(0))
+            combo = self.view.ui.lab_name_comboBox
+            combo.blockSignals(True)
+            combo.setCurrentText(parent_item.text(0))
+            combo.blockSignals(False)
 
+        # Enable UI for Edit
         self.view.ui.lab_name_comboBox.setEnabled(True)
         self.view.ui.form_name_lineEdit.setEnabled(True)
         self.view.ui.detail_from_textEdit.setEnabled(True)
@@ -116,6 +148,12 @@ class LabEditFormController(QObject):
         self.view.ui.Download_form_pushButton.setEnabled(True)
 
     def edit_form_pushButton_clicked(self):
+        """
+        ปุ่มนี้ทำหน้าที่ 2 อย่าง:
+        1. ถ้าเลือกรายการอยู่ (Edit) -> เปลี่ยนไฟล์ (Change File)
+        2. ถ้าไม่ได้เลือกรายการ (New) -> เลือกไฟล์เพื่อสร้างฟอร์มใหม่ (New Form)
+        """
+        # เปิด File Dialog เหมือนกันทั้ง 2 กรณี
         file_dialog = QFileDialog(self.view)
         file_dialog.setNameFilter("Word Documents (*.docx *.doc)")
         file_dialog.setFileMode(QFileDialog.ExistingFile)
@@ -127,21 +165,29 @@ class LabEditFormController(QObject):
                 file_name = os.path.basename(self.pending_file_path)
 
                 if self.editing_report_id:
-                    QMessageBox.information(self.view, "Info", f"เปลี่ยนไฟล์เป็น: {file_name}\nกด 'บันทึก' เพื่อยืนยัน")
+                    # --- CASE 1: EDIT MODE ---
+                    QMessageBox.information(self.view, "Info", f"เปลี่ยนไฟล์สำหรับรายการที่เลือกเป็น:\n{file_name}\n\nกด 'บันทึกแบบฟอร์ม' เพื่อยืนยัน")
                 else:
+                    # --- CASE 2: NEW FORM MODE ---
+                    # ดึงชื่อไฟล์มาเป็นชื่อฟอร์มอัตโนมัติ (ตัดนามสกุลออก)
                     name_only = os.path.splitext(file_name)[0]
                     self.view.ui.form_name_lineEdit.setText(name_only)
+                    
+                    # เปิดการใช้งานช่องกรอกข้อมูล
                     self.view.ui.lab_name_comboBox.setEnabled(True)
                     self.view.ui.form_name_lineEdit.setEnabled(True)
                     self.view.ui.detail_from_textEdit.setEnabled(True)
                     self.view.ui.save_form_pushButton.setEnabled(True)
-                    QMessageBox.information(self.view, "Info", f"เตรียมเพิ่มไฟล์: {file_name}")
+                    
+                    QMessageBox.information(self.view, "Info", f"เตรียมเพิ่มแบบฟอร์มใหม่:\n{file_name}\n\nกรุณาตรวจสอบชื่อและกด 'บันทึกแบบฟอร์ม'")
 
     def save_form_pushButton_clicked(self):
+        """
+        ปุ่ม Save ทำหน้าที่ 2 อย่างตามสถานะ self.editing_report_id
+        """
         try:
+            # 1. Validate Input
             new_report_name = self.view.ui.form_name_lineEdit.text().strip()
-            detail_text = self.view.ui.detail_from_textEdit.toPlainText()
-            
             if not new_report_name:
                 QMessageBox.warning(self.view, "Warning", "กรุณากรอกชื่อแบบฟอร์ม")
                 return
@@ -151,81 +197,64 @@ class LabEditFormController(QObject):
             if self.main_controller:
                 user_id = self.main_controller.get_logged_in_user_id() or 1
 
-            allow_all = self.user_group_id in [1, 2, 3, 18, 19, 20]
-            room_id_to_save = None
+            # --- 2. Determine Logic (Edit vs New) ---
+            lab_name_to_save = self.view.ui.lab_name_comboBox.currentText().strip()
+            detail_text = self.view.ui.detail_from_textEdit.toPlainText().strip()
 
             if self.editing_report_id:
-                room_id_to_save = self.current_room_id_of_item
-            else:
-                if allow_all:
-                    selected_room_name = self.view.ui.lab_name_comboBox.currentText()
-                    room_id_to_save = self.room_name_map.get(selected_room_name)
-                    
-                    if not room_id_to_save:
-                        QMessageBox.warning(self.view, "Error", "ไม่สามารถระบุ ID ของห้องที่เลือกได้")
-                        return
-                else:
-                    room_id_to_save = self.user_room_id
+                # ================= EDIT MODE (VERSIONING) =================
+                final_path = self.current_report_path
 
-            if not room_id_to_save:
-                room_id_to_save = 999 
-            
-            # --- PATH LOGIC (เหมือนเดิม) ---
-            backend_root = os.path.join(root_path, "..", "BACKEND")
-            backend_root = os.path.abspath(backend_root)
-            rel_folder = os.path.join("report_template", "word", f"Room_{room_id_to_save}")
-            abs_folder = os.path.join(backend_root, rel_folder)
-
-            if not os.path.exists(abs_folder):
-                os.makedirs(abs_folder)
-
-            db_path_to_save = None
-
-            # --- 2. Process (Edit vs New) ---
-            if self.editing_report_id:
-                # === EDIT ===
+                # Upload File to Backend if changed
                 if self.pending_file_path:
-                    # มีการเปลี่ยนไฟล์ -> Copy ใหม่
-                    file_name = os.path.basename(self.pending_file_path)
-                    shutil.copy2(self.pending_file_path, os.path.join(abs_folder, file_name))
-                    db_path_to_save = os.path.join("report_template", "word", f"Room_{room_id_to_save}", file_name) # Save Relative (ไม่รวม BACKEND)
-                else:
-                    # ไม่เปลี่ยนไฟล์ -> ใช้ Path เดิม (ต้องแปลงกลับเป็น Relative ถ้าทำได้)
-                    current_abs = self.current_report_path
-                    if current_abs and current_abs.startswith(root_path):
-                        db_path_to_save = os.path.relpath(current_abs, root_path)
-                    else:
-                        db_path_to_save = current_abs # กรณีเป็น Path ภายนอกเก่าๆ
+                    upload_ok, result = self.report_info_service.upload_file(
+                        local_file_path=self.pending_file_path,
+                        lab_name=lab_name_to_save,
+                        from_name=new_report_name
+                    )
+                    if not upload_ok:
+                        QMessageBox.critical(self.view, "Error", f"อัพโหลดไฟล์ล้มเหลว: {result}")
+                        return
+                    final_path = result  # path ที่ Backend ได้ให้มา
 
                 success, message = self.report_info_service.save_new_report_version(
                     old_report_id=self.editing_report_id,
                     new_name=new_report_name,
-                    new_path=db_path_to_save,
-                    room_id=room_id_to_save,
-                    updater_id=user_id,
-                    detail=detail_text
-                )
-            else:
-                # === NEW ===
-                if not self.pending_file_path:
-                     QMessageBox.warning(self.view, "Warning", "กรุณาเลือกไฟล์ก่อน")
-                     return
-                
-                file_name = os.path.basename(self.pending_file_path)
-                shutil.copy2(self.pending_file_path, os.path.join(abs_folder, file_name))
-                db_path_to_save = os.path.join("report_template", "word", f"Room_{room_id_to_save}", file_name) # Save Relative (ไม่รวม BACKEND)
-                
-                success, message = self.report_info_service.add_report(
-                    report_name=new_report_name,
-                    room_id=room_id_to_save,
-                    report_path=db_path_to_save,
-                    updater_id=user_id,
-                    detail=detail_text
+                    new_path=final_path,
+                    lab_name=lab_name_to_save,
+                    updater=user_id,
+                    comment=detail_text
                 )
 
-            # --- 3. Result ---
+            else:
+                # ================= NEW FORM MODE (INSERT) =================
+                if not self.pending_file_path:
+                    QMessageBox.warning(self.view, "Warning", "กรุณาเลือกไฟล์ก่อนบันทึก (กดปุ่มเพิ่มแบบฟอร์ม)")
+                    return
+
+                # Upload File to Backend
+                upload_ok, result = self.report_info_service.upload_file(
+                    local_file_path=self.pending_file_path,
+                    lab_name=lab_name_to_save,
+                    from_name=new_report_name
+                )
+                if not upload_ok:
+                    QMessageBox.critical(self.view, "Error", f"อัพโหลดไฟล์ล้มเหลว: {result}")
+                    return
+                dest_path = result  # path ที่ Backend ได้ให้มา
+
+                success, message = self.report_info_service.add_report(
+                    from_name=new_report_name,
+                    lab_name=lab_name_to_save,
+                    location_file=dest_path,
+                    updater=user_id,
+                    comment=detail_text
+                )
+
+            # --- 3. Result Handling ---
             if success:
-                QMessageBox.information(self.view, "Success", "บันทึกข้อมูลเรียบร้อยแล้ว")
+                action_text = "แก้ไข" if self.editing_report_id else "เพิ่ม"
+                QMessageBox.information(self.view, "Success", f"{action_text}ข้อมูลเรียบร้อยแล้ว")
                 self.set_initial_ui_state()
                 self.reload_data()
             else:
@@ -234,140 +263,166 @@ class LabEditFormController(QObject):
         except Exception as e:
             import traceback
             print(traceback.format_exc())
-            QMessageBox.critical(self.view, "Error", f"System Error: {str(e)}")
+            QMessageBox.critical(self.view, "Error", f"เกิดข้อผิดพลาด: {str(e)}")
 
     def delete_pushButton_clicked(self):
         selected_items = self.view.ui.list_detail_treeWidget.selectedItems()
-        if not selected_items: return
+        if not selected_items:
+            QMessageBox.warning(self.view, "Warning", "กรุณาเลือกรายการที่ต้องการลบ")
+            return
             
         item = selected_items[0]
         report_id = item.data(0, 1000)
         
-        if not report_id: return
+        if not report_id:
+            QMessageBox.warning(self.view, "Warning", "ไม่สามารถลบหัวข้อกลุ่มได้")
+            return
 
-        confirm = QMessageBox.question(self.view, "Confirm", f"ลบรายงาน '{item.text(0)}' ?", QMessageBox.Yes | QMessageBox.No)
+        confirm = QMessageBox.question(
+            self.view, 
+            "Confirm Delete", 
+            f"คุณต้องการลบรายงาน '{item.text(0)}' ใช่หรือไม่?",
+            QMessageBox.Yes | QMessageBox.No
+        )
+        
         if confirm == QMessageBox.Yes:
-            user_id = self.main_controller.get_logged_in_user_id() or 1 if self.main_controller else 1
+            user_id = 1
+            if self.main_controller:
+                user_id = self.main_controller.get_logged_in_user_id() or 1
+                
             success, message = self.report_info_service.delete_report(report_id, user_id)
+            
             if success:
+                QMessageBox.information(self.view, "Success", "ลบข้อมูลเรียบร้อยแล้ว")
+                self.set_initial_ui_state()
                 self.reload_data()
             else:
-                QMessageBox.critical(self.view, "Error", message)
+                QMessageBox.critical(self.view, "Error", f"เกิดข้อผิดพลาดในการลบ: {message}")
 
     def save_new_lab_pushButton_clicked(self):
-        QMessageBox.information(self.view, "Information", "Feature Disabled")
+        """บันทึก lab_name ใหม่เข้า database และเพิ่มเข้า comboBox"""
+        new_lab_name = self.view.ui.new_lab_name_lineEdit.text().strip()
+        if not new_lab_name:
+            QMessageBox.warning(self.view, "Warning", "กรุณากรอกชื่อห้องปฏิบัติการ")
+            return
+
+        user_id = 1
+        if self.main_controller:
+            user_id = self.main_controller.get_logged_in_user_id() or 1
+
+        success, message = self.report_info_service.add_lab_name(new_lab_name, user_id)
+
+        if not success:
+            # 409 = มีอยู่แล้ว ให้แสดง warning แต่ยังเพิ่มเข้า comboBox ได้
+            if "already exists" in message:
+                QMessageBox.warning(self.view, "Warning", f"ห้องปฏิบัติการ '{new_lab_name}' มีอยู่ใน database แล้ว")
+            else:
+                QMessageBox.critical(self.view, "Error", f"บันทึกล้มเหลว: {message}")
+            return
+
+        # เพิ่มเข้า comboBox ถ้ายังไม่มี
+        combo = self.view.ui.lab_name_comboBox
+        existing = [combo.itemText(i) for i in range(combo.count())]
+        if new_lab_name not in existing:
+            combo.addItem(new_lab_name)
+        combo.setCurrentText(new_lab_name)
+
+        self.view.ui.new_lab_name_lineEdit.clear()
+        self.view.ui.new_lab_detail_textEdit.clear()
+        self.reload_data()
+        QMessageBox.information(self.view, "Success", f"เพิ่มห้องปฏิบัติการ '{new_lab_name}' เรียบร้อยแล้ว")
 
     def download_pushButton_clicked(self):
         selected_items = self.view.ui.list_detail_treeWidget.selectedItems()
-        if not selected_items: return
+        if not selected_items:
+            return
             
         item = selected_items[0]
-        src_path = item.data(0, 1001) # อันนี้เป็น Absolute Path แล้ว
+        relative_path = item.data(0, 1001)  # location_file เก็บเป็น relative path (Backend-relative)
+        report_name = item.text(0)
         
-        if not src_path or not os.path.exists(src_path):
-            QMessageBox.critical(self.view, "Error", f"ไม่พบไฟล์ต้นฉบับ:\n{src_path}")
+        if not relative_path:
+            QMessageBox.critical(self.view, "Error", "ไม่พบไฟล์ต้นฉบับ")
             return
 
-        _, ext = os.path.splitext(src_path)
-        save_path, _ = QFileDialog.getSaveFileName(self.view, "Save File", f"{item.text(0)}{ext}", f"*{ext}")
+        _, file_extension = os.path.splitext(relative_path)
+        default_filename = f"{report_name}{file_extension}"
+
+        save_path, _ = QFileDialog.getSaveFileName(
+            self.view, "บันทึกแบบฟอร์ม", default_filename, f"Document Files (*{file_extension});;All Files (*.*)"
+        )
 
         if save_path:
             try:
-                shutil.copy2(src_path, save_path)
-                QMessageBox.information(self.view, "Success", "ดาวน์โหลดเสร็จสิ้น")
+                success, result = self.report_info_service.download_file(relative_path, save_path)
+                if success:
+                    QMessageBox.information(self.view, "Success", f"ดาวน์โหลดเรียบร้อยแล้วที่: {save_path}")
+                else:
+                    QMessageBox.critical(self.view, "Error", f"ดาวน์โหลดล้มเหลว: {result}")
             except Exception as e:
                 QMessageBox.critical(self.view, "Error", str(e))
-
-    def set_user_group_id(self, group_id):
-        self.user_group_id = group_id
 
     def reload_data(self):
         self.load_report_data()
     
+    def _apply_group_permissions(self):
+        """เปิด/ปิด new_lab_frame ตาม group_id (เฉพาะ group 1, 2 เท่านั้น)"""
+        allowed = self.user_group_id in (1, 2)
+        self.view.ui.new_lab_name_lineEdit.setEnabled(allowed)
+        self.view.ui.new_lab_detail_textEdit.setEnabled(allowed)
+        self.view.ui.save_new_lab_pushButton.setEnabled(allowed)
+        self.view.ui.new_lab_frame.setVisible(allowed)
+
+    def set_user_group_id(self, group_id):
+        """เก็บ group_id ของ user (เรียกจาก MainController)"""
+        self.user_group_id = group_id
+        self._apply_group_permissions()
+
     def set_room_id(self, room_id: int):
         self.user_room_id = room_id
     
     def load_report_data(self):
-        # เงื่อนไขพิเศษ ให้โหลดทั้งหมด
-        allow_all = self.user_group_id in [1, 2, 3, 18, 19, 20]
-
-        if allow_all:
-            result = self.report_info_service.get_all_reports_with_status(1)
-        else:
-            # User ทั่วไป โหลดตามห้องตัวเอง
-            if self.user_room_id is None: return
-            result = self.report_info_service.get_reports_by_room_and_status(self.user_room_id, 1)
-            
-        reports = result if isinstance(result, list) else []
+        reports = self.report_info_service.get_all_reports_with_status(status=1)
         self.populate_tree_widget(reports)
     
     def populate_tree_widget(self, reports):
         tree = self.view.ui.list_detail_treeWidget
         combo = self.view.ui.lab_name_comboBox
-        if not tree: return
         
+        if tree is None: return
         tree.clear()
         combo.clear()
-        self.room_name_map.clear() 
-        
-        # เช็คสิทธิ์
-        allow_all = self.user_group_id in [1, 2, 3, 18, 19, 20]
 
-        if allow_all:
-            # ถ้าเป็น Admin ให้ดึงรายชื่อห้องทั้งหมดจาก DB มาใส่
-            all_rooms = self.report_info_service.get_all_rooms_list()
-            
-            for room in all_rooms:
-                r_name = room.get('name')
-                r_id = room.get('id')
-                if r_name and r_id:
-                    self.room_name_map[r_name] = r_id
-                    combo.addItem(r_name)
-        else:
-            # ถ้าเป็น User ธรรมดา ให้ใส่เฉพาะห้องที่มีใน report หรือห้องตัวเอง
-            if reports:
-                for r in reports:
-                    name = r.get('room_name', f"Room {r.get('room_id')}")
-                    rid = r.get('room_id')
-                    if name not in self.room_name_map:
-                        self.room_name_map[name] = rid
-                        combo.addItem(name)
-            else:
-                pass
+        if not reports: return
 
-        root_path = self.get_app_root_path()
-        backend_root = os.path.abspath(os.path.join(root_path, "..", "BACKEND"))
-        
+        # Group by lab_name (รวมทั้งแถวที่ from_name ว่าง เพื่อเอา lab header ขึ้นมาด้วย)
         grouped_reports = {}
-        if reports:
-            for r in reports:
-                key = r.get('room_name')
-                if not key:
-                     key = f"Room {r.get('room_id', '?')}"
-                
-                grouped_reports.setdefault(key, []).append(r)
+        for report in reports:
+            group_key = report.get('lab_name', 'Unknown')
+            if group_key not in grouped_reports:
+                grouped_reports[group_key] = []
+            grouped_reports[group_key].append(report)
 
-        for g_name, g_reports in grouped_reports.items():
-            parent = QTreeWidgetItem(tree)
-            parent.setText(0, g_name)
-            parent.setText(1, str(len(g_reports)))
-            
-            for r in g_reports:
-                child = QTreeWidgetItem(parent)
-                child.setText(0, r.get('report_name', 'No Name'))
-                child.setText(1, "1")
-                
-                detail_db = r.get('detial') or r.get('detail') or "" 
-                child.setText(2, str(detail_db))
-                
-                child.setData(0, 1000, r.get('id'))
-                child.setData(0, 1002, r.get('room_id'))
-                
-                db_path = r.get('report_path', '')
-                full_path = db_path
-                if db_path and not os.path.isabs(db_path):
-                    full_path = os.path.join(backend_root, db_path)
-                
-                child.setData(0, 1001, full_path)
-                
+        combo.blockSignals(True)
+        combo.addItems(list(grouped_reports.keys()))
+        combo.blockSignals(False)
+
+        for group_name, group_reports in grouped_reports.items():
+            # กรองเฉพาะฟอร์มที่มีชื่อจริง (ไม่ใช่ placeholder จาก add_lab_name)
+            real_forms = [r for r in group_reports if r.get('from_name', '').strip()]
+
+            parent_item = QTreeWidgetItem(tree)
+            parent_item.setText(0, group_name)
+            parent_item.setText(1, str(len(real_forms)))  # นับเฉพาะฟอร์มจริง
+            parent_item.setText(2, "")
+
+            for report in real_forms:
+                child_item = QTreeWidgetItem(parent_item)
+                child_item.setText(0, report.get('from_name', ''))
+                child_item.setText(1, "")
+                child_item.setText(2, report.get('comment', ''))
+                child_item.setData(0, 1000, report['id'])
+                child_item.setData(0, 1001, report.get('location_file', ''))
+                child_item.setData(0, 1002, report.get('lab_name', ''))
+
         tree.collapseAll()

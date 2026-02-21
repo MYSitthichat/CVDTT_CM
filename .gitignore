@@ -1,9 +1,11 @@
 # Python cache files and directories
 __pycache__/
 *.py[cod]
+*.pyo
 *$py.class
-*.so
 .Python
+.pytest_cache/
+*.so
 signatures/
 pdf_temp/
 report_template/

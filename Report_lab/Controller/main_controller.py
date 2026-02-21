@@ -54,7 +54,7 @@ class MainController(QObject):
     def check_folder_in_backend(self):
         result = self.save_file_service.initialize_lab_report_folders()
         status = result.get("status") if result else "ERROR"
-        print("Folder Initialization Result:", status)
+        # print("Folder Initialization Result:", status)
         if status == "ERROR":
             error_message = result.get("message", "An error occurred while initializing folders.")
             QMessageBox.critical(self.main_window, "Folder Initialization Error", error_message)
@@ -75,15 +75,13 @@ class MainController(QObject):
             self.send_lab_controller.reload_data()
 
     def show_lab_edit_form(self):
+        # print(f"DEBUG MainController: show_lab_edit_form called")
         self.main_window.show_lab_edit_form()
         # โหลดข้อมูลเมื่อเปิดหน้า lab edit form (ใช้ QTimer เพื่อให้ widget แสดงผลก่อน)
         if hasattr(self, 'lab_edit_form_controller') and self.lab_edit_form_controller:
-            if self.lab_edit_form_controller.user_room_id is not None:
-                # ใช้ QTimer delay เล็กน้อยเพื่อให้ UI แสดงผลก่อน
-                from PySide6.QtCore import QTimer
-                QTimer.singleShot(100, self.lab_edit_form_controller.reload_data)
-            else:
-                print(f"WARNING MainController: room_id is None, cannot load data")
+            # โหลดข้อมูลทุก lab (ไม่ต้องรอ room_id)
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(100, self.lab_edit_form_controller.reload_data)
         else:
             print(f"WARNING MainController: lab_edit_form_controller does not exist")
 
@@ -145,6 +143,7 @@ class MainController(QObject):
             role = user_info.get('position', 'Staff')
             email = user_info.get('email', '')
             group_id = user_info.get('group_id')  # ดึง group_id จาก user_info
+            # print(f"User group_id = {group_id}")
 
             if hasattr(self, 'lab_edit_form_controller') and self.lab_edit_form_controller:
                 self.lab_edit_form_controller.set_user_group_id(group_id)
