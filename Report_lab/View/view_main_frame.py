@@ -6,6 +6,8 @@ from View.view_receive_lab_frame import ReceiveLabFormView
 from View.view_error_page import ErrorPageView
 from View.view_lab_edite_form_frame import LabEditFormView
 from View.view_export_from_frame import ExportFormView
+from View.view_parasite_form import ParasiteFormView
+from View.view_monocular_form import MonocularFormView
 
 
 class MainWindow(QMainWindow):
@@ -21,6 +23,8 @@ class MainWindow(QMainWindow):
         self.error_page_view = ErrorPageView()
         self.lab_edit_form_view = LabEditFormView()
         self.export_form_view = ExportFormView()
+        self.parasite_form_view = ParasiteFormView()
+        self.monocular_form_view = MonocularFormView()
         # Store reference to main controller (will be set by MainController)
         self.main_controller = None
         
@@ -39,6 +43,8 @@ class MainWindow(QMainWindow):
         self.ui.stackedWidget.addWidget(self.error_page_view)
         self.ui.stackedWidget.addWidget(self.lab_edit_form_view)
         self.ui.stackedWidget.addWidget(self.export_form_view)
+        self.ui.stackedWidget.addWidget(self.parasite_form_view)
+        self.ui.stackedWidget.addWidget(self.monocular_form_view)
         self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
 
 
@@ -53,6 +59,12 @@ class MainWindow(QMainWindow):
 
     def show_lab_edit_form(self):
         self.ui.stackedWidget.setCurrentWidget(self.lab_edit_form_view)
+
+    def show_parasite_form(self):
+        self.ui.stackedWidget.setCurrentWidget(self.parasite_form_view)
+
+    def show_monocular_form(self):
+        self.ui.stackedWidget.setCurrentWidget(self.monocular_form_view)
 
     def show_error_page(self):
         self.show()

@@ -57,6 +57,14 @@ class Ui_MainWindow(object):
         self.merg_Form_pushButton.setObjectName(u"merg_Form_pushButton")
         self.merg_Form_pushButton.setGeometry(QRect(5, 130, 251, 51))
         self.merg_Form_pushButton.setFont(font)
+        self.parasite_Form_pushButton = QPushButton(self.frame)
+        self.parasite_Form_pushButton.setObjectName(u"parasite_Form_pushButton")
+        self.parasite_Form_pushButton.setGeometry(QRect(10, 310, 251, 51))
+        self.parasite_Form_pushButton.setFont(font)
+        self.monocular_Form_pushButton = QPushButton(self.frame)
+        self.monocular_Form_pushButton.setObjectName(u"monocular_Form_pushButton")
+        self.monocular_Form_pushButton.setGeometry(QRect(10, 370, 251, 51))
+        self.monocular_Form_pushButton.setFont(font)
         self.stackedWidget = QStackedWidget(self.centralwidget)
         self.stackedWidget.setObjectName(u"stackedWidget")
         self.stackedWidget.setGeometry(QRect(275, 5, 1270, 890))
@@ -85,5 +93,7 @@ class Ui_MainWindow(object):
         self.logout_pushButton.setText(QCoreApplication.translate("MainWindow", u"LOGOUT", None))
         self.Edit_Form_pushButton.setText(QCoreApplication.translate("MainWindow", u"Edite Form", None))
         self.merg_Form_pushButton.setText(QCoreApplication.translate("MainWindow", u"\u0e23\u0e27\u0e21\u0e1f\u0e2d\u0e23\u0e4c\u0e21", None))
+        self.parasite_Form_pushButton.setText(QCoreApplication.translate("MainWindow", u"parasite form", None))
+        self.monocular_Form_pushButton.setText(QCoreApplication.translate("MainWindow", u"monocular form", None))
     # retranslateUi
 

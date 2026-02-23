@@ -8,6 +8,7 @@ class ReportInformationService(BaseService):
         try:
             params = {"room_id": room_id, "status": status}
             result = self._get("/report_information/by_room_and_status", params=params)
+            
             if isinstance(result, list):
                 return result
             elif isinstance(result, dict) and "data" in result:

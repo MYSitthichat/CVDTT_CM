@@ -144,6 +144,46 @@
       <string>รวมฟอร์ม</string>
      </property>
     </widget>
+    <widget class="QPushButton" name="parasite_Form_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>310</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>parasite form</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="monocular_Form_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>370</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>monocular form</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QStackedWidget" name="stackedWidget">
     <property name="geometry">

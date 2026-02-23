@@ -14,7 +14,6 @@ class ReportAddRequest(BaseModel):
     room_id: int
     report_path: str
     updater_id: int
-    detail: str = ""
 
 class ReportVersionRequest(BaseModel):
     old_report_id: int
@@ -22,7 +21,6 @@ class ReportVersionRequest(BaseModel):
     new_path: str
     room_id: int
     updater_id: int
-    detail: str = ""
 
 class ReportDeleteRequest(BaseModel):
     report_id: int
@@ -48,7 +46,7 @@ def get_all_reports_by_status(status: int = 1):
     
         sql = """
             SELECT 
-                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater, t1.detail, 
+                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater, 
                 t2.name AS room_name
             FROM report_information t1
             LEFT JOIN room_information t2 ON t1.room_id = t2.id
@@ -80,10 +78,10 @@ def add_report(request: ReportAddRequest):
     try:
         cursor = conn.cursor()
         sql = """
-            INSERT INTO report_information (report_name, room_id, report_path, updater, status, detail) 
-            VALUES (?, ?, ?, ?, 1, ?)
+            INSERT INTO report_information (report_name, room_id, report_path, updater, status) 
+            VALUES (?, ?, ?, ?, 1)
         """
-        cursor.execute(sql, (request.report_name, request.room_id, request.report_path, request.updater_id, request.detail))
+        cursor.execute(sql, (request.report_name, request.room_id, request.report_path, request.updater_id))
         conn.commit()
         
         return {"status": "success", "message": "Report added successfully"}
@@ -109,10 +107,10 @@ def save_new_report_version(request: ReportVersionRequest):
         
         # 2. Insert ตัวใหม่ (status = 1)
         insert_sql = """
-            INSERT INTO report_information (report_name, room_id, report_path, updater, status, detail) 
-            VALUES (?, ?, ?, ?, 1, ?)
+            INSERT INTO report_information (report_name, room_id, report_path, updater, status) 
+            VALUES (?, ?, ?, ?, 1)
         """
-        cursor.execute(insert_sql, (request.new_name, request.room_id, request.new_path, request.updater_id, request.detail))
+        cursor.execute(insert_sql, (request.new_name, request.room_id, request.new_path, request.updater_id))
         
         conn.commit()
         return {"status": "success", "message": "Version updated successfully"}
@@ -155,7 +153,7 @@ def get_reports_by_room_and_status(room_id: int, status: int = 1):
         
         sql = """
             SELECT 
-                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater, t1.detail,
+                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater,
                 t2.name AS room_name
             FROM report_information t1
             LEFT JOIN room_information t2 ON t1.room_id = t2.id
