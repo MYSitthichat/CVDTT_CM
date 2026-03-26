@@ -1,7 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "${workspaceFolder}"
-    ],
-    "python.analysis.typeCheckingMode": "basic",
-    "editor.semanticHighlighting.enabled": true
-}

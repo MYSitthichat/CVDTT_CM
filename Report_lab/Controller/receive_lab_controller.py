@@ -153,10 +153,11 @@ class ReceiveLabController(QObject):
         self.template_model.removeRows(0, self.template_model.rowCount())
         
         # เพิ่มรายละเอียด Lab Order (แถวแรกๆ)
+        dtime_value = str(order_data.get('dtime', '')).replace('T', ' ')
         details = [
             ("=== รายละเอียด Lab Order ===", ""),
             ("Lab Order ID:", str(order_data.get('lab_order_id', '')).zfill(12)),
-            ("วันที่-เวลา:", str(order_data.get('dtime', ''))),
+            ("วันที่-เวลา:", dtime_value),
             ("ตัวอย่างที่ส่งตรวจ:", str(order_data.get('sample_inspection', order_data.get('sample_type', '')))),
             ("ความเร็ว:", str(order_data.get('speed', ''))),
             ("", ""),
@@ -550,7 +551,8 @@ class ReceiveLabController(QObject):
                 job_progress = result['job_progress']
                 self.all_data = job_progress
                 for item in job_progress:
-                    time_item = QStandardItem(str(item.get('time', '')))
+                    time_value = str(item.get('time', '')).replace('T', ' ')
+                    time_item = QStandardItem(time_value)
                     time_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                     lab_order_id = str(item.get('lab_order_id', ''))
                     lab_order_id_formatted = lab_order_id.zfill(12)
@@ -590,7 +592,8 @@ class ReceiveLabController(QObject):
                 job_progress = result['job_progress']
                 self.has_more_data = result.get('has_more', False)
                 for item in job_progress:
-                    time_item = QStandardItem(str(item.get('time', '')))
+                    time_value = str(item.get('time', '')).replace('T', ' ')
+                    time_item = QStandardItem(time_value)
                     time_item.setTextAlignment(Qt.AlignmentFlag.AlignCenter)
                     lab_order_id = str(item.get('lab_order_id', ''))
                     lab_order_id_formatted = lab_order_id.zfill(12)

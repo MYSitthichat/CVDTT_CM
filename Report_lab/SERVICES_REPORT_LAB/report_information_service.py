@@ -5,11 +5,23 @@ import os
 class ReportInformationService(BaseService):
     def get_reports_by_room_and_status(self, lab_name: str, status: int = 1):
         try:
+<<<<<<< HEAD
+            params = {"room_id": room_id, "status": status}
+            result = self._get("/report_information/by_room_and_status", params=params)
+            
+            if isinstance(result, list):
+                return result
+            elif isinstance(result, dict) and "data" in result:
+                return result["data"]
+            else:
+                return []
+=======
             response = self._get(
                 "/lab_form_edite/by_room_and_status",
                 params={"lab_name": lab_name, "status": status}
             )
             return response if isinstance(response, list) else []
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
         except Exception as e:
             print(f"ERROR get_reports_by_room_and_status: {e}")
             return []

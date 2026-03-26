@@ -144,11 +144,19 @@
       <string>รวมฟอร์ม</string>
      </property>
     </widget>
+<<<<<<< HEAD
     <widget class="QPushButton" name="doctor_report_pushButton">
      <property name="geometry">
       <rect>
        <x>5</x>
        <y>190</y>
+=======
+    <widget class="QPushButton" name="parasite_Form_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>310</y>
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
        <width>251</width>
        <height>51</height>
       </rect>
@@ -161,7 +169,31 @@
       </font>
      </property>
      <property name="text">
+<<<<<<< HEAD
       <string>Doctor Report</string>
+=======
+      <string>parasite form</string>
+     </property>
+    </widget>
+    <widget class="QPushButton" name="monocular_Form_pushButton">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>370</y>
+       <width>251</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>TH Niramit AS</family>
+       <pointsize>24</pointsize>
+       <bold>true</bold>
+      </font>
+     </property>
+     <property name="text">
+      <string>monocular form</string>
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
      </property>
     </widget>
    </widget>

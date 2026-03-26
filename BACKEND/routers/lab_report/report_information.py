@@ -13,19 +13,31 @@ router = APIRouter(
 
 # --- Pydantic Models (สำหรับรับค่า JSON) ---
 class ReportAddRequest(BaseModel):
+<<<<<<< HEAD
+    report_name: str
+    room_id: int
+    report_path: str
+    updater_id: int
+=======
     from_name: str
     lab_name: str
     location_file: str
     updater: int
     comment: str = ""
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
 
 class ReportVersionRequest(BaseModel):
     old_report_id: int
     new_name: str
     new_path: str
+<<<<<<< HEAD
+    room_id: int
+    updater_id: int
+=======
     lab_name: str
     updater: int
     comment: str = ""
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
 
 class ReportDeleteRequest(BaseModel):
     report_id: int
@@ -50,10 +62,20 @@ def get_all_reports_by_status(status: int = 1):
         cursor = conn.cursor()
     
         sql = """
+<<<<<<< HEAD
+            SELECT 
+                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater, 
+                t2.name AS room_name
+            FROM report_information t1
+            LEFT JOIN room_information t2 ON t1.room_id = t2.id
+            WHERE t1.status = ?
+            ORDER BY t1.room_id ASC, t1.id DESC
+=======
             SELECT id, lab_name, from_name, comment, status, location_file, updater, dTime
             FROM lab_form_edite
             WHERE status = ?
             ORDER BY lab_name ASC, id DESC
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
         """
 
         cursor.execute(sql, (status,))
@@ -80,10 +102,17 @@ def add_report(request: ReportAddRequest):
     try:
         cursor = conn.cursor()
         sql = """
+<<<<<<< HEAD
+            INSERT INTO report_information (report_name, room_id, report_path, updater, status) 
+            VALUES (?, ?, ?, ?, 1)
+        """
+        cursor.execute(sql, (request.report_name, request.room_id, request.report_path, request.updater_id))
+=======
             INSERT INTO lab_form_edite (from_name, lab_name, location_file, updater, status, comment) 
             VALUES (?, ?, ?, ?, 1, ?)
         """
         cursor.execute(sql, (request.from_name, request.lab_name, request.location_file, request.updater, request.comment))
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
         conn.commit()
         
         return {"status": "success", "message": "Report added successfully"}
@@ -109,10 +138,17 @@ def save_new_report_version(request: ReportVersionRequest):
         
         # 2. Insert ตัวใหม่ (status = 1)
         insert_sql = """
+<<<<<<< HEAD
+            INSERT INTO report_information (report_name, room_id, report_path, updater, status) 
+            VALUES (?, ?, ?, ?, 1)
+        """
+        cursor.execute(insert_sql, (request.new_name, request.room_id, request.new_path, request.updater_id))
+=======
             INSERT INTO lab_form_edite (from_name, lab_name, location_file, updater, status, comment) 
             VALUES (?, ?, ?, ?, 1, ?)
         """
         cursor.execute(insert_sql, (request.new_name, request.lab_name, request.new_path, request.updater, request.comment))
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
         
         conn.commit()
         return {"status": "success", "message": "Version updated successfully"}
@@ -154,10 +190,20 @@ def get_reports_by_room_and_status(lab_name: str, status: int = 1):
         cursor = conn.cursor()
         
         sql = """
+<<<<<<< HEAD
+            SELECT 
+                t1.id, t1.report_name, t1.room_id, t1.report_path, t1.status, t1.updater,
+                t2.name AS room_name
+            FROM report_information t1
+            LEFT JOIN room_information t2 ON t1.room_id = t2.id
+            WHERE t1.room_id = ? AND t1.status = ?
+            ORDER BY t1.id DESC
+=======
             SELECT id, lab_name, from_name, comment, status, location_file, updater, dTime
             FROM lab_form_edite
             WHERE lab_name = ? AND status = ?
             ORDER BY id DESC
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
         """
         
         cursor.execute(sql, (lab_name, status))

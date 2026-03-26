@@ -6,7 +6,12 @@ from View.view_receive_lab_frame import ReceiveLabFormView
 from View.view_error_page import ErrorPageView
 from View.view_lab_edite_form_frame import LabEditFormView
 from View.view_export_from_frame import ExportFormView
+<<<<<<< HEAD
 from View.view_doctor_frame import DoctorReportView
+=======
+from View.view_parasite_form import ParasiteFormView
+from View.view_monocular_form import MonocularFormView
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
 
 
 class MainWindow(QMainWindow):
@@ -22,7 +27,12 @@ class MainWindow(QMainWindow):
         self.error_page_view = ErrorPageView()
         self.lab_edit_form_view = LabEditFormView()
         self.export_form_view = ExportFormView()
+<<<<<<< HEAD
         self.doctor_report_view = DoctorReportView()
+=======
+        self.parasite_form_view = ParasiteFormView()
+        self.monocular_form_view = MonocularFormView()
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
         # Store reference to main controller (will be set by MainController)
         self.main_controller = None
         
@@ -41,7 +51,12 @@ class MainWindow(QMainWindow):
         self.ui.stackedWidget.addWidget(self.error_page_view)
         self.ui.stackedWidget.addWidget(self.lab_edit_form_view)
         self.ui.stackedWidget.addWidget(self.export_form_view)
+<<<<<<< HEAD
         self.ui.stackedWidget.addWidget(self.doctor_report_view)
+=======
+        self.ui.stackedWidget.addWidget(self.parasite_form_view)
+        self.ui.stackedWidget.addWidget(self.monocular_form_view)
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
         self.ui.stackedWidget.setCurrentWidget(self.receive_lab_form_view)
 
 
@@ -59,6 +74,12 @@ class MainWindow(QMainWindow):
         
     def show_doctor_report_form(self):
         self.ui.stackedWidget.setCurrentWidget(self.doctor_report_view)
+
+    def show_parasite_form(self):
+        self.ui.stackedWidget.setCurrentWidget(self.parasite_form_view)
+
+    def show_monocular_form(self):
+        self.ui.stackedWidget.setCurrentWidget(self.monocular_form_view)
 
     def show_error_page(self):
         self.show()

@@ -38,10 +38,10 @@ class BaseService:
         try:
             url = f"{self.base_url}{endpoint}"
             response = requests.get(url, params=params, timeout=self.timeout)
+            
             if response.status_code == 200:
                 return response.json()
             else:
-                # print(f"Server Error ({endpoint}): {response.status_code}")
                 return [] if "search" in endpoint else None
         except requests.RequestException as e:
             print(f"Network Error ({endpoint}): {e}")

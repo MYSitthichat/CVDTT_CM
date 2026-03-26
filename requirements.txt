@@ -1,0 +1,70 @@
+# Python Dependencies for CVDTT Lab Management System
+
+# ========================================
+# Core Framework
+# ========================================
+fastapi
+uvicorn[standard]
+pydantic
+
+# ========================================
+# Database
+# ========================================
+mariadb
+
+# ========================================
+# Security
+# ========================================
+passlib[bcrypt]
+python-multipart
+
+# ========================================
+# HTTP Client
+# ========================================
+requests
+
+# ========================================
+# GUI (Qt)
+# ========================================
+PySide6
+PySide6-WebEngine
+qt-material
+
+# ========================================
+# Document Processing
+# ========================================
+python-docx        # สำหรับจัดการไฟล์ Word
+docx2pdf           # สำหรับแปลง Word เป็น PDF
+
+# ========================================
+# Barcode & QR Code
+# ========================================
+python-barcode
+qrcode[pil]
+Pillow
+
+# ========================================
+# PDF Processing (Optional)
+# ========================================
+PyPDF2
+reportlab
+
+# ========================================
+# Date & Time
+# ========================================
+python-dateutil
+
+# ========================================
+# Utility
+# ========================================
+pythoncom           # สำหรับ COM interface (Windows)
+
+# ========================================
+# Installation Instructions
+# ========================================
+# Install all dependencies:
+#   pip install -r requirements.txt
+#
+# Or install individually:
+#   pip install python-docx
+#   pip install fastapi uvicorn mariadb PySide6 qt-material

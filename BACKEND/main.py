@@ -1,6 +1,10 @@
 from fastapi import FastAPI
 from routers.registation import auth, customer, employee, work, lab, barcode, check_job_progress,lab_order, after_death
+<<<<<<< HEAD
 from routers.lab_report import select_room, receive_lab_order, send_lab , save_report_lab, report_information, doctor_report
+=======
+from routers.lab_report import select_room, receive_lab_order, send_lab , save_report_lab, report_information, report_form
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
 from database import get_db_connection
 from security import pwd_context
 import mariadb
@@ -22,7 +26,11 @@ app.include_router(receive_lab_order.router)
 app.include_router(send_lab.router)
 app.include_router(save_report_lab.router)
 app.include_router(report_information.router)
+<<<<<<< HEAD
 app.include_router(doctor_report.router)
+=======
+app.include_router(report_form.router)
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
 
 @app.get("/")
 def index():

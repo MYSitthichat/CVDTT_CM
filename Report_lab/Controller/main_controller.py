@@ -3,11 +3,21 @@ from PySide6.QtCore import QObject, Signal, QTimer
 from Controller.send_lab_controller import SendLabController
 from Controller.receive_lab_controller import ReceiveLabController
 from Controller.lab_edit_from_controller import LabEditFormController
+<<<<<<< HEAD
 from Controller.doctor_report_controller import DoctorReportController
 from View.view_receive_lab_frame import ReceiveLabFormView
 from View.view_report_from_frame import ReportFormView
 from View.view_lab_edite_form_frame import LabEditFormView
 from View.view_doctor_frame import DoctorReportView
+=======
+from Controller.parasite_form_controller import ParasiteFormController
+from Controller.monocular_form_controller import MonocularFormController
+from View.view_receive_lab_frame import ReceiveLabFormView
+from View.view_report_from_frame import ReportFormView
+from View.view_lab_edite_form_frame import LabEditFormView
+from View.view_parasite_form import ParasiteFormView
+from View.view_monocular_form import MonocularFormView
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
 from SERVICES_REPORT_LAB.search_room import SearchRoomService
 from SERVICES_REPORT_LAB.save_report_lab_folder_service import SaveReportLabFolderService
 from PySide6.QtWidgets import QMessageBox
@@ -32,13 +42,23 @@ class MainController(QObject):
         self.report_widget: ReportFormView = self.main_window.report_form_view
         self.receive_widget: ReceiveLabFormView = self.main_window.receive_lab_form_view
         self.edite_lab_widget: LabEditFormView = self.main_window.lab_edit_form_view
+<<<<<<< HEAD
         self.doctor_report_widget: DoctorReportView = self.main_window.doctor_report_view
+=======
+        self.parasite_widget: ParasiteFormView = self.main_window.parasite_form_view
+        self.monocular_widget: MonocularFormView = self.main_window.monocular_form_view
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
 
         # Create controllers
         self.send_lab_controller: SendLabController = SendLabController(self.report_widget, main_controller=self)
         self.receive_lab_controller: ReceiveLabController = ReceiveLabController(self.receive_widget, main_controller=self)
         self.lab_edit_form_controller: LabEditFormController = LabEditFormController(self.edite_lab_widget, main_controller=self)
+<<<<<<< HEAD
         self.doctor_report_controller = DoctorReportController(self.doctor_report_widget, main_controller=self)
+=======
+        self.parasite_form_controller: ParasiteFormController = ParasiteFormController(self.parasite_widget, main_controller=self)
+        self.monocular_form_controller: MonocularFormController = MonocularFormController(self.monocular_widget, main_controller=self)
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
 
         # Set reference to this controller in main_window
         self.main_window.main_controller = self
@@ -51,7 +71,12 @@ class MainController(QObject):
         self.main_window.ui.send_lab_report_pushButton.clicked.connect(self.show_report_work_page)
         self.main_window.ui.Edit_Form_pushButton.clicked.connect(self.show_lab_edit_form)
         self.main_window.ui.merg_Form_pushButton.clicked.connect(self.show_export_form_page)
+<<<<<<< HEAD
         self.main_window.ui.doctor_report_pushButton.clicked.connect(self.show_doctor_report_form)
+=======
+        self.main_window.ui.parasite_Form_pushButton.clicked.connect(self.show_parasite_form)
+        self.main_window.ui.monocular_Form_pushButton.clicked.connect(self.show_monocular_form)
+>>>>>>> 379d33bf78c628f06267ca8ffa110cd16ba557eb
         self._setup_user_profile_connections()
         
         
@@ -60,6 +85,10 @@ class MainController(QObject):
     def check_folder_in_backend(self):
         result = self.save_file_service.initialize_lab_report_folders()
         status = result.get("status") if result else "ERROR"
+<<<<<<< HEAD
+        # DEBUG: Uncomment for debugging
+=======
+>>>>>>> ef7021bec0600bab8bb8970532f8dd9a047875ae
         # print("Folder Initialization Result:", status)
         if status == "ERROR":
             error_message = result.get("message", "An error occurred while initializing folders.")
@@ -69,6 +98,19 @@ class MainController(QObject):
     def show_export_form_page(self):
         self.main_window.show_export_form()
     
+    def show_parasite_form(self):
+        self.main_window.show_parasite_form()
+        # โหลดข้อมูลเมื่อเปิดหน้า parasite form
+        if hasattr(self, 'parasite_form_controller') and self.parasite_form_controller:
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(100, self.parasite_form_controller.reload_data)
+    
+    def show_monocular_form(self):
+        self.main_window.show_monocular_form()
+        # โหลดข้อมูลเมื่อเปิดหน้า monocular form
+        if hasattr(self, 'monocular_form_controller') and self.monocular_form_controller:
+            from PySide6.QtCore import QTimer
+            QTimer.singleShot(100, self.monocular_form_controller.reload_data)
     
     def show_receive_work_page(self):
         self.main_window.show_receive_work_page()
