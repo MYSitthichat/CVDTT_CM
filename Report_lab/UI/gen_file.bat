@@ -7,3 +7,4 @@ pyside6-uic receive_lab.ui -o ..\view\template_from_ui\receive_lab_frame.py
 pyside6-uic error_page.ui -o ..\view\template_from_ui\error_page_frame.py
 pyside6-uic lab_edite_form.ui -o ..\view\template_from_ui\lab_edit_form_frame.py
 pyside6-uic merg_report_form.ui -o ..\view\template_from_ui\Export_form_frame.py
+pyside6-uic Doctor_report.ui -o ..\view\template_from_ui\Doctor_report_frame.py

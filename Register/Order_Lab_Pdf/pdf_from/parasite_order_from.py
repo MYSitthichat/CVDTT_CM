@@ -121,8 +121,8 @@ def create_parasite_biology(sample_detail, data, output_file):
     bottom_margin = 0.25 * inch
 
     pdf_file = SimpleDocTemplate(output_file, pagesize=A4,
-                                 leftMargin=left_margin, rightMargin=right_margin,
-                                 topMargin=top_margin, bottomMargin=bottom_margin)
+                                leftMargin=left_margin, rightMargin=right_margin,
+                                topMargin=top_margin, bottomMargin=bottom_margin)
 
     elements = []
     
